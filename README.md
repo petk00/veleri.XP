@@ -91,3 +91,41 @@ project-root/
 ├── server/          # API i poslovna logika
 ├── database/        # SQL skripte, sheme i početni podaci
 └── README.md
+
+🧩 Model podataka
+
+Sustav se temelji na sljedećim osnovnim entitetima:
+	•	uloga
+	•	korisnik
+	•	poslovna_godina
+	•	predmet_nabave
+	•	mjesto_troska
+	•	zahtjev
+	•	stavka_zahtjeva
+	•	dokument
+	•	limit_predmeta
+	•	limit_mjesta_troska
+	•	evidencija_radnji
+
+⸻
+
+🚀 Pokretanje aplikacije
+
+Backend
+
+
+📄 Napomena o projektu
+
+Ovaj projekt razvija se u edukativne svrhe kao dio izrade projektnog zadatka i projektne dokumentacije u okviru studija.
+
+Aplikacija je trenutno u fazi projektiranja i postupne implementacije, a planirano je daljnje proširenje funkcionalnosti tijekom razvoja.
+
+⸻
+
+✍️ Autor
+
+Igor Petković
+Veleučilište u Rijeci
+Stručni diplomski studij Informacijske tehnologije u poslovnim sustavima
+Smjer: Programsko inženjerstvo
+
