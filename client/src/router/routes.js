@@ -14,6 +14,10 @@ const routes = [
       {
         path: 'moji-nalozi',
         component: () => import('pages/MojiNaloziStranica.vue')
+      },
+      {
+        path: 'novi-nalog',
+        component: () => import('pages/NoviNalogStranica.vue')
       }
     ]
   },
