@@ -39,6 +39,7 @@
                 dense
                 icon="visibility"
                 color="primary"
+                :to="`/detalji-naloga/${props.row.id}`"
               />
             </q-td>
           </template>

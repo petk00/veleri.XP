@@ -18,10 +18,13 @@ const routes = [
       {
         path: 'novi-nalog',
         component: () => import('pages/NoviNalogStranica.vue')
+      },
+      {
+        path: 'detalji-naloga/:id',
+        component: () => import('pages/DetaljiNalogaStranica.vue')
       }
     ]
   },
-
   {
     path: '/:catchAll(.*)*',
     component: () => import('pages/ErrorNotFound.vue')
