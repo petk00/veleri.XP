@@ -38,9 +38,10 @@ Planirani tehnološki stack:
 ```bash
 project-root/
 │
-├── frontend/        # Vue + Quasar aplikacija
-├── backend/         # API, poslovna logika i autentifikacija
+├── ckient/          # Vue + Quasar aplikacija
+├── server/          # API, poslovna logika i autentifikacija
 ├── database/        # modeli baze, skripte i inicijalni podaci
+├── docs/            # dokumentacija, ER
 └── README.md
 
 
