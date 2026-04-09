@@ -35,14 +35,13 @@ Planirani tehnološki stack:
 
 ## 🧱 Arhitektura projekta
 
+```bash
 project-root/
 │
-├── client/        # Vue + Quasar aplikacija
-├── server/         # API, poslovna logika i autentifikacija
+├── frontend/        # Vue + Quasar aplikacija
+├── backend/         # API, poslovna logika i autentifikacija
 ├── database/        # modeli baze, skripte i inicijalni podaci
-├── docs/            # dokumentacija, ER
 └── README.md
-
 
 
                                           
