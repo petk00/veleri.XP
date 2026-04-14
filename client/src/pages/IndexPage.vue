@@ -1,23 +1,16 @@
 <template>
-  <q-page class="flex flex-center column">
-    <div class="text-h5 q-mb-md">Quasar + Node</div>
-    <div>{{ message }}</div>
+  <q-page padding>
+    <div class="text-h4 q-mb-lg">Dashboard</div>
+
+    <div class="row q-col-gutter-md">
+      <div class="col-12 col-md-4">
+        <q-card clickable class="cursor-pointer" @click="$router.push('/requests')">
+          <q-card-section>
+            <div class="text-h6">Zahtjevi za nabavu</div>
+            <div class="text-body2">Pregled svih zahtjeva</div>
+          </q-card-section>
+        </q-card>
+      </div>
+    </div>
   </q-page>
 </template>
-
-<script setup>
-import { ref, onMounted } from 'vue'
-import { api } from 'src/boot/axios'
-
-const message = ref('Učitavanje...')
-
-onMounted(async () => {
-  try {
-    const response = await api.get('/')
-    message.value = response.data.message
-  } catch (error) {
-    console.error(error)
-    message.value = 'Greška kod spajanja na backend'
-  }
-})
-</script>
