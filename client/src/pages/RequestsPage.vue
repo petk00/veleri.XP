@@ -1,13 +1,10 @@
 <template>
   <q-page padding>
-    <div class="row items-center q-mb-md">
-      <div class="text-h5">Zahtjevi za nabavu</div>
-    </div>
+    <div class="text-h5 q-mb-md">Pregled zahtjeva</div>
 
     <q-card>
       <q-card-section>
         <q-table
-          title="Pregled zahtjeva"
           :rows="rows"
           :columns="columns"
           row-key="id_purchase_request"
@@ -53,48 +50,13 @@ const loading = ref(false);
 const rows = ref([]);
 
 const columns = [
-  {
-    name: 'request_number',
-    label: 'Broj zahtjeva',
-    field: 'request_number',
-    align: 'left',
-  },
-  {
-    name: 'fiscal_year',
-    label: 'Godina',
-    field: 'fiscal_year',
-    align: 'left',
-  },
-  {
-    name: 'department_name',
-    label: 'Odjel',
-    field: 'department_name',
-    align: 'left',
-  },
-  {
-    name: 'status_name',
-    label: 'Status',
-    field: 'status_name',
-    align: 'left',
-  },
-  {
-    name: 'created_by',
-    label: 'Kreirao',
-    field: 'created_by',
-    align: 'left',
-  },
-  {
-    name: 'total_amount',
-    label: 'Ukupan iznos',
-    field: 'total_amount',
-    align: 'right',
-  },
-  {
-    name: 'created_at',
-    label: 'Datum',
-    field: 'created_at',
-    align: 'left',
-  },
+  { name: 'request_number', label: 'Broj zahtjeva', field: 'request_number', align: 'left' },
+  { name: 'fiscal_year', label: 'Godina', field: 'fiscal_year', align: 'left' },
+  { name: 'department_name', label: 'Odjel', field: 'department_name', align: 'left' },
+  { name: 'status_name', label: 'Status', field: 'status_name', align: 'left' },
+  { name: 'created_by', label: 'Kreirao', field: 'created_by', align: 'left' },
+  { name: 'total_amount', label: 'Ukupan iznos', field: 'total_amount', align: 'right' },
+  { name: 'created_at', label: 'Datum', field: 'created_at', align: 'left' },
 ];
 
 const fetchRequests = async () => {
