@@ -54,24 +54,9 @@ const request = ref(null);
 const items = ref([]);
 
 const columns = [
-  {
-    name: 'item_name',
-    label: 'Naziv artikla',
-    field: 'item_name',
-    align: 'left',
-  },
-  {
-    name: 'category_name',
-    label: 'Kategorija',
-    field: 'category_name',
-    align: 'left',
-  },
-  {
-    name: 'quantity',
-    label: 'Količina',
-    field: 'quantity',
-    align: 'right',
-  },
+  { name: 'item_name', label: 'Naziv artikla', field: 'item_name', align: 'left' },
+  { name: 'category_name', label: 'Kategorija', field: 'category_name', align: 'left' },
+  { name: 'quantity', label: 'Količina', field: 'quantity', align: 'right' },
 ];
 
 const fetchRequestDetails = async () => {

@@ -1,89 +1,15 @@
-const express = require('express');
-const router = express.Router();
-const db = require('../config/db');
-
-router.get('/', async (req, res) => {
-  try {
-    const [rows] = await db.query(`
-      SELECT
-        pr.id_purchase_request,
-        pr.request_number,
-        fy.year AS fiscal_year,
-        d.name AS department_name,
-        rs.name AS status_name,
-        CONCAT(u.first_name, ' ', u.last_name) AS created_by,
-        pr.total_amount,
-        pr.created_at
-      FROM PurchaseRequest pr
-      INNER JOIN FiscalYear fy ON pr.fk_fiscal_year = fy.id_fiscal_year
-      INNER JOIN Department d ON pr.fk_department = d.id_department
-      INNER JOIN RequestStatus rs ON pr.fk_request_status = rs.id_request_status
-      INNER JOIN AppUser u ON pr.fk_created_by_user = u.id_user
-      ORDER BY pr.created_at DESC, pr.id_purchase_request DESC
-    `);
-
-    res.json(rows);
-  } catch (error) {
-    console.error('GET /api/requests error:', error);
-    res.status(500).json({
-      message: 'Greška pri dohvaćanju zahtjeva.',
-    });
-  }
-});
-
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const [requestRows] = await db.query(`
-      SELECT
-        pr.id_purchase_request,
-        pr.request_number,
-        fy.year AS fiscal_year,
-        d.name AS department_name,
-        rs.name AS status_name,
-        CONCAT(u.first_name, ' ', u.last_name) AS created_by,
-        pr.total_amount,
-        pr.justification,
-        pr.created_at,
-        pr.updated_at
-      FROM PurchaseRequest pr
-      INNER JOIN FiscalYear fy ON pr.fk_fiscal_year = fy.id_fiscal_year
-      INNER JOIN Department d ON pr.fk_department = d.id_department
-      INNER JOIN RequestStatus rs ON pr.fk_request_status = rs.id_request_status
-      INNER JOIN AppUser u ON pr.fk_created_by_user = u.id_user
-      WHERE pr.id_purchase_request = ?
-      LIMIT 1
-    `, [id]);
-
-    if (requestRows.length === 0) {
-      return res.status(404).json({
-        message: 'Zahtjev nije pronađen.',
-      });
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "src/*": ["src/*"],
+      "app/*": ["src/*"],
+      "components/*": ["src/components/*"],
+      "layouts/*": ["src/layouts/*"],
+      "pages/*": ["src/pages/*"],
+      "assets/*": ["src/assets/*"],
+      "boot/*": ["src/boot/*"]
     }
-
-    const [itemRows] = await db.query(`
-      SELECT
-        pri.id_purchase_request_item,
-        pri.item_name,
-        pri.quantity,
-        ic.name AS category_name
-      FROM PurchaseRequestItem pri
-      INNER JOIN ItemCategory ic ON pri.fk_item_category = ic.id_item_category
-      WHERE pri.fk_purchase_request = ?
-      ORDER BY pri.id_purchase_request_item ASC
-    `, [id]);
-
-    res.json({
-      request: requestRows[0],
-      items: itemRows,
-    });
-  } catch (error) {
-    console.error('GET /api/requests/:id error:', error);
-    res.status(500).json({
-      message: 'Greška pri dohvaćanju detalja zahtjeva.',
-    });
-  }
-});
-
-module.exports = router;
+  },
+  "exclude": ["dist", ".quasar", "node_modules"]
+}
