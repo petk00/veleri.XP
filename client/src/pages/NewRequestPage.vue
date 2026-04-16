@@ -42,13 +42,11 @@
             >
               <div class="row q-col-gutter-lg">
                 <div class="col-12 col-md-6">
-                  <q-select
-                    v-model="form.fiscalYear"
-                    :options="fiscalYearOptions"
-                    label="Fiskalna godina"
+                  <q-input
+                    :model-value="activeFiscalYear"
+                    label="Aktivna fiskalna godina"
                     outlined
-                    emit-value
-                    map-options
+                    readonly
                   />
                 </div>
 
@@ -65,10 +63,8 @@
 
                 <div class="col-12">
                   <q-input
-                    v-model="form.justification"
-                    label="Obrazloženje"
-                    type="textarea"
-                    autogrow
+                    v-model="form.reasonName"
+                    label="Razlog nabave"
                     outlined
                   />
                 </div>
@@ -77,7 +73,7 @@
 
             <q-step
               :name="2"
-              title="Stavke zahtjeva"
+              title="Stavke i dodatni podaci"
               icon="inventory_2"
               :done="step > 2"
             >
@@ -123,7 +119,7 @@
                 />
               </div>
 
-              <q-card flat class="items-card">
+              <q-card flat class="items-card q-mb-lg">
                 <q-card-section class="row items-center justify-between">
                   <div class="text-subtitle1 text-weight-bold">
                     Dodane stavke
@@ -163,12 +159,57 @@
                   </q-item>
                 </q-list>
               </q-card>
+
+              <div class="row q-col-gutter-lg">
+                <div class="col-12 col-md-6">
+                  <q-input
+                    v-model.number="form.estimatedAmount"
+                    label="Procjena iznosa nabave"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    outlined
+                    suffix="EUR"
+                  />
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <q-select
+                    v-model="form.hasOffer"
+                    :options="offerOptions"
+                    label="Imate li ponudu za upload?"
+                    outlined
+                    emit-value
+                    map-options
+                  />
+                </div>
+
+                <div v-if="form.hasOffer === true" class="col-12">
+                  <q-file
+                    v-model="form.offerFile"
+                    label="Upload ponude"
+                    outlined
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    clearable
+                  >
+                    <template #prepend>
+                      <q-icon name="attach_file" />
+                    </template>
+                  </q-file>
+                </div>
+              </div>
+
+              <q-banner class="bg-blue-1 text-blue-9 q-mt-lg" rounded>
+                Procjena iznosa nabave i ponuda nisu obavezni za početno kreiranje zahtjeva,
+                ali će ih biti potrebno dodati naknadno.
+              </q-banner>
             </q-step>
 
             <q-step
               :name="3"
-              title="Pregled i potvrda"
+              title="Pregled zahtjeva"
               icon="fact_check"
+              :done="step > 3"
             >
               <div class="row q-col-gutter-lg">
                 <div class="col-12 col-md-6">
@@ -179,8 +220,8 @@
                       </div>
 
                       <div class="summary-row">
-                        <span>Fiskalna godina</span>
-                        <strong>{{ selectedFiscalYearLabel || '-' }}</strong>
+                        <span>Aktivna fiskalna godina</span>
+                        <strong>{{ activeFiscalYear }}</strong>
                       </div>
 
                       <div class="summary-row">
@@ -189,8 +230,8 @@
                       </div>
 
                       <div class="summary-row summary-row--top">
-                        <span>Obrazloženje</span>
-                        <strong class="text-right">{{ form.justification || '-' }}</strong>
+                        <span>Naziv razloga nabave</span>
+                        <strong class="text-right">{{ form.reasonName || '-' }}</strong>
                       </div>
                     </q-card-section>
                   </q-card>
@@ -200,12 +241,45 @@
                   <q-card flat class="summary-card">
                     <q-card-section>
                       <div class="text-subtitle1 text-weight-bold q-mb-md">
-                        Sažetak stavki
+                        Dodatni podaci
+                      </div>
+
+                      <div class="summary-row">
+                        <span>Procjena iznosa</span>
+                        <strong>{{ formatCurrency(form.estimatedAmount) }}</strong>
+                      </div>
+
+                      <div class="summary-row">
+                        <span>Ponuda</span>
+                        <strong>
+                          {{
+                            form.hasOffer === true
+                              ? (form.offerFile ? 'Dodana' : 'Označeno bez datoteke')
+                              : 'Nije dodana'
+                          }}
+                        </strong>
                       </div>
 
                       <div class="summary-row">
                         <span>Broj stavki</span>
                         <strong>{{ form.items.length }}</strong>
+                      </div>
+                    </q-card-section>
+                  </q-card>
+                </div>
+
+                <div class="col-12">
+                  <q-card flat class="summary-card">
+                    <q-card-section>
+                      <div class="text-subtitle1 text-weight-bold q-mb-md">
+                        Stavke zahtjeva
+                      </div>
+
+                      <div
+                        v-if="form.items.length === 0"
+                        class="text-grey-6"
+                      >
+                        Nema dodanih stavki.
                       </div>
 
                       <div
@@ -222,10 +296,44 @@
                   </q-card>
                 </div>
               </div>
+            </q-step>
 
-              <q-banner class="bg-blue-1 text-blue-9 q-mt-lg" rounded>
-                Ovo je za sada početni wizard prikaz. U sljedećem koraku povezat ćemo spremanje zahtjeva u bazu.
-              </q-banner>
+            <q-step
+              :name="4"
+              title="Potvrda"
+              icon="check_circle"
+            >
+              <q-card flat class="confirm-card">
+                <q-card-section>
+                  <div class="text-h6 text-weight-bold q-mb-md">
+                    Potvrda kreiranja zahtjeva
+                  </div>
+
+                  <div class="text-body1 text-grey-8 q-mb-md">
+                    Zahtjev će biti kreiran u sustavu i moći ćete mu naknadno pristupiti.
+                  </div>
+
+                  <q-banner
+                    v-if="isMissingEstimatedAmount || isMissingOffer"
+                    class="bg-orange-1 text-orange-9 q-mb-md"
+                    rounded
+                  >
+                    Zahtjev je moguće kreirati i bez
+                    <strong v-if="isMissingEstimatedAmount"> procjene iznosa</strong>
+                    <span v-if="isMissingEstimatedAmount && isMissingOffer"> i</span>
+                    <strong v-if="isMissingOffer"> ponude</strong>,
+                    ali te podatke će biti potrebno dodati naknadno.
+                  </q-banner>
+
+                  <q-banner
+                    v-else
+                    class="bg-green-1 text-green-9"
+                    rounded
+                  >
+                    Zahtjev sadrži sve trenutno unesene podatke i spreman je za kreiranje.
+                  </q-banner>
+                </q-card-section>
+              </q-card>
             </q-step>
 
             <template #navigation>
@@ -251,7 +359,7 @@
                   />
 
                   <q-btn
-                    v-if="step < 3"
+                    v-if="step < 4"
                     unelevated
                     no-caps
                     color="primary"
@@ -266,7 +374,7 @@
                     no-caps
                     color="primary"
                     icon="check"
-                    label="Potvrdi zahtjev"
+                    label="Kreiraj zahtjev"
                     @click="submitWizard"
                   />
                 </div>
@@ -286,10 +394,8 @@ import { useQuasar } from 'quasar';
 const $q = useQuasar();
 const step = ref(1);
 
-const fiscalYearOptions = [
-  { label: '2025', value: 1 },
-  { label: '2026', value: 2 },
-];
+// Privremeno hardcoded; kasnije vučemo iz sustava
+const activeFiscalYear = ref('2026');
 
 const departmentOptions = [
   { label: 'IT', value: 1 },
@@ -304,11 +410,18 @@ const categoryOptions = [
   { label: 'Namještaj', value: 4 },
 ];
 
+const offerOptions = [
+  { label: 'Da', value: true },
+  { label: 'Ne', value: false },
+];
+
 const form = ref({
-  fiscalYear: null,
   department: null,
-  justification: '',
+  reasonName: '',
   items: [],
+  estimatedAmount: null,
+  hasOffer: null,
+  offerFile: null,
 });
 
 const itemForm = ref({
@@ -317,20 +430,26 @@ const itemForm = ref({
   quantity: 1,
 });
 
-const selectedFiscalYearLabel = computed(() => {
-  return fiscalYearOptions.find((x) => x.value === form.value.fiscalYear)?.label || '';
-});
-
 const selectedDepartmentLabel = computed(() => {
   return departmentOptions.find((x) => x.value === form.value.department)?.label || '';
 });
 
+const isMissingEstimatedAmount = computed(() => {
+  return form.value.estimatedAmount === null || form.value.estimatedAmount === '' || Number(form.value.estimatedAmount) <= 0;
+});
+
+const isMissingOffer = computed(() => {
+  if (form.value.hasOffer === null) return true;
+  if (form.value.hasOffer === false) return true;
+  return !form.value.offerFile;
+});
+
 const nextStep = () => {
   if (step.value === 1) {
-    if (!form.value.fiscalYear || !form.value.department || !form.value.justification.trim()) {
+    if (!form.value.department || !form.value.reasonName.trim()) {
       $q.notify({
         type: 'negative',
-        message: 'Ispuni sva obavezna polja u prvom koraku.',
+        message: 'Ispuni odjel i naziv razloga nabave.',
       });
       return;
     }
@@ -346,11 +465,18 @@ const nextStep = () => {
     }
   }
 
-  step.value++;
+  if (step.value < 4) {
+    step.value++;
+  }
 };
 
 const addItem = () => {
-  if (!itemForm.value.category || !itemForm.value.item_name.trim() || !itemForm.value.quantity || itemForm.value.quantity < 1) {
+  if (
+    !itemForm.value.category ||
+    !itemForm.value.item_name.trim() ||
+    !itemForm.value.quantity ||
+    itemForm.value.quantity < 1
+  ) {
     $q.notify({
       type: 'negative',
       message: 'Ispuni kategoriju, naziv artikla i količinu.',
@@ -376,6 +502,14 @@ const addItem = () => {
 
 const removeItem = (index) => {
   form.value.items.splice(index, 1);
+};
+
+const formatCurrency = (value) => {
+  if (value == null || value === '') return '-';
+  return new Intl.NumberFormat('hr-HR', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(Number(value));
 };
 
 const submitWizard = () => {
@@ -428,7 +562,8 @@ const submitWizard = () => {
 }
 
 .items-card,
-.summary-card {
+.summary-card,
+.confirm-card {
   border-radius: 20px;
   background: #f8fafc;
   border: 1px solid rgba(15, 23, 42, 0.06);
