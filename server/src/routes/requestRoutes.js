@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
+const authenticateToken = require('../middleware/authMiddleware');
 
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT
@@ -32,7 +33,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
