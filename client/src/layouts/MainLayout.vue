@@ -6,7 +6,7 @@
 
         <q-btn flat label="Dashboard" @click="$router.push('/dashboard')" />
         <q-btn flat label="Zahtjevi" @click="$router.push('/requests')" />
-        <q-btn flat label="Odjava" @click="$router.push('/login')" />
+        <q-btn flat label="Odjava" @click="logout" />
       </q-toolbar>
     </q-header>
 
@@ -17,4 +17,13 @@
 </template>
 
 <script setup>
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
+const logout = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  router.replace('/login');
+};
 </script>
