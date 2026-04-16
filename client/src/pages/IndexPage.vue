@@ -1,6 +1,9 @@
 <template>
   <q-page padding>
-    <div class="text-h4 q-mb-lg">Dashboard</div>
+    <div class="text-h4 q-mb-sm">Dashboard</div>
+    <div class="text-subtitle1 q-mb-lg">
+      Dobrodošao{{ user ? `, ${user.first_name}` : '' }}
+    </div>
 
     <div class="row q-col-gutter-md">
       <div class="col-12 col-md-4">
@@ -14,3 +17,7 @@
     </div>
   </q-page>
 </template>
+
+<script setup>
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+</script>
