@@ -11,6 +11,7 @@
           label="Email"
           type="email"
           outlined
+          autocomplete="username"
         />
 
         <q-input
@@ -18,6 +19,8 @@
           label="Lozinka"
           :type="showPassword ? 'text' : 'password'"
           outlined
+          autocomplete="current-password"
+          @keyup.enter="handleLogin"
         >
           <template #append>
             <q-icon
@@ -27,12 +30,21 @@
             />
           </template>
         </q-input>
+
+        <q-banner
+          v-if="errorMessage"
+          class="bg-red-1 text-red-8"
+          rounded
+        >
+          {{ errorMessage }}
+        </q-banner>
       </q-card-section>
 
       <q-card-actions align="right" class="q-pa-md">
         <q-btn
           color="primary"
           label="Prijavi se"
+          :loading="loading"
           @click="handleLogin"
         />
       </q-card-actions>
@@ -43,24 +55,43 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useQuasar } from 'quasar';
+import { api } from 'boot/axios';
 
 const router = useRouter();
-const $q = useQuasar();
 
 const email = ref('');
 const password = ref('');
 const showPassword = ref(false);
+const loading = ref(false);
+const errorMessage = ref('');
 
-const handleLogin = () => {
+const handleLogin = async () => {
+  errorMessage.value = '';
+
   if (!email.value || !password.value) {
-    $q.notify({
-      type: 'negative',
-      message: 'Unesi email i lozinku.',
-    });
+    errorMessage.value = 'Unesi email i lozinku.';
     return;
   }
 
-  router.push('/dashboard');
+  loading.value = true;
+
+  try {
+    const response = await api.post('/auth/login', {
+      email: email.value.trim(),
+      password: password.value,
+    });
+
+    localStorage.setItem('token', response.data.token);
+    localStorage.setItem('user', JSON.stringify(response.data.user));
+
+    router.replace('/dashboard');
+  } catch (error) {
+    console.error('LOGIN ERROR:', error?.response?.data || error);
+
+    errorMessage.value =
+      error?.response?.data?.message || 'Greška pri prijavi.';
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
