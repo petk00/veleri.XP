@@ -26,7 +26,12 @@
 
       <q-card flat class="wizard-card">
         <q-card-section class="q-pa-lg">
+          <div v-if="loadingReferenceData" class="row justify-center q-pa-xl">
+            <q-spinner color="primary" size="40px" />
+          </div>
+
           <q-stepper
+            v-else
             v-model="step"
             flat
             animated
@@ -64,7 +69,7 @@
                 <div class="col-12">
                   <q-input
                     v-model="form.reasonName"
-                    label="Razlog nabave"
+                    label="Naziv razloga nabave"
                     outlined
                   />
                 </div>
@@ -221,7 +226,7 @@
 
                       <div class="summary-row">
                         <span>Aktivna fiskalna godina</span>
-                        <strong>{{ activeFiscalYear }}</strong>
+                        <strong>{{ activeFiscalYear || '-' }}</strong>
                       </div>
 
                       <div class="summary-row">
@@ -388,27 +393,19 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useQuasar } from 'quasar';
+import { api } from 'boot/axios';
 
 const $q = useQuasar();
 const step = ref(1);
+const loadingReferenceData = ref(false);
 
-// Privremeno hardcoded; kasnije vučemo iz sustava
-const activeFiscalYear = ref('2026');
+const activeFiscalYear = ref('');
+const activeFiscalYearId = ref(null);
 
-const departmentOptions = [
-  { label: 'IT', value: 1 },
-  { label: 'Nabava', value: 2 },
-  { label: 'Računovodstvo', value: 3 },
-];
-
-const categoryOptions = [
-  { label: 'Računalna oprema', value: 1 },
-  { label: 'Softver', value: 2 },
-  { label: 'Uredski materijal', value: 3 },
-  { label: 'Namještaj', value: 4 },
-];
+const departmentOptions = ref([]);
+const categoryOptions = ref([]);
 
 const offerOptions = [
   { label: 'Da', value: true },
@@ -431,11 +428,15 @@ const itemForm = ref({
 });
 
 const selectedDepartmentLabel = computed(() => {
-  return departmentOptions.find((x) => x.value === form.value.department)?.label || '';
+  return departmentOptions.value.find((x) => x.value === form.value.department)?.label || '';
 });
 
 const isMissingEstimatedAmount = computed(() => {
-  return form.value.estimatedAmount === null || form.value.estimatedAmount === '' || Number(form.value.estimatedAmount) <= 0;
+  return (
+    form.value.estimatedAmount === null ||
+    form.value.estimatedAmount === '' ||
+    Number(form.value.estimatedAmount) <= 0
+  );
 });
 
 const isMissingOffer = computed(() => {
@@ -443,6 +444,40 @@ const isMissingOffer = computed(() => {
   if (form.value.hasOffer === false) return true;
   return !form.value.offerFile;
 });
+
+const fetchReferenceData = async () => {
+  loadingReferenceData.value = true;
+
+  try {
+    const [fiscalYearRes, departmentsRes, categoriesRes] = await Promise.all([
+      api.get('/reference/active-fiscal-year'),
+      api.get('/reference/departments'),
+      api.get('/reference/item-categories'),
+    ]);
+
+    activeFiscalYear.value = fiscalYearRes.data.year?.toString() || '';
+    activeFiscalYearId.value = fiscalYearRes.data.id_fiscal_year;
+
+    departmentOptions.value = departmentsRes.data.map((item) => ({
+      label: item.name,
+      value: item.id_department,
+    }));
+
+    categoryOptions.value = categoriesRes.data.map((item) => ({
+      label: item.name,
+      value: item.id_item_category,
+    }));
+  } catch (error) {
+    console.error('Greška kod dohvaćanja referentnih podataka:', error);
+
+    $q.notify({
+      type: 'negative',
+      message: 'Greška pri dohvaćanju podataka za obrazac.',
+    });
+  } finally {
+    loadingReferenceData.value = false;
+  }
+};
 
 const nextStep = () => {
   if (step.value === 1) {
@@ -484,7 +519,7 @@ const addItem = () => {
     return;
   }
 
-  const category = categoryOptions.find((x) => x.value === itemForm.value.category);
+  const category = categoryOptions.value.find((x) => x.value === itemForm.value.category);
 
   form.value.items.push({
     category: itemForm.value.category,
@@ -518,6 +553,10 @@ const submitWizard = () => {
     message: 'Wizard je spreman za povezivanje sa spremanjem u bazu.',
   });
 };
+
+onMounted(() => {
+  fetchReferenceData();
+});
 </script>
 
 <style scoped>
