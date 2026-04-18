@@ -315,7 +315,10 @@
                   </div>
 
                   <div class="text-body1 text-grey-8 q-mb-md">
-                    Zahtjev će biti kreiran u sustavu i moći ćete mu naknadno pristupiti.
+                    Odaberite želite li zahtjev spremiti kao <strong>skicu</strong>
+                    (možete ga kasnije uređivati) ili ga odmah
+                    <strong>poslati na odobravanje</strong>
+                    (nakon slanja više ga ne možete mijenjati).
                   </div>
 
                   <q-banner
@@ -350,6 +353,7 @@
                   color="primary"
                   icon="arrow_back"
                   label="Natrag"
+                  :disable="submitting"
                   @click="step--"
                 />
 
@@ -360,6 +364,7 @@
                     flat
                     no-caps
                     label="Odustani"
+                    :disable="submitting"
                     @click="$router.push('/requests')"
                   />
 
@@ -373,15 +378,29 @@
                     @click="nextStep"
                   />
 
-                  <q-btn
-                    v-else
-                    unelevated
-                    no-caps
-                    color="primary"
-                    icon="check"
-                    label="Kreiraj zahtjev"
-                    @click="submitWizard"
-                  />
+                  <!-- NOVO: umjesto jednog "Kreiraj zahtjev" gumba, sad imamo DVA -->
+                  <template v-else>
+                    <q-btn
+                      outline
+                      no-caps
+                      color="primary"
+                      icon="save"
+                      label="Spremi kao skicu"
+                      :loading="submitting && saveMode === 'draft'"
+                      :disable="submitting"
+                      @click="submitWizard('draft')"
+                    />
+                    <q-btn
+                      unelevated
+                      no-caps
+                      color="primary"
+                      icon="send"
+                      label="Pošalji na odobravanje"
+                      :loading="submitting && saveMode === 'submit'"
+                      :disable="submitting"
+                      @click="submitWizard('submit')"
+                    />
+                  </template>
                 </div>
               </div>
             </template>
@@ -396,10 +415,16 @@
 import { computed, onMounted, ref } from 'vue';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
+import { useRouter } from 'vue-router';
 
 const $q = useQuasar();
+const router = useRouter();
 const step = ref(1);
 const loadingReferenceData = ref(false);
+
+// NOVO: state za submit proces (spriječava dvostruko slanje, pokazuje spinner)
+const submitting = ref(false);
+const saveMode = ref(null); // 'draft' | 'submit' - koji je gumb kliknut
 
 const activeFiscalYear = ref('');
 const activeFiscalYearId = ref(null);
@@ -547,11 +572,68 @@ const formatCurrency = (value) => {
   }).format(Number(value));
 };
 
-const submitWizard = () => {
-  $q.notify({
-    type: 'positive',
-    message: 'Wizard je spreman za povezivanje sa spremanjem u bazu.',
-  });
+// NOVO: submitWizard sad STVARNO zove API
+// mode = 'draft' (Skica) ili 'submit' (Pošalji na odobravanje)
+const submitWizard = async (mode) => {
+  // Sanity check - ako je neki obavezan podatak nestao, ne šaljemo
+  if (
+    !activeFiscalYearId.value ||
+    !form.value.department ||
+    !form.value.reasonName.trim() ||
+    form.value.items.length === 0
+  ) {
+    $q.notify({
+      type: 'negative',
+      message: 'Nedostaju obavezni podaci.',
+    });
+    return;
+  }
+
+  submitting.value = true;
+  saveMode.value = mode;
+
+  // Pripremi payload koji backend očekuje
+  const payload = {
+    fk_fiscal_year: activeFiscalYearId.value,
+    fk_department: form.value.department,
+    justification: form.value.reasonName.trim(),
+    estimated_amount: form.value.estimatedAmount || null,
+    save_mode: mode,
+    items: form.value.items.map((it) => ({
+      fk_item_category: it.category,
+      item_name: it.item_name,
+      quantity: it.quantity,
+    })),
+  };
+
+  try {
+    const { data } = await api.post('/requests', payload);
+
+    $q.notify({
+      type: 'positive',
+      message: `Zahtjev ${data.request_number} uspješno kreiran.`,
+      timeout: 2500,
+    });
+
+    // Nakon uspjeha -> preusmjeri na listu zahtjeva
+    router.push('/requests');
+  } catch (error) {
+    console.error('Greška pri kreiranju zahtjeva:', error);
+
+    // Ako backend vrati message u responseu, prikaži taj; inače generičku poruku
+    const message =
+      error.response?.data?.message ||
+      'Greška pri kreiranju zahtjeva. Pokušajte ponovno.';
+
+    $q.notify({
+      type: 'negative',
+      message,
+      timeout: 4000,
+    });
+  } finally {
+    submitting.value = false;
+    saveMode.value = null;
+  }
 };
 
 onMounted(() => {
