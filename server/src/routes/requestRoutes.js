@@ -6,6 +6,9 @@ const authenticateToken = require('../middleware/authMiddleware');
 const STATUS = {
   DRAFT: 1,
   SUBMITTED: 2,
+  APPROVED: 3,
+  REJECTED: 4,
+  COMPLETED: 5,
 };
 
 router.get('/', authenticateToken, async (req, res) => {
@@ -87,9 +90,28 @@ router.get('/:id', authenticateToken, async (req, res) => {
       [id]
     );
 
+    const [historyRows] = await db.query(
+      `
+      SELECT
+        rsh.id_request_status_history,
+        rs.name AS status_name,
+        rs.id_request_status,
+        CONCAT(u.first_name, ' ', u.last_name) AS changed_by,
+        rsh.changed_at,
+        rsh.comment
+      FROM RequestStatusHistory rsh
+      INNER JOIN RequestStatus rs ON rsh.fk_request_status = rs.id_request_status
+      INNER JOIN AppUser u ON rsh.fk_changed_by_user = u.id_user
+      WHERE rsh.fk_purchase_request = ?
+      ORDER BY rsh.changed_at ASC, rsh.id_request_status_history ASC
+      `,
+      [id]
+    );
+
     res.json({
       request: requestRows[0],
       items: itemRows,
+      history: historyRows,  // ← NOVO
     });
   } catch (error) {
     console.error('GET /api/requests/:id error:', error);
@@ -290,4 +312,122 @@ router.post('/', authenticateToken, async (req, res) => {
     connection.release();
   }
 });
+
+/**
+ * PATCH /api/requests/:id/status
+ * Odobravanje ili odbijanje zahtjeva (samo Admin).
+ *
+ * Expected body:
+ * {
+ *   action: 'approve' | 'reject',
+ *   comment: string (opcionalno)
+ * }
+ */
+router.patch('/:id/status', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { action, comment } = req.body;
+
+  // --- 1. Autorizacija: samo Admin smije odobravati/odbijati ---
+  if (req.user.role_name !== 'Administrator') {
+    return res.status(403).json({
+      message: 'Samo administrator može odobravati ili odbijati zahtjeve.',
+    });
+  }
+
+  // --- 2. Validacija action-a ---
+  if (action !== 'approve' && action !== 'reject') {
+    return res.status(400).json({
+      message: 'Nevažeća akcija. Očekuje se "approve" ili "reject".',
+    });
+  }
+
+  // --- 3. Ako je Reject, komentar je obavezan ---
+  if (action === 'reject' && (!comment || !comment.trim())) {
+    return res.status(400).json({
+      message: 'Komentar je obavezan pri odbijanju zahtjeva.',
+    });
+  }
+
+  const newStatusId = action === 'approve' ? STATUS.APPROVED : STATUS.REJECTED;
+  const userId = req.user.id_user;
+
+  // --- 4. Transakcija ---
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // 4a) Dohvati trenutni status zahtjeva (s lockom, da se ne može paralelno mijenjati)
+    const [requestRows] = await connection.query(
+      `
+      SELECT fk_request_status
+      FROM PurchaseRequest
+      WHERE id_purchase_request = ?
+      FOR UPDATE
+      `,
+      [id]
+    );
+
+    if (requestRows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        message: 'Zahtjev nije pronađen.',
+      });
+    }
+
+    const currentStatus = requestRows[0].fk_request_status;
+
+    // 4b) Provjeri da je zahtjev u statusu Submitted (samo tad se može odobriti/odbiti)
+    if (currentStatus !== STATUS.SUBMITTED) {
+      await connection.rollback();
+      return res.status(400).json({
+        message: 'Zahtjev nije u statusu "Poslano na odobravanje" i ne može se mijenjati.',
+      });
+    }
+
+    // 4c) Promijeni status u PurchaseRequest
+    await connection.query(
+      `
+      UPDATE PurchaseRequest
+      SET fk_request_status = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id_purchase_request = ?
+      `,
+      [newStatusId, id]
+    );
+
+    // 4d) Upiši u history (audit trail)
+    const historyComment =
+      comment && comment.trim()
+        ? comment.trim()
+        : action === 'approve'
+          ? 'Zahtjev odobren.'
+          : 'Zahtjev odbijen.';
+
+    await connection.query(
+      `
+      INSERT INTO RequestStatusHistory
+        (fk_purchase_request, fk_request_status, fk_changed_by_user, comment)
+      VALUES (?, ?, ?, ?)
+      `,
+      [id, newStatusId, userId, historyComment]
+    );
+
+    await connection.commit();
+
+    return res.json({
+      message: action === 'approve' ? 'Zahtjev je odobren.' : 'Zahtjev je odbijen.',
+      new_status_id: newStatusId,
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('PATCH /api/requests/:id/status error:', error);
+    return res.status(500).json({
+      message: 'Greška pri promjeni statusa zahtjeva.',
+      error: error.message,
+    });
+  } finally {
+    connection.release();
+  }
+});
+
 module.exports = router;
