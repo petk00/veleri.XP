@@ -271,7 +271,7 @@ router.post('/', authenticateToken, async (req, res) => {
     // 3e) INSERT prvog unosa u RequestStatusHistory (audit trail)
     const historyComment =
       statusId === STATUS.SUBMITTED
-        ? 'Zahtjev kreiran i poslan na odobravanje.'
+        ? 'Zahtjev kreiran i poslan u obradu.'
         : 'Zahtjev kreiran kao skica.';
 
     await connection.query(
