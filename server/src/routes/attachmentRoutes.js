@@ -70,7 +70,7 @@ router.post('/:id/attachments', authenticateToken, upload.single('file'), async 
 
   try {
     const [requestRows] = await db.query(
-      'SELECT id_purchase_request FROM PurchaseRequest WHERE id_purchase_request = ?',
+      'SELECT id_purchase_request, fk_request_status FROM PurchaseRequest WHERE id_purchase_request = ?',
       [id]
     );
 
@@ -85,7 +85,19 @@ router.post('/:id/attachments', authenticateToken, upload.single('file'), async 
        VALUES (?, ?, ?, ?, ?, ?)`,
       [id, userId, req.file.originalname, req.file.path, req.file.mimetype, document_type]
     );
-
+    // Upiši u status history (audit trail za dokumente)
+    const currentStatus = requestRows[0].fk_request_status;
+    await db.query(
+      `INSERT INTO RequestStatusHistory
+        (fk_purchase_request, fk_request_status, fk_changed_by_user, comment)
+       VALUES (?, ?, ?, ?)`,
+      [
+        id,
+        currentStatus,
+        userId,
+        `Dokument dodan: ${document_type} - ${req.file.originalname}`,
+      ]
+    );
     return res.status(201).json({
       message: 'Fajl uspješno uploadан.',
       id_attachment: result.insertId,
