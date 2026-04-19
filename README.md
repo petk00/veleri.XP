@@ -1,6 +1,15 @@
 # 📦 veleri.XP
 
 
+## 🐇 DO SADA NAPRAVLJENO:
+
+✅ Login / logout
+✅ Wizard za kreiranje zahtjeva (skica / pošalji)
+✅ Lista zahtjeva s chipovima u boji
+✅ Detalji zahtjeva s timeline-om
+✅ Approval flow (Odobri/Odbij) s komentarom
+✅ Audit trail kroz status history
+
 ## ✨ Overview
 
 veleri.XP je osmišljena kao jednostavna i pregledna aplikacija za internu nabavu.
