@@ -13,6 +13,17 @@ const STATUS = {
 
 router.get('/', authenticateToken, async (req, res) => {
   try {
+    const isAdmin = req.user.role_name === 'Administrator';
+
+    // Admin vidi sve, zaposlenik vidi samo svoje
+    const whereClause = isAdmin
+      ? ''
+      : 'WHERE pr.fk_created_by_user = ?';
+
+    const params = isAdmin
+      ? []
+      : [req.user.id_user];
+
     const [rows] = await db.query(`
       SELECT
         pr.id_purchase_request,
@@ -28,9 +39,11 @@ router.get('/', authenticateToken, async (req, res) => {
       INNER JOIN Department d ON pr.fk_department = d.id_department
       INNER JOIN RequestStatus rs ON pr.fk_request_status = rs.id_request_status
       INNER JOIN AppUser u ON pr.fk_created_by_user = u.id_user
+      ${whereClause}
       ORDER BY pr.created_at DESC, pr.id_purchase_request DESC
-    `);
+    `, params);
 
+    
     res.json(rows);
   } catch (error) {
     console.error('GET /api/requests error:', error);
@@ -271,7 +284,7 @@ router.post('/', authenticateToken, async (req, res) => {
     // 3e) INSERT prvog unosa u RequestStatusHistory (audit trail)
     const historyComment =
       statusId === STATUS.SUBMITTED
-        ? 'Zahtjev kreiran i poslan u obradu.'
+        ? 'Zahtjev kreiran i poslan na odobravanje.'
         : 'Zahtjev kreiran kao skica.';
 
     await connection.query(
