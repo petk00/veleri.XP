@@ -280,7 +280,7 @@ const isAdmin = computed(() => {
 
 // Admin može approve/reject samo ako je status Submitted
 const canApproveOrReject = computed(() => {
-  return isAdmin.value && request.value?.status_name === 'Submitted';
+  return isAdmin.value && request.value?.status_name === 'U obradi';
 });
 
 // --- Kolone tablice stavki ---
@@ -398,15 +398,15 @@ const formatDate = (value) => {
 
 const statusClass = (status) => {
   switch ((status || '').toLowerCase()) {
-    case 'draft':
+    case 'skica':
       return 'status-chip--draft';
-    case 'submitted':
+    case 'u obradi':
       return 'status-chip--submitted';
-    case 'approved':
+    case 'odobreno':
       return 'status-chip--approved';
-    case 'rejected':
+    case 'odbijeno':
       return 'status-chip--rejected';
-    case 'completed':
+    case 'završeno':
       return 'status-chip--completed';
     default:
       return 'status-chip--default';
@@ -416,36 +416,24 @@ const statusClass = (status) => {
 // Boja za timeline entry (q-timeline-entry prop)
 const timelineColor = (status) => {
   switch ((status || '').toLowerCase()) {
-    case 'draft':
-      return 'indigo';
-    case 'submitted':
-      return 'blue';
-    case 'approved':
-      return 'positive';
-    case 'rejected':
-      return 'negative';
-    case 'completed':
-      return 'green';
-    default:
-      return 'grey';
+    case 'skica':     return 'indigo';
+    case 'u obradi':  return 'blue';
+    case 'odobreno':  return 'positive';
+    case 'odbijeno':  return 'negative';
+    case 'završeno':  return 'green';
+    default:          return 'grey';
   }
 };
 
 // Ikona za timeline entry
 const timelineIcon = (status) => {
   switch ((status || '').toLowerCase()) {
-    case 'draft':
-      return 'edit_note';
-    case 'submitted':
-      return 'send';
-    case 'approved':
-      return 'check_circle';
-    case 'rejected':
-      return 'cancel';
-    case 'completed':
-      return 'task_alt';
-    default:
-      return 'circle';
+    case 'skica':     return 'edit_note';
+    case 'u obradi':  return 'send';
+    case 'odobreno':  return 'check_circle';
+    case 'odbijeno':  return 'cancel';
+    case 'završeno':  return 'task_alt';
+    default:          return 'circle';
   }
 };
 

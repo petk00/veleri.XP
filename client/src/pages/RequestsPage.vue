@@ -201,15 +201,15 @@ const formatDate = (value) => {
 
 const statusClass = (status) => {
   switch ((status || '').toLowerCase()) {
-    case 'draft':
+    case 'skica':
       return 'status-chip--draft';
-    case 'submitted':
+    case 'u obradi':
       return 'status-chip--submitted';
-    case 'approved':
+    case 'odobreno':
       return 'status-chip--approved';
-    case 'rejected':
+    case 'odbijeno':
       return 'status-chip--rejected';
-    case 'completed':
+    case 'završeno':
       return 'status-chip--completed';
     default:
       return 'status-chip--default';
