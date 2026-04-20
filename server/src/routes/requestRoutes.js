@@ -448,4 +448,103 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * PUT /api/requests/:id
+ * Ažuriranje zahtjeva (samo Admin).
+ */
+router.put('/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { fk_department, justification, estimated_amount, items } = req.body;
+  const userId = req.user.id_user;
+
+  if (req.user.role_name !== 'Administrator') {
+    return res.status(403).json({
+      message: 'Samo administrator može uređivati zahtjeve.',
+    });
+  }
+
+  if (!fk_department) {
+    return res.status(400).json({ message: 'Odjel je obavezan.' });
+  }
+  if (!justification || !justification.trim()) {
+    return res.status(400).json({ message: 'Obrazloženje je obavezno.' });
+  }
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ message: 'Zahtjev mora imati barem jednu stavku.' });
+  }
+
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // Provjeri postoji li zahtjev
+    const [requestRows] = await connection.query(
+      'SELECT id_purchase_request, fk_request_status FROM PurchaseRequest WHERE id_purchase_request = ? FOR UPDATE',
+      [id]
+    );
+
+    if (requestRows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ message: 'Zahtjev nije pronađen.' });
+    }
+
+    // Ažuriraj osnovne podatke
+    await connection.query(
+      `UPDATE PurchaseRequest
+       SET fk_department = ?,
+           justification = ?,
+           total_amount = ?,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id_purchase_request = ?`,
+      [fk_department, justification.trim(), estimated_amount || null, id]
+    );
+
+    // Obriši stare stavke i upiši nove
+    await connection.query(
+      'DELETE FROM PurchaseRequestItem WHERE fk_purchase_request = ?',
+      [id]
+    );
+
+    const itemValues = items.map((it) => [
+      id,
+      it.fk_item_category,
+      it.item_name.trim(),
+      it.quantity,
+    ]);
+
+    await connection.query(
+      `INSERT INTO PurchaseRequestItem
+         (fk_purchase_request, fk_item_category, item_name, quantity)
+       VALUES ?`,
+      [itemValues]
+    );
+
+    // Upiši u history
+    await connection.query(
+      `INSERT INTO RequestStatusHistory
+         (fk_purchase_request, fk_request_status, fk_changed_by_user, comment)
+       VALUES (?, ?, ?, ?)`,
+      [
+        id,
+        requestRows[0].fk_request_status,
+        userId,
+        'Zahtjev izmijenjen od strane administratora.',
+      ]
+    );
+
+    await connection.commit();
+    return res.json({ message: 'Zahtjev uspješno ažuriran.' });
+  } catch (error) {
+    await connection.rollback();
+    console.error('PUT /api/requests/:id error:', error);
+    return res.status(500).json({
+      message: 'Greška pri ažuriranju zahtjeva.',
+      error: error.message,
+    });
+  } finally {
+    connection.release();
+  }
+});
+
 module.exports = router;

@@ -16,6 +16,7 @@ const routes = [
       { path: 'requests', component: () => import('pages/RequestsPage.vue') },
       { path: 'requests/new', component: () => import('pages/NewRequestPage.vue') },
       { path: 'requests/:id', component: () => import('pages/RequestDetailsPage.vue') },
+      { path: 'requests/:id/edit', component: () => import('pages/EditRequestPage.vue') },
     ],
   },
 

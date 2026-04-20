@@ -29,6 +29,14 @@
               <q-chip dense class="status-chip" :class="statusClass(request.status_name)">
                 {{ request.status_name }}
               </q-chip>
+                <q-btn
+                  v-if="isAdmin"
+                  flat no-caps
+                  color="primary"
+                  icon="edit"
+                  label="Uredi"
+                  @click="router.push(`/requests/${route.params.id}/edit`)"
+                />
             </div>
             <div class="text-subtitle1 text-grey-7 q-mt-sm">
               Kreirao {{ request.created_by }} · {{ formatDate(request.created_at) }}
@@ -254,12 +262,7 @@ const actionComment = ref('');
 const submittingAction = ref(false);
 const submittingComplete = ref(false);
 
-const currentUser = computed(() => {
-  try {
-    const u = localStorage.getItem('user');
-    return u ? JSON.parse(u) : null;
-  } catch { return null; }
-});
+const currentUser = ref(null);
 
 const isAdmin = computed(() => currentUser.value?.role_name === 'Administrator');
 const hasPonuda = computed(() => attachments.value.some((a) => a.document_type === 'Ponuda'));
@@ -462,7 +465,15 @@ const fileIcon = (mimeType) => {
   return 'insert_drive_file';
 };
 
-onMounted(() => { fetchRequestDetails(); });
+onMounted(() => {
+  try {
+    const u = localStorage.getItem('user');
+    currentUser.value = u ? JSON.parse(u) : null;
+  } catch {
+    currentUser.value = null;
+  }
+  fetchRequestDetails();
+});
 </script>
 
 <style scoped>
