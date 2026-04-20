@@ -392,6 +392,14 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       });
     }
 
+      const lockedStatuses = [STATUS.REJECTED, STATUS.COMPLETED];
+        if (lockedStatuses.includes(requestRows[0].fk_request_status)) {
+          await connection.rollback();
+          return res.status(400).json({
+            message: 'Zahtjev je zaključan i više se ne može mijenjati.',
+          });
+}
+
     const currentStatus = requestRows[0].fk_request_status;
 
     // 4b) Provjeri da je zahtjev u statusu Submitted (samo tad se može odobriti/odbiti)
