@@ -6,6 +6,7 @@ const testRoutes = require('./routes/testRoutes');
 const authRoutes = require('./routes/authRoutes');
 const requestRoutes = require('./routes/requestRoutes');
 const referenceRoutes = require('./routes/referenceRoutes');
+const attachmentRoutes = require('./routes/attachmentRoutes');
 
 const app = express();
 
@@ -14,6 +15,8 @@ app.use(express.json());
 
 app.use('/api/test', testRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/attachments', attachmentRoutes);
+app.use('/api/requests', attachmentRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/reference', referenceRoutes);
 

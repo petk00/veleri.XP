@@ -348,9 +348,9 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
   }
 
   // --- 2. Validacija action-a ---
-  if (action !== 'approve' && action !== 'reject') {
+  if (action !== 'approve' && action !== 'reject' && action !== 'complete') {
     return res.status(400).json({
-      message: 'Nevažeća akcija. Očekuje se "approve" ili "reject".',
+      message: 'Nevažeća akcija. Očekuje se "approve", "reject" ili "complete".',
     });
   }
 
@@ -361,7 +361,11 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     });
   }
 
-  const newStatusId = action === 'approve' ? STATUS.APPROVED : STATUS.REJECTED;
+  const newStatusId = action === 'approve'
+  ? STATUS.APPROVED
+  : action === 'reject'
+    ? STATUS.REJECTED
+    : STATUS.COMPLETED;
   const userId = req.user.id_user;
 
   // --- 4. Transakcija ---
@@ -391,7 +395,8 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     const currentStatus = requestRows[0].fk_request_status;
 
     // 4b) Provjeri da je zahtjev u statusu Submitted (samo tad se može odobriti/odbiti)
-    if (currentStatus !== STATUS.SUBMITTED) {
+    const allowedFrom = action === 'complete' ? STATUS.APPROVED : STATUS.SUBMITTED;
+      if (currentStatus !== allowedFrom) {
       await connection.rollback();
       return res.status(400).json({
         message: 'Zahtjev nije u statusu "Poslano na odobravanje" i ne može se mijenjati.',
