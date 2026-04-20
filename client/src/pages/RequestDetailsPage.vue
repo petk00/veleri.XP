@@ -30,7 +30,7 @@
                 {{ request.status_name }}
               </q-chip>
                 <q-btn
-                  v-if="isAdmin"
+                  v-if="canEdit"
                   flat no-caps
                   color="primary"
                   icon="edit"
@@ -265,6 +265,11 @@ const submittingComplete = ref(false);
 const currentUser = ref(null);
 
 const isAdmin = computed(() => currentUser.value?.role_name === 'Administrator');
+const canEdit = computed(() =>
+  isAdmin.value &&
+  request.value?.status_name !== 'Završeno' &&
+  request.value?.status_name !== 'Odbijeno'
+);
 const hasPonuda = computed(() => attachments.value.some((a) => a.document_type === 'Ponuda'));
 const hasOtpremnica = computed(() => attachments.value.some((a) => a.document_type === 'Otpremnica'));
 const canApproveOrReject = computed(() => isAdmin.value && request.value?.status_name === 'U obradi');
