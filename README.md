@@ -1,7 +1,5 @@
 # 📦 veleri.XP
 
-This project appears to be a well-organized full-stack application for managing requests, with a Quasar-based Vue.js frontend and a Node.js backend. The structure separates concerns effectively (client, server, database, docs), includes authentication, routing, and file handling, and uses modern tools like Axios and stores.
-
 ## 🐇 DO SADA NAPRAVLJENO:
 
 ✅ Login / logout
