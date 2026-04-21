@@ -11,6 +11,20 @@ const STATUS = {
   COMPLETED: 5,
 };
 
+const getRequestAccessCondition = (user) => {
+  if (user.role_name === 'Administrator') {
+    return {
+      clause: 'pr.id_purchase_request = ?',
+      params: [],
+    };
+  }
+
+  return {
+    clause: 'pr.id_purchase_request = ? AND pr.fk_created_by_user = ?',
+    params: [user.id_user],
+  };
+};
+
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const isAdmin = req.user.role_name === 'Administrator';
@@ -57,6 +71,7 @@ router.get('/', authenticateToken, async (req, res) => {
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
+    const access = getRequestAccessCondition(req.user);
 
     const [requestRows] = await db.query(
       `
@@ -76,10 +91,10 @@ router.get('/:id', authenticateToken, async (req, res) => {
       INNER JOIN Department d ON pr.fk_department = d.id_department
       INNER JOIN RequestStatus rs ON pr.fk_request_status = rs.id_request_status
       INNER JOIN AppUser u ON pr.fk_created_by_user = u.id_user
-      WHERE pr.id_purchase_request = ?
+      WHERE ${access.clause}
       LIMIT 1
       `,
-      [id]
+      [id, ...access.params]
     );
 
     if (requestRows.length === 0) {
