@@ -163,7 +163,8 @@
                   </div>
                   <div class="amount-hint">
                     <q-icon name="info_outline" size="14px" class="q-mr-xs" />
-                    Iznos s priložene ponude. Administrator može korigirati naknadno.
+                    Upišite iznos s ponude. Ako imate više ponuda, upišite ukupni zbroj svih iznosa.
+                    Administrator može korigirati naknadno.
                   </div>
                 </div>
 

@@ -20,6 +20,50 @@ const ALLOWED_TYPES = [
 
 const DOCUMENT_TYPES = ['Ponuda', 'Otpremnica'];
 
+const assertRequestAccess = async (requestId, user) => {
+  const isAdmin = user.role_name === 'Administrator';
+  const query = isAdmin
+    ? 'SELECT id_purchase_request, fk_request_status FROM PurchaseRequest WHERE id_purchase_request = ? LIMIT 1'
+    : `SELECT id_purchase_request, fk_request_status
+       FROM PurchaseRequest
+       WHERE id_purchase_request = ? AND fk_created_by_user = ?
+       LIMIT 1`;
+  const params = isAdmin ? [requestId] : [requestId, user.id_user];
+  const [rows] = await db.query(query, params);
+
+  return rows[0] || null;
+};
+
+const getAttachmentForUser = async (attachmentId, user) => {
+  const isAdmin = user.role_name === 'Administrator';
+  const query = isAdmin
+    ? `SELECT
+         a.id_attachment,
+         a.file_name,
+         a.file_path,
+         a.file_type,
+         a.fk_uploaded_by_user,
+         a.fk_purchase_request
+       FROM Attachment a
+       WHERE a.id_attachment = ?
+       LIMIT 1`
+    : `SELECT
+         a.id_attachment,
+         a.file_name,
+         a.file_path,
+         a.file_type,
+         a.fk_uploaded_by_user,
+         a.fk_purchase_request
+       FROM Attachment a
+       INNER JOIN PurchaseRequest pr ON pr.id_purchase_request = a.fk_purchase_request
+       WHERE a.id_attachment = ? AND pr.fk_created_by_user = ?
+       LIMIT 1`;
+  const params = isAdmin ? [attachmentId] : [attachmentId, user.id_user];
+  const [rows] = await db.query(query, params);
+
+  return rows[0] || null;
+};
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = path.join(__dirname, '../../uploads/attachments', String(req.params.id));
@@ -53,7 +97,7 @@ const upload = multer({
 router.post('/:id/attachments', authenticateToken, upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({
-      message: 'Fajl nije uploadан ili tip nije dozvoljen.',
+      message: 'Fajl nije uploadan ili tip nije dozvoljen.',
     });
   }
 
@@ -69,12 +113,9 @@ router.post('/:id/attachments', authenticateToken, upload.single('file'), async 
   }
 
   try {
-    const [requestRows] = await db.query(
-      'SELECT id_purchase_request, fk_request_status FROM PurchaseRequest WHERE id_purchase_request = ?',
-      [id]
-    );
+    const request = await assertRequestAccess(id, req.user);
 
-    if (requestRows.length === 0) {
+    if (!request) {
       fs.unlinkSync(req.file.path);
       return res.status(404).json({ message: 'Zahtjev nije pronađen.' });
     }
@@ -86,7 +127,7 @@ router.post('/:id/attachments', authenticateToken, upload.single('file'), async 
       [id, userId, req.file.originalname, req.file.path, req.file.mimetype, document_type]
     );
     // Upiši u status history (audit trail za dokumente)
-    const currentStatus = requestRows[0].fk_request_status;
+    const currentStatus = request.fk_request_status;
     await db.query(
       `INSERT INTO RequestStatusHistory
         (fk_purchase_request, fk_request_status, fk_changed_by_user, comment)
@@ -99,7 +140,7 @@ router.post('/:id/attachments', authenticateToken, upload.single('file'), async 
       ]
     );
     return res.status(201).json({
-      message: 'Fajl uspješno uploadан.',
+      message: 'Fajl uspješno uploadan.',
       id_attachment: result.insertId,
       file_name: req.file.originalname,
       document_type,
@@ -119,6 +160,12 @@ router.get('/:id/attachments', authenticateToken, async (req, res) => {
   const { id } = req.params;
 
   try {
+    const request = await assertRequestAccess(id, req.user);
+
+    if (!request) {
+      return res.status(404).json({ message: 'Zahtjev nije pronađen.' });
+    }
+
     const [rows] = await db.query(
       `SELECT
         a.id_attachment,
@@ -149,16 +196,11 @@ router.get('/download/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
 
   try {
-    const [rows] = await db.query(
-      'SELECT file_name, file_path, file_type FROM Attachment WHERE id_attachment = ?',
-      [id]
-    );
+    const attachment = await getAttachmentForUser(id, req.user);
 
-    if (rows.length === 0) {
+    if (!attachment) {
       return res.status(404).json({ message: 'Fajl nije pronađen.' });
     }
-
-    const attachment = rows[0];
 
     if (!fs.existsSync(attachment.file_path)) {
       return res.status(404).json({ message: 'Fajl ne postoji na disku.' });
@@ -183,16 +225,11 @@ router.delete('/delete/:id', authenticateToken, async (req, res) => {
   const isAdmin = req.user.role_name === 'Administrator';
 
   try {
-    const [rows] = await db.query(
-      'SELECT id_attachment, file_path, fk_uploaded_by_user FROM Attachment WHERE id_attachment = ?',
-      [id]
-    );
+    const attachment = await getAttachmentForUser(id, req.user);
 
-    if (rows.length === 0) {
+    if (!attachment) {
       return res.status(404).json({ message: 'Fajl nije pronađen.' });
     }
-
-    const attachment = rows[0];
 
     if (!isAdmin && attachment.fk_uploaded_by_user !== userId) {
       return res.status(403).json({
