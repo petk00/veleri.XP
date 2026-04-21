@@ -29,16 +29,16 @@
         <!-- LIJEVO: Progress tracker -->
         <div class="wizard-sidebar">
           <div
-            v-for="s in steps"
-            :key="s.number"
+            v-for="s in currentSteps"
+            :key="s.key"
             class="sidebar-step"
             :class="{
-              'sidebar-step--active': step === s.number,
-              'sidebar-step--done': step > s.number,
+              'sidebar-step--active': step === s.step,
+              'sidebar-step--done': step > s.step,
             }"
           >
             <div class="sidebar-step__indicator">
-              <q-icon v-if="step > s.number" name="check" size="16px" />
+              <q-icon v-if="step > s.step" name="check" size="16px" />
               <span v-else>{{ s.number }}</span>
             </div>
             <div class="sidebar-step__label">{{ s.title }}</div>
@@ -78,137 +78,79 @@
               </div>
             </div>
 
-            <!-- KORAK 2: Obrazloženje -->
+            <!-- KORAK 2: Imaš li ponudu? -->
             <div v-else-if="step === 2" key="2">
               <div class="step-header">
                 <div class="step-number">02</div>
                 <div>
-                  <div class="text-h5 text-weight-bold">Obrazložite nabavu</div>
+                  <div class="text-h5 text-weight-bold">Imaš li ponudu ili račun?</div>
                   <div class="text-body1 text-grey-6 q-mt-xs">
-                    Opišite što trebate nabaviti i zašto. Jasnije obrazloženje = brže odobravanje.
+                    Ovisno o odgovoru, nastavak zahtjeva će biti prilagođen.
                   </div>
                 </div>
               </div>
 
-              <div class="q-mt-xl">
-                <q-input
-                  v-model="form.reasonName"
-                  type="textarea"
-                  outlined
-                  autogrow
-                  rows="6"
-                  counter
-                  maxlength="1000"
-                  placeholder="npr. Za potrebe opremanja nove učionice potrebno je nabaviti..."
-                  class="field-lg"
-                />
+              <div class="offer-choice q-mt-xl">
+                <div
+                  class="offer-option"
+                  :class="{ 'offer-option--selected': form.hasOffer === true }"
+                  @click="form.hasOffer = true"
+                >
+                  <q-icon name="receipt_long" size="28px" color="primary" />
+                  <div>
+                    <div class="text-weight-bold">Da, imam ponudu / račun</div>
+                    <div class="text-caption text-grey-6">Priložit ću ga odmah uz zahtjev</div>
+                  </div>
+                  <q-icon v-if="form.hasOffer === true" name="check_circle" color="primary" size="22px" class="offer-option__check" />
+                </div>
+
+                <div
+                  class="offer-option"
+                  :class="{ 'offer-option--selected': form.hasOffer === false }"
+                  @click="form.hasOffer = false; form.offerFile = null; form.estimatedAmount = null"
+                >
+                  <q-icon name="format_list_bulleted" size="28px" color="grey-5" />
+                  <div>
+                    <div class="text-weight-bold">Nemam ponudu</div>
+                    <div class="text-caption text-grey-6">Unijet ću stavke koje trebam nabaviti</div>
+                  </div>
+                  <q-icon v-if="form.hasOffer === false" name="check_circle" color="primary" size="22px" class="offer-option__check" />
+                </div>
               </div>
             </div>
 
-            <!-- KORAK 3: Stavke -->
-            <div v-else-if="step === 3" key="3">
+            <!-- KORAK 3a: IMA ponudu → Upload + iznos + svrha + kategorija -->
+            <div v-else-if="step === 3 && form.hasOffer === true" key="3a">
               <div class="step-header">
                 <div class="step-number">03</div>
                 <div>
-                  <div class="text-h5 text-weight-bold">Stavke zahtjeva</div>
+                  <div class="text-h5 text-weight-bold">Detalji nabave</div>
                   <div class="text-body1 text-grey-6 q-mt-xs">
-                    Dodajte sve artikle ili usluge koje treba nabaviti.
+                    Priložite ponudu i unesite potrebne podatke.
                   </div>
                 </div>
               </div>
 
-              <!-- Forma za dodavanje stavke -->
-              <div class="add-item-form q-mt-xl">
-                <div class="row q-col-gutter-md">
-                  <div class="col-12 col-md-4">
-                    <q-select
-                      v-model="itemForm.category"
-                      :options="categoryOptions"
-                      label="Kategorija"
-                      outlined dense
-                      emit-value map-options
-                    />
-                  </div>
-                  <div class="col-12 col-md-5">
-                    <q-input
-                      v-model="itemForm.item_name"
-                      label="Naziv artikla / usluge"
-                      outlined dense
-                      @keyup.enter="addItem"
-                    />
-                  </div>
-                  <div class="col-12 col-md-2">
-                    <q-input
-                      v-model.number="itemForm.quantity"
-                      label="Kol."
-                      type="number" min="1"
-                      outlined dense
-                    />
-                  </div>
-                  <div class="col-12 col-md-1 flex items-center">
-                    <q-btn
-                      unelevated round color="primary"
-                      icon="add" size="md"
-                      @click="addItem"
-                    >
-                      <q-tooltip>Dodaj stavku</q-tooltip>
-                    </q-btn>
-                  </div>
-                </div>
-              </div>
+              <div class="q-mt-xl row q-col-gutter-lg">
 
-              <!-- Lista stavki -->
-              <div class="items-list q-mt-lg">
-                <div v-if="form.items.length === 0" class="items-empty">
-                  <q-icon name="inventory_2" size="36px" color="grey-4" />
-                  <div class="text-grey-5 q-mt-sm">Još nema dodanih stavki</div>
-                </div>
-
-                <transition-group name="item-list" tag="div">
-                  <div
-                    v-for="(item, index) in form.items"
-                    :key="index"
-                    class="item-row"
+                <!-- Upload ponude -->
+                <div class="col-12">
+                  <div class="field-section-label">Prilog (ponuda / račun)</div>
+                  <q-file
+                    v-model="form.offerFile"
+                    outlined
+                    clearable
+                    label="Odaberi datoteku"
+                    class="field-lg"
                   >
-                    <div class="item-row__index">{{ index + 1 }}</div>
-                    <div class="item-row__content">
-                      <div class="text-weight-medium">{{ item.item_name }}</div>
-                      <div class="text-caption text-grey-6">{{ item.category_label }}</div>
-                    </div>
-                    <div class="item-row__quantity">
-                      <q-chip dense color="primary" text-color="white" size="sm">
-                        × {{ item.quantity }}
-                      </q-chip>
-                    </div>
-                    <q-btn
-                      flat round dense
-                      icon="close" color="grey-5" size="sm"
-                      @click="removeItem(index)"
-                    />
-                  </div>
-                </transition-group>
-
-                <div v-if="form.items.length > 0" class="items-footer">
-                  {{ form.items.length }} {{ form.items.length === 1 ? 'stavka' : 'stavki' }} ukupno
+                    <template #prepend><q-icon name="attach_file" color="primary" /></template>
+                    <template #hint>PDF, Word, Excel, slike — max 10MB</template>
+                  </q-file>
                 </div>
-              </div>
-            </div>
 
-            <!-- KORAK 4: Procjena iznosa -->
-            <div v-else-if="step === 4" key="4">
-              <div class="step-header">
-                <div class="step-number">04</div>
-                <div>
-                  <div class="text-h5 text-weight-bold">Procijenite ukupni iznos</div>
-                  <div class="text-body1 text-grey-6 q-mt-xs">
-                    Neobavezno — unesite okvirnu vrijednost nabave ako je poznata.
-                  </div>
-                </div>
-              </div>
-
-              <div class="q-mt-xl">
-                <div class="amount-input-wrapper">
-                  <div class="amount-input-label">Procijenjeni iznos</div>
+                <!-- Iznos -->
+                <div class="col-12 col-md-6">
+                  <div class="field-section-label">Iznos iz ponude</div>
                   <div class="amount-input-row">
                     <q-input
                       v-model.number="form.estimatedAmount"
@@ -216,96 +158,146 @@
                       outlined
                       placeholder="0.00"
                       class="amount-input"
-                      input-class="amount-input__field"
                     />
                     <div class="amount-input-currency">EUR</div>
                   </div>
                   <div class="amount-hint">
                     <q-icon name="info_outline" size="14px" class="q-mr-xs" />
-                    Ovo je <strong>procijenjeni</strong> iznos — nije konačan. Jednom unesen,
-                    više ga nećete moći mijenjati. Administrator može ažurirati iznos naknadno.
+                    Iznos s priložene ponude. Administrator može korigirati naknadno.
                   </div>
                 </div>
 
-                <!-- Skip opcija -->
-                <q-btn
-                  flat no-caps color="grey-6"
-                  label="Preskoči, iznos nije poznat"
-                  class="q-mt-md"
-                  @click="form.estimatedAmount = null; step++"
-                />
-              </div>
-            </div>
-
-            <!-- KORAK 5: Ponuda -->
-            <div v-else-if="step === 5" key="5">
-              <div class="step-header">
-                <div class="step-number">05</div>
-                <div>
-                  <div class="text-h5 text-weight-bold">Imate li ponudu dobavljača?</div>
-                  <div class="text-body1 text-grey-6 q-mt-xs">
-                    Ponuda nije obavezna sada — može se dodati i naknadno.
-                  </div>
-                </div>
-              </div>
-
-              <div class="offer-choice q-mt-xl">
-                <!-- Da -->
-                <div
-                  class="offer-option"
-                  :class="{ 'offer-option--selected': form.hasOffer === true }"
-                  @click="form.hasOffer = true"
-                >
-                  <q-icon name="description" size="28px" color="primary" />
-                  <div>
-                    <div class="text-weight-bold">Da, imam ponudu</div>
-                    <div class="text-caption text-grey-6">Priložit ću je odmah</div>
-                  </div>
-                  <q-icon
-                    v-if="form.hasOffer === true"
-                    name="check_circle" color="primary" size="22px"
-                    class="offer-option__check"
-                  />
-                </div>
-
-                <!-- Ne -->
-                <div
-                  class="offer-option"
-                  :class="{ 'offer-option--selected': form.hasOffer === false }"
-                  @click="form.hasOffer = false; form.offerFile = null"
-                >
-                  <q-icon name="schedule" size="28px" color="grey-5" />
-                  <div>
-                    <div class="text-weight-bold">Nemam ponudu</div>
-                    <div class="text-caption text-grey-6">Administrator će je dodati naknadno</div>
-                  </div>
-                  <q-icon
-                    v-if="form.hasOffer === false"
-                    name="check_circle" color="primary" size="22px"
-                    class="offer-option__check"
-                  />
-                </div>
-              </div>
-
-              <!-- Upload - prikaže se kad odabere Da -->
-              <transition name="fade">
-                <div v-if="form.hasOffer === true" class="q-mt-lg">
-                  <q-file
-                    v-model="form.offerFile"
-                    outlined clearable
-                    label="Odaberi datoteku ponude"
+                <!-- Kategorija -->
+                <div class="col-12 col-md-6">
+                  <div class="field-section-label">Kategorija nabave</div>
+                  <q-select
+                    v-model="form.category"
+                    :options="categoryOptions"
+                    label="Odaberi kategoriju"
+                    outlined
+                    emit-value
+                    map-options
                   >
-                    <template #prepend><q-icon name="attach_file" color="primary" /></template>
-                    <template #hint>PDF, Word, Excel, slike — max 10MB</template>
-                  </q-file>
+                    <template #prepend><q-icon name="category" color="primary" /></template>
+                  </q-select>
                 </div>
-              </transition>
+
+                <!-- Svrha -->
+                <div class="col-12">
+                  <div class="field-section-label">Svrha nabave</div>
+                  <q-input
+                    v-model="form.reasonName"
+                    type="textarea"
+                    outlined
+                    autogrow
+                    rows="4"
+                    counter
+                    maxlength="1000"
+                    placeholder="Opišite zašto se ova nabava vrši i čemu služi..."
+                  />
+                </div>
+
+              </div>
             </div>
 
-            <!-- KORAK 6: Pregled -->
-            <div v-else-if="step === 6" key="6">
+            <!-- KORAK 3b: NEMA ponudu → Stavke + svrha -->
+            <div v-else-if="step === 3 && form.hasOffer === false" key="3b">
               <div class="step-header">
-                <div class="step-number">06</div>
+                <div class="step-number">03</div>
+                <div>
+                  <div class="text-h5 text-weight-bold">Stavke i svrha nabave</div>
+                  <div class="text-body1 text-grey-6 q-mt-xs">
+                    Navedite što trebate nabaviti i zašto.
+                  </div>
+                </div>
+              </div>
+
+              <div class="q-mt-xl">
+
+                <!-- Svrha -->
+                <div class="field-section-label">Svrha nabave</div>
+                <q-input
+                  v-model="form.reasonName"
+                  type="textarea"
+                  outlined
+                  autogrow
+                  rows="3"
+                  counter
+                  maxlength="1000"
+                  placeholder="Opišite zašto se ova nabava vrši i čemu služi..."
+                  class="q-mb-lg"
+                />
+
+                <!-- Forma za dodavanje stavke -->
+                <div class="field-section-label">Stavke zahtjeva</div>
+                <div class="add-item-form q-mb-md">
+                  <div class="row q-col-gutter-md">
+                    <div class="col-12 col-md-4">
+                      <q-select
+                        v-model="itemForm.category"
+                        :options="categoryOptions"
+                        label="Kategorija"
+                        outlined dense
+                        emit-value map-options
+                      />
+                    </div>
+                    <div class="col-12 col-md-5">
+                      <q-input
+                        v-model="itemForm.item_name"
+                        label="Naziv artikla / usluge"
+                        outlined dense
+                        @keyup.enter="addItem"
+                      />
+                    </div>
+                    <div class="col-12 col-md-2">
+                      <q-input
+                        v-model.number="itemForm.quantity"
+                        label="Kol."
+                        type="number" min="1"
+                        outlined dense
+                      />
+                    </div>
+                    <div class="col-12 col-md-1 flex items-center">
+                      <q-btn unelevated round color="primary" icon="add" size="md" @click="addItem">
+                        <q-tooltip>Dodaj stavku</q-tooltip>
+                      </q-btn>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Lista stavki -->
+                <div class="items-list">
+                  <div v-if="form.items.length === 0" class="items-empty">
+                    <q-icon name="inventory_2" size="36px" color="grey-4" />
+                    <div class="text-grey-5 q-mt-sm">Još nema dodanih stavki</div>
+                  </div>
+
+                  <transition-group name="item-list" tag="div">
+                    <div v-for="(item, index) in form.items" :key="index" class="item-row">
+                      <div class="item-row__index">{{ index + 1 }}</div>
+                      <div class="item-row__content">
+                        <div class="text-weight-medium">{{ item.item_name }}</div>
+                        <div class="text-caption text-grey-6">{{ item.category_label }}</div>
+                      </div>
+                      <div class="item-row__quantity">
+                        <q-chip dense color="primary" text-color="white" size="sm">× {{ item.quantity }}</q-chip>
+                      </div>
+                      <q-btn flat round dense icon="close" color="grey-5" size="sm" @click="removeItem(index)" />
+                    </div>
+                  </transition-group>
+
+                  <div v-if="form.items.length > 0" class="items-footer">
+                    {{ form.items.length }} {{ form.items.length === 1 ? 'stavka' : 'stavki' }} ukupno
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- KORAK 4: Pregled -->
+            <div v-else-if="step === 4" key="4">
+              <div class="step-header">
+                <div class="step-number">04</div>
                 <div>
                   <div class="text-h5 text-weight-bold">Pregled zahtjeva</div>
                   <div class="text-body1 text-grey-6 q-mt-xs">
@@ -316,52 +308,51 @@
 
               <div class="review-grid q-mt-xl">
 
-                <!-- Lijevo: Meta podaci -->
+                <!-- Meta podaci -->
                 <div class="review-meta">
                   <div class="review-field">
                     <div class="review-field__label">Odjel / Služba / Projekt</div>
                     <div class="review-field__value">{{ selectedDepartmentLabel || '-' }}</div>
                   </div>
                   <div class="review-field">
-                    <div class="review-field__label">Obrazloženje</div>
-                    <div class="review-field__value review-field__value--multiline">
-                      {{ form.reasonName || '-' }}
-                    </div>
+                    <div class="review-field__label">Svrha nabave</div>
+                    <div class="review-field__value review-field__value--multiline">{{ form.reasonName || '-' }}</div>
                   </div>
                   <div class="review-field">
-                    <div class="review-field__label">Procjena iznosa</div>
-                    <div class="review-field__value">{{ formatCurrency(form.estimatedAmount) }}</div>
-                  </div>
-                  <div class="review-field">
-                    <div class="review-field__label">Ponuda</div>
+                    <div class="review-field__label">Ponuda / Račun</div>
                     <div class="review-field__value">
                       <span v-if="form.hasOffer === true && form.offerFile" class="text-positive">
-                        <q-icon name="check_circle" size="16px" class="q-mr-xs" />
-                        {{ form.offerFile.name }}
+                        <q-icon name="check_circle" size="16px" class="q-mr-xs" />{{ form.offerFile.name }}
                       </span>
                       <span v-else class="text-grey-6">
-                        <q-icon name="schedule" size="16px" class="q-mr-xs" />
-                        Dodaje administrator naknadno
+                        <q-icon name="schedule" size="16px" class="q-mr-xs" />Bez ponude — dodaje se naknadno
                       </span>
                     </div>
+                  </div>
+                  <div v-if="form.estimatedAmount" class="review-field">
+                    <div class="review-field__label">Iznos</div>
+                    <div class="review-field__value">{{ formatCurrency(form.estimatedAmount) }}</div>
                   </div>
                 </div>
 
-                <!-- Desno: Stavke -->
+                <!-- Stavke (ako nema ponude) ili kategorija (ako ima) -->
                 <div class="review-items">
                   <div class="review-items__header">
-                    Stavke zahtjeva
-                    <q-badge color="primary" class="q-ml-sm">{{ form.items.length }}</q-badge>
+                    <span v-if="form.hasOffer === false">Stavke zahtjeva</span>
+                    <span v-else>Kategorija</span>
+                    <q-badge v-if="form.hasOffer === false" color="primary" class="q-ml-sm">{{ form.items.length }}</q-badge>
                   </div>
                   <div class="review-items__list">
-                    <div
-                      v-for="(item, index) in form.items"
-                      :key="index"
-                      class="review-item-row"
-                    >
+                    <!-- Prikaz kategorije kad ima ponudu -->
+                    <div v-if="form.hasOffer === true" class="review-item-row">
+                      <span class="review-item-row__index">—</span>
+                      <span class="review-item-row__name">{{ selectedCategoryLabel || '-' }}</span>
+                    </div>
+                    <!-- Prikaz stavki kad nema ponude -->
+                    <div v-else v-for="(item, index) in form.items" :key="index" class="review-item-row">
                       <span class="review-item-row__index">{{ index + 1 }}.</span>
                       <span class="review-item-row__name">{{ item.item_name }}</span>
-                      <span class="review-item-row__category text-grey-5">{{ item.category_label }}</span>
+                      <span class="review-item-row__category">{{ item.category_label }}</span>
                       <span class="review-item-row__qty">× {{ item.quantity }}</span>
                     </div>
                   </div>
@@ -385,7 +376,7 @@
 
             <div class="row q-gutter-sm">
               <q-btn
-                v-if="step < 6"
+                v-if="step < 4"
                 unelevated no-caps color="primary"
                 icon-right="arrow_forward" label="Dalje"
                 @click="nextStep"
@@ -416,18 +407,10 @@ import { api } from 'boot/axios';
 
 const $q = useQuasar();
 const router = useRouter();
+
 const step = ref(1);
 const loadingReferenceData = ref(false);
 const submitting = ref(false);
-
-const steps = [
-  { number: 1, title: 'Odjel' },
-  { number: 2, title: 'Obrazloženje' },
-  { number: 3, title: 'Stavke' },
-  { number: 4, title: 'Iznos' },
-  { number: 5, title: 'Ponuda' },
-  { number: 6, title: 'Pregled' },
-];
 
 const activeFiscalYear = ref('');
 const activeFiscalYearId = ref(null);
@@ -436,17 +419,49 @@ const categoryOptions = ref([]);
 
 const form = ref({
   department: null,
-  reasonName: '',
-  items: [],
-  estimatedAmount: null,
   hasOffer: null,
   offerFile: null,
+  estimatedAmount: null,
+  category: null,
+  reasonName: '',
+  items: [],
 });
 
 const itemForm = ref({ category: null, item_name: '', quantity: 1 });
 
+// Dinamički koraci ovisno o odabiru ponude
+const currentSteps = computed(() => {
+  if (form.value.hasOffer === true) {
+    return [
+      { key: 'odjel',    step: 1, number: '01', title: 'Odjel' },
+      { key: 'ponuda',   step: 2, number: '02', title: 'Ponuda' },
+      { key: 'detalji',  step: 3, number: '03', title: 'Detalji' },
+      { key: 'pregled',  step: 4, number: '04', title: 'Pregled' },
+    ];
+  }
+  if (form.value.hasOffer === false) {
+    return [
+      { key: 'odjel',   step: 1, number: '01', title: 'Odjel' },
+      { key: 'ponuda',  step: 2, number: '02', title: 'Ponuda' },
+      { key: 'stavke',  step: 3, number: '03', title: 'Stavke' },
+      { key: 'pregled', step: 4, number: '04', title: 'Pregled' },
+    ];
+  }
+  // Prije odabira - neutralni prikaz
+  return [
+    { key: 'odjel',   step: 1, number: '01', title: 'Odjel' },
+    { key: 'ponuda',  step: 2, number: '02', title: 'Ponuda' },
+    { key: 'detalji', step: 3, number: '03', title: 'Detalji' },
+    { key: 'pregled', step: 4, number: '04', title: 'Pregled' },
+  ];
+});
+
 const selectedDepartmentLabel = computed(() =>
   departmentOptions.value.find((x) => x.value === form.value.department)?.label || ''
+);
+
+const selectedCategoryLabel = computed(() =>
+  categoryOptions.value.find((x) => x.value === form.value.category)?.label || ''
 );
 
 const fetchReferenceData = async () => {
@@ -459,14 +474,8 @@ const fetchReferenceData = async () => {
     ]);
     activeFiscalYear.value = fiscalYearRes.data.year?.toString() || '';
     activeFiscalYearId.value = fiscalYearRes.data.id_fiscal_year;
-    departmentOptions.value = departmentsRes.data.map((item) => ({
-      label: item.name,
-      value: item.id_department,
-    }));
-    categoryOptions.value = categoriesRes.data.map((item) => ({
-      label: item.name,
-      value: item.id_item_category,
-    }));
+    departmentOptions.value = departmentsRes.data.map((d) => ({ label: d.name, value: d.id_department }));
+    categoryOptions.value = categoriesRes.data.map((c) => ({ label: c.name, value: c.id_item_category }));
   } catch (error) {
     console.error('Greška:', error);
     $q.notify({ type: 'negative', message: 'Greška pri dohvaćanju podataka.' });
@@ -476,32 +485,56 @@ const fetchReferenceData = async () => {
 };
 
 const nextStep = () => {
-  if (step.value === 1 && !form.value.department) {
-    $q.notify({ type: 'negative', message: 'Odaberite odjel, službu ili projekt.' });
-    return;
+  // Korak 1: odjel obavezan
+  if (step.value === 1) {
+    if (!form.value.department) {
+      $q.notify({ type: 'negative', message: 'Odaberite odjel, službu ili projekt.' });
+      return;
+    }
   }
-  if (step.value === 2 && !form.value.reasonName.trim()) {
-    $q.notify({ type: 'negative', message: 'Unesite obrazloženje nabave.' });
-    return;
+
+  // Korak 2: odabir obavezan
+  if (step.value === 2) {
+    if (form.value.hasOffer === null) {
+      $q.notify({ type: 'negative', message: 'Odaberite jednu od opcija.' });
+      return;
+    }
   }
-  if (step.value === 3 && form.value.items.length === 0) {
-    $q.notify({ type: 'negative', message: 'Dodajte barem jednu stavku.' });
-    return;
+
+  // Korak 3 - IMA ponudu: svrha obavezna, datoteka preporučena
+  if (step.value === 3 && form.value.hasOffer === true) {
+    if (!form.value.reasonName.trim()) {
+      $q.notify({ type: 'negative', message: 'Unesite svrhu nabave.' });
+      return;
+    }
+    if (!form.value.category) {
+      $q.notify({ type: 'negative', message: 'Odaberite kategoriju nabave.' });
+      return;
+    }
+    if (!form.value.offerFile) {
+      $q.dialog({
+        title: 'Upozorenje',
+        message: 'Niste priložili ponudu/račun. Nastaviti bez priloga?',
+        cancel: { flat: true, label: 'Natrag' },
+        ok: { color: 'primary', label: 'Nastavi bez ponude', unelevated: true },
+      }).onOk(() => { step.value++; });
+      return;
+    }
   }
-  if (step.value === 5 && form.value.hasOffer === true && !form.value.offerFile) {
-    $q.dialog({
-      title: 'Upozorenje',
-      message: 'Odabrali ste "Da" ali niste priložili datoteku. Nastaviti bez ponude?',
-      cancel: { flat: true, label: 'Natrag' },
-      ok: { color: 'primary', label: 'Nastavi bez ponude', unelevated: true },
-    }).onOk(() => {
-      form.value.hasOffer = false;
-      form.value.offerFile = null;
-      step.value++;
-    });
-    return;
+
+  // Korak 3 - NEMA ponudu: svrha i min 1 stavka obavezni
+  if (step.value === 3 && form.value.hasOffer === false) {
+    if (!form.value.reasonName.trim()) {
+      $q.notify({ type: 'negative', message: 'Unesite svrhu nabave.' });
+      return;
+    }
+    if (form.value.items.length === 0) {
+      $q.notify({ type: 'negative', message: 'Dodajte barem jednu stavku.' });
+      return;
+    }
   }
-  if (step.value < 6) step.value++;
+
+  if (step.value < 4) step.value++;
 };
 
 const addItem = () => {
@@ -527,12 +560,12 @@ const formatCurrency = (value) => {
 };
 
 const submitWizard = async () => {
-  if (!activeFiscalYearId.value || !form.value.department || !form.value.reasonName.trim() || form.value.items.length === 0) {
-    $q.notify({ type: 'negative', message: 'Nedostaju obavezni podaci.' });
-    return;
-  }
-
   submitting.value = true;
+
+  // Stavke: ako ima ponudu → jedna stavka iz kategorije, ako nema → lista stavki
+  const items = form.value.hasOffer === true
+    ? [{ fk_item_category: form.value.category, item_name: selectedCategoryLabel.value, quantity: 1 }]
+    : form.value.items.map((it) => ({ fk_item_category: it.category, item_name: it.item_name, quantity: it.quantity }));
 
   const payload = {
     fk_fiscal_year: activeFiscalYearId.value,
@@ -540,11 +573,7 @@ const submitWizard = async () => {
     justification: form.value.reasonName.trim(),
     estimated_amount: form.value.estimatedAmount || null,
     save_mode: 'submit',
-    items: form.value.items.map((it) => ({
-      fk_item_category: it.category,
-      item_name: it.item_name,
-      quantity: it.quantity,
-    })),
+    items,
   };
 
   try {
@@ -603,7 +632,6 @@ onMounted(() => { fetchReferenceData(); });
 .page-title { letter-spacing: -0.03em; }
 .letter-spacing-wide { letter-spacing: 0.08em; }
 
-/* Layout */
 .wizard-layout {
   display: grid;
   grid-template-columns: 220px 1fr;
@@ -611,7 +639,6 @@ onMounted(() => { fetchReferenceData(); });
   align-items: start;
 }
 
-/* Sidebar */
 .wizard-sidebar {
   position: sticky;
   top: 24px;
@@ -627,7 +654,6 @@ onMounted(() => { fetchReferenceData(); });
   gap: 12px;
   padding: 10px 16px;
   border-radius: 12px;
-  cursor: default;
   transition: background 0.2s;
 }
 
@@ -653,27 +679,12 @@ onMounted(() => { fetchReferenceData(); });
   transition: color 0.2s;
 }
 
-.sidebar-step--active {
-  background: rgba(25, 118, 210, 0.06);
-}
-.sidebar-step--active .sidebar-step__indicator {
-  background: #1976d2;
-  color: white;
-}
-.sidebar-step--active .sidebar-step__label {
-  color: #1976d2;
-  font-weight: 700;
-}
+.sidebar-step--active { background: rgba(25, 118, 210, 0.06); }
+.sidebar-step--active .sidebar-step__indicator { background: #1976d2; color: white; }
+.sidebar-step--active .sidebar-step__label { color: #1976d2; font-weight: 700; }
+.sidebar-step--done .sidebar-step__indicator { background: #dcfce7; color: #16a34a; }
+.sidebar-step--done .sidebar-step__label { color: #64748b; }
 
-.sidebar-step--done .sidebar-step__indicator {
-  background: #dcfce7;
-  color: #16a34a;
-}
-.sidebar-step--done .sidebar-step__label {
-  color: #64748b;
-}
-
-/* Content card */
 .wizard-content {
   background: rgba(255, 255, 255, 0.96);
   border-radius: 24px;
@@ -685,7 +696,6 @@ onMounted(() => { fetchReferenceData(); });
   flex-direction: column;
 }
 
-/* Step header */
 .step-header {
   display: flex;
   align-items: flex-start;
@@ -702,10 +712,17 @@ onMounted(() => { fetchReferenceData(); });
   margin-top: 2px;
 }
 
-/* Large field */
 .field-lg { max-width: 480px; }
 
-/* Items */
+.field-section-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
 .add-item-form {
   background: #f8fafc;
   border: 1px solid rgba(15, 23, 42, 0.06);
@@ -719,10 +736,7 @@ onMounted(() => { fetchReferenceData(); });
   overflow: hidden;
 }
 
-.items-empty {
-  padding: 40px;
-  text-align: center;
-}
+.items-empty { padding: 40px; text-align: center; }
 
 .item-row {
   display: flex;
@@ -732,21 +746,15 @@ onMounted(() => { fetchReferenceData(); });
   border-bottom: 1px solid rgba(15, 23, 42, 0.04);
   transition: background 0.15s;
 }
-
 .item-row:last-child { border-bottom: none; }
 .item-row:hover { background: #f8fafc; }
 
 .item-row__index {
-  width: 24px;
-  height: 24px;
+  width: 24px; height: 24px;
   border-radius: 50%;
-  background: #f1f5f9;
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: #f1f5f9; color: #64748b;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 
@@ -762,47 +770,12 @@ onMounted(() => { fetchReferenceData(); });
   border-top: 1px solid rgba(15, 23, 42, 0.04);
 }
 
-/* Amount */
-.amount-input-wrapper { max-width: 360px; }
+.amount-input-row { display: flex; align-items: center; gap: 12px; }
+.amount-input { flex: 1; max-width: 280px; }
+.amount-input-currency { font-size: 1.25rem; font-weight: 700; color: #1976d2; }
+.amount-hint { margin-top: 10px; font-size: 0.8rem; color: #94a3b8; line-height: 1.5; display: flex; align-items: flex-start; }
 
-.amount-input-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #475569;
-  margin-bottom: 8px;
-}
-
-.amount-input-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.amount-input { flex: 1; }
-
-.amount-input-currency {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1976d2;
-  flex-shrink: 0;
-}
-
-.amount-hint {
-  margin-top: 10px;
-  font-size: 0.8rem;
-  color: #94a3b8;
-  line-height: 1.5;
-  display: flex;
-  align-items: flex-start;
-}
-
-/* Offer choice */
-.offer-choice {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 480px;
-}
+.offer-choice { display: flex; flex-direction: column; gap: 12px; max-width: 480px; }
 
 .offer-option {
   display: flex;
@@ -815,60 +788,25 @@ onMounted(() => { fetchReferenceData(); });
   transition: all 0.2s;
   position: relative;
 }
-
 .offer-option:hover { border-color: #93c5fd; background: #f0f9ff; }
-
-.offer-option--selected {
-  border-color: #1976d2;
-  background: rgba(25, 118, 210, 0.04);
-}
-
+.offer-option--selected { border-color: #1976d2; background: rgba(25, 118, 210, 0.04); }
 .offer-option__check { margin-left: auto; }
 
-/* Review */
-.review-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
+.review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 
 .review-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+  display: flex; flex-direction: column;
   background: #f8fafc;
   border: 1px solid rgba(15, 23, 42, 0.06);
   border-radius: 16px;
   overflow: hidden;
 }
 
-.review-field {
-  padding: 14px 20px;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
-}
+.review-field { padding: 14px 20px; border-bottom: 1px solid rgba(15, 23, 42, 0.05); }
 .review-field:last-child { border-bottom: none; }
-
-.review-field__label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #94a3b8;
-  margin-bottom: 4px;
-}
-
-.review-field__value {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.review-field__value--multiline {
-  white-space: pre-wrap;
-  font-weight: 400;
-  color: #334155;
-  line-height: 1.5;
-}
+.review-field__label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; margin-bottom: 4px; }
+.review-field__value { font-size: 0.95rem; font-weight: 600; color: #0f172a; }
+.review-field__value--multiline { white-space: pre-wrap; font-weight: 400; color: #334155; line-height: 1.5; }
 
 .review-items {
   background: #f8fafc;
@@ -879,14 +817,11 @@ onMounted(() => { fetchReferenceData(); });
 
 .review-items__header {
   padding: 14px 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 0.75rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
   color: #94a3b8;
   border-bottom: 1px solid rgba(15, 23, 42, 0.05);
-  display: flex;
-  align-items: center;
+  display: flex; align-items: center;
 }
 
 .review-items__list { padding: 8px 0; }
@@ -902,25 +837,18 @@ onMounted(() => { fetchReferenceData(); });
   user-select: text;
 }
 .review-item-row:last-child { border-bottom: none; }
-
 .review-item-row__index { color: #94a3b8; font-size: 0.75rem; }
 .review-item-row__name { font-weight: 600; color: #0f172a; }
 .review-item-row__category { color: #94a3b8; font-size: 0.75rem; }
 .review-item-row__qty { font-weight: 700; color: #1976d2; white-space: nowrap; }
 
-/* Nav */
 .wizard-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 32px;
-  margin-top: auto;
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 32px; margin-top: auto;
   border-top: 1px solid rgba(15, 23, 42, 0.06);
 }
 
-/* Transitions */
-.step-fade-enter-active,
-.step-fade-leave-active { transition: all 0.2s ease; }
+.step-fade-enter-active, .step-fade-leave-active { transition: all 0.2s ease; }
 .step-fade-enter-from { opacity: 0; transform: translateX(12px); }
 .step-fade-leave-to { opacity: 0; transform: translateX(-12px); }
 
