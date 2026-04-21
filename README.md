@@ -4,6 +4,14 @@
 
 ---
 
+## 🍎 WHAT'S NEXT? [upute sa sastanka]
+- registracija (password reset mail)
+- draft vratiti
+- personalizirani uxui (korisnik\admin)
+- filter / search po korisniku definitivno
+- security hardening
+- ponuda moze imati vise
+
 ## ✅ Napravljeno do sada
 
 ### 🔐 Autentikacija i sigurnost
