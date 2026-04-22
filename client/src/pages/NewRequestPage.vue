@@ -2,7 +2,6 @@
   <q-page class="new-request-page q-pa-lg">
     <div class="page-shell">
 
-      <!-- PAGE HEADER -->
       <section class="page-hero q-mb-xl">
         <div>
           <div class="text-overline text-primary text-weight-bold letter-spacing-wide">
@@ -19,14 +18,13 @@
         />
       </section>
 
-      <!-- LOADING -->
       <div v-if="loadingReferenceData" class="row justify-center q-pa-xl">
         <q-spinner color="primary" size="48px" />
       </div>
 
       <div v-else class="wizard-layout">
 
-        <!-- LIJEVO: Progress tracker -->
+        <!-- SIDEBAR -->
         <div class="wizard-sidebar">
           <div
             v-for="s in currentSteps"
@@ -45,7 +43,7 @@
           </div>
         </div>
 
-        <!-- DESNO: Sadržaj koraka -->
+        <!-- CONTENT -->
         <div class="wizard-content">
           <transition name="step-fade" mode="out-in">
 
@@ -60,20 +58,15 @@
                   </div>
                 </div>
               </div>
-
               <div class="q-mt-xl">
                 <q-select
                   v-model="form.department"
                   :options="departmentOptions"
-                  outlined
-                  emit-value
-                  map-options
+                  outlined emit-value map-options
                   label="Odjel / Služba / Projekt"
                   class="field-lg"
                 >
-                  <template #prepend>
-                    <q-icon name="business" color="primary" />
-                  </template>
+                  <template #prepend><q-icon name="business" color="primary" /></template>
                 </q-select>
               </div>
             </div>
@@ -89,7 +82,6 @@
                   </div>
                 </div>
               </div>
-
               <div class="offer-choice q-mt-xl">
                 <div
                   class="offer-option"
@@ -99,7 +91,7 @@
                   <q-icon name="receipt_long" size="28px" color="primary" />
                   <div>
                     <div class="text-weight-bold">Da, imam ponudu / račun</div>
-                    <div class="text-caption text-grey-6">Priložit ću ga odmah uz zahtjev</div>
+                    <div class="text-caption text-grey-6">Mogu priložiti jednu ili više ponuda</div>
                   </div>
                   <q-icon v-if="form.hasOffer === true" name="check_circle" color="primary" size="22px" class="offer-option__check" />
                 </div>
@@ -107,7 +99,7 @@
                 <div
                   class="offer-option"
                   :class="{ 'offer-option--selected': form.hasOffer === false }"
-                  @click="form.hasOffer = false; form.offerFile = null; form.estimatedAmount = null"
+                  @click="form.hasOffer = false; form.offerFiles = []; form.estimatedAmount = null"
                 >
                   <q-icon name="format_list_bulleted" size="28px" color="grey-5" />
                   <div>
@@ -119,38 +111,62 @@
               </div>
             </div>
 
-            <!-- KORAK 3a: IMA ponudu → Upload + iznos + svrha + kategorija -->
+            <!-- KORAK 3a: IMA ponudu → Multiple upload + iznos + kategorija + svrha -->
             <div v-else-if="step === 3 && form.hasOffer === true" key="3a">
               <div class="step-header">
                 <div class="step-number">03</div>
                 <div>
                   <div class="text-h5 text-weight-bold">Detalji nabave</div>
                   <div class="text-body1 text-grey-6 q-mt-xs">
-                    Priložite ponudu i unesite potrebne podatke.
+                    Priložite jednu ili više ponuda i unesite potrebne podatke.
                   </div>
                 </div>
               </div>
 
               <div class="q-mt-xl row q-col-gutter-lg">
 
-                <!-- Upload ponude -->
+                <!-- Multiple upload ponuda -->
                 <div class="col-12">
-                  <div class="field-section-label">Prilog (ponuda / račun)</div>
+                  <div class="field-section-label">Ponude / računi</div>
+
                   <q-file
-                    v-model="form.offerFile"
+                    v-model="newOfferFile"
                     outlined
-                    clearable
-                    label="Odaberi datoteku"
+                    label="Dodaj ponudu"
                     class="field-lg"
+                    @update:model-value="onAddOffer"
                   >
                     <template #prepend><q-icon name="attach_file" color="primary" /></template>
-                    <template #hint>PDF, Word, Excel, slike — max 10MB</template>
+                    <template #hint>PDF, Word, Excel, slike — max 10MB po datoteci</template>
                   </q-file>
+
+                  <!-- Lista dodanih ponuda -->
+                  <div v-if="form.offerFiles.length > 0" class="offers-list q-mt-md">
+                    <div
+                      v-for="(file, index) in form.offerFiles"
+                      :key="index"
+                      class="offer-file-row"
+                    >
+                      <q-icon name="description" color="primary" size="20px" />
+                      <div class="offer-file-row__name">{{ file.name }}</div>
+                      <div class="offer-file-row__size">{{ formatFileSize(file.size) }}</div>
+                      <q-btn
+                        flat round dense
+                        icon="close" color="grey-5" size="sm"
+                        @click="removeOffer(index)"
+                      />
+                    </div>
+                    <div class="offers-list__footer">
+                      {{ form.offerFiles.length }} {{ form.offerFiles.length === 1 ? 'ponuda' : 'ponuda' }} dodano
+                    </div>
+                  </div>
                 </div>
 
-                <!-- Iznos -->
+                <!-- Iznos (obavezan) -->
                 <div class="col-12 col-md-6">
-                  <div class="field-section-label">Iznos iz ponude</div>
+                  <div class="field-section-label">
+                    Ukupni iznos *
+                  </div>
                   <div class="amount-input-row">
                     <q-input
                       v-model.number="form.estimatedAmount"
@@ -163,7 +179,12 @@
                   </div>
                   <div class="amount-hint">
                     <q-icon name="info_outline" size="14px" class="q-mr-xs" />
-                    Iznos s priložene ponude. Administrator može korigirati naknadno.
+                    <span v-if="form.offerFiles.length > 1">
+                      Imate {{ form.offerFiles.length }} ponuda - upišite ukupni zbroj svih iznosa.
+                    </span>
+                    <span v-else>
+                      Upišite iznos s ponude. Administrator može korigirati naknadno.
+                    </span>
                   </div>
                 </div>
 
@@ -174,9 +195,7 @@
                     v-model="form.category"
                     :options="categoryOptions"
                     label="Odaberi kategoriju"
-                    outlined
-                    emit-value
-                    map-options
+                    outlined emit-value map-options
                   >
                     <template #prepend><q-icon name="category" color="primary" /></template>
                   </q-select>
@@ -188,11 +207,8 @@
                   <q-input
                     v-model="form.reasonName"
                     type="textarea"
-                    outlined
-                    autogrow
-                    rows="4"
-                    counter
-                    maxlength="1000"
+                    outlined autogrow rows="4"
+                    counter maxlength="1000"
                     placeholder="Opišite zašto se ova nabava vrši i čemu služi..."
                   />
                 </div>
@@ -213,22 +229,16 @@
               </div>
 
               <div class="q-mt-xl">
-
-                <!-- Svrha -->
                 <div class="field-section-label">Svrha nabave</div>
                 <q-input
                   v-model="form.reasonName"
                   type="textarea"
-                  outlined
-                  autogrow
-                  rows="3"
-                  counter
-                  maxlength="1000"
+                  outlined autogrow rows="3"
+                  counter maxlength="1000"
                   placeholder="Opišite zašto se ova nabava vrši i čemu služi..."
                   class="q-mb-lg"
                 />
 
-                <!-- Forma za dodavanje stavke -->
                 <div class="field-section-label">Stavke zahtjeva</div>
                 <div class="add-item-form q-mb-md">
                   <div class="row q-col-gutter-md">
@@ -237,8 +247,7 @@
                         v-model="itemForm.category"
                         :options="categoryOptions"
                         label="Kategorija"
-                        outlined dense
-                        emit-value map-options
+                        outlined dense emit-value map-options
                       />
                     </div>
                     <div class="col-12 col-md-5">
@@ -252,8 +261,7 @@
                     <div class="col-12 col-md-2">
                       <q-input
                         v-model.number="itemForm.quantity"
-                        label="Kol."
-                        type="number" min="1"
+                        label="Kol." type="number" min="1"
                         outlined dense
                       />
                     </div>
@@ -265,7 +273,6 @@
                   </div>
                 </div>
 
-                <!-- Lista stavki -->
                 <div class="items-list">
                   <div v-if="form.items.length === 0" class="items-empty">
                     <q-icon name="inventory_2" size="36px" color="grey-4" />
@@ -290,7 +297,6 @@
                     {{ form.items.length }} {{ form.items.length === 1 ? 'stavka' : 'stavki' }} ukupno
                   </div>
                 </div>
-
               </div>
             </div>
 
@@ -308,7 +314,6 @@
 
               <div class="review-grid q-mt-xl">
 
-                <!-- Meta podaci -->
                 <div class="review-meta">
                   <div class="review-field">
                     <div class="review-field__label">Odjel / Služba / Projekt</div>
@@ -319,23 +324,24 @@
                     <div class="review-field__value review-field__value--multiline">{{ form.reasonName || '-' }}</div>
                   </div>
                   <div class="review-field">
-                    <div class="review-field__label">Ponuda / Račun</div>
+                    <div class="review-field__label">Ponude / Računi</div>
                     <div class="review-field__value">
-                      <span v-if="form.hasOffer === true && form.offerFile" class="text-positive">
-                        <q-icon name="check_circle" size="16px" class="q-mr-xs" />{{ form.offerFile.name }}
-                      </span>
+                      <div v-if="form.hasOffer === true && form.offerFiles.length > 0">
+                        <div v-for="(file, index) in form.offerFiles" :key="index" class="text-positive" style="margin-bottom: 4px;">
+                          <q-icon name="check_circle" size="16px" class="q-mr-xs" />{{ file.name }}
+                        </div>
+                      </div>
                       <span v-else class="text-grey-6">
                         <q-icon name="schedule" size="16px" class="q-mr-xs" />Bez ponude — dodaje se naknadno
                       </span>
                     </div>
                   </div>
                   <div v-if="form.estimatedAmount" class="review-field">
-                    <div class="review-field__label">Iznos</div>
+                    <div class="review-field__label">Ukupni iznos</div>
                     <div class="review-field__value">{{ formatCurrency(form.estimatedAmount) }}</div>
                   </div>
                 </div>
 
-                <!-- Stavke (ako nema ponude) ili kategorija (ako ima) -->
                 <div class="review-items">
                   <div class="review-items__header">
                     <span v-if="form.hasOffer === false">Stavke zahtjeva</span>
@@ -343,12 +349,10 @@
                     <q-badge v-if="form.hasOffer === false" color="primary" class="q-ml-sm">{{ form.items.length }}</q-badge>
                   </div>
                   <div class="review-items__list">
-                    <!-- Prikaz kategorije kad ima ponudu -->
                     <div v-if="form.hasOffer === true" class="review-item-row">
                       <span class="review-item-row__index">—</span>
                       <span class="review-item-row__name">{{ selectedCategoryLabel || '-' }}</span>
                     </div>
-                    <!-- Prikaz stavki kad nema ponude -->
                     <div v-else v-for="(item, index) in form.items" :key="index" class="review-item-row">
                       <span class="review-item-row__index">{{ index + 1 }}.</span>
                       <span class="review-item-row__name">{{ item.item_name }}</span>
@@ -363,7 +367,7 @@
 
           </transition>
 
-          <!-- NAVIGACIJA -->
+          <!-- NAV -->
           <div class="wizard-nav q-mt-xl">
             <q-btn
               v-if="step > 1"
@@ -417,10 +421,12 @@ const activeFiscalYearId = ref(null);
 const departmentOptions = ref([]);
 const categoryOptions = ref([]);
 
+const newOfferFile = ref(null);
+
 const form = ref({
   department: null,
   hasOffer: null,
-  offerFile: null,
+  offerFiles: [],
   estimatedAmount: null,
   category: null,
   reasonName: '',
@@ -429,14 +435,13 @@ const form = ref({
 
 const itemForm = ref({ category: null, item_name: '', quantity: 1 });
 
-// Dinamički koraci ovisno o odabiru ponude
 const currentSteps = computed(() => {
   if (form.value.hasOffer === true) {
     return [
-      { key: 'odjel',    step: 1, number: '01', title: 'Odjel' },
-      { key: 'ponuda',   step: 2, number: '02', title: 'Ponuda' },
-      { key: 'detalji',  step: 3, number: '03', title: 'Detalji' },
-      { key: 'pregled',  step: 4, number: '04', title: 'Pregled' },
+      { key: 'odjel',   step: 1, number: '01', title: 'Odjel' },
+      { key: 'ponuda',  step: 2, number: '02', title: 'Ponuda' },
+      { key: 'detalji', step: 3, number: '03', title: 'Detalji' },
+      { key: 'pregled', step: 4, number: '04', title: 'Pregled' },
     ];
   }
   if (form.value.hasOffer === false) {
@@ -447,7 +452,6 @@ const currentSteps = computed(() => {
       { key: 'pregled', step: 4, number: '04', title: 'Pregled' },
     ];
   }
-  // Prije odabira - neutralni prikaz
   return [
     { key: 'odjel',   step: 1, number: '01', title: 'Odjel' },
     { key: 'ponuda',  step: 2, number: '02', title: 'Ponuda' },
@@ -484,45 +488,53 @@ const fetchReferenceData = async () => {
   }
 };
 
+// Kad user odabere novu ponudu, dodaj je u listu i resetiraj input
+const onAddOffer = (file) => {
+  if (!file) return;
+  form.value.offerFiles.push(file);
+  newOfferFile.value = null;
+};
+
+const removeOffer = (index) => form.value.offerFiles.splice(index, 1);
+
+const formatFileSize = (bytes) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
 const nextStep = () => {
-  // Korak 1: odjel obavezan
-  if (step.value === 1) {
-    if (!form.value.department) {
-      $q.notify({ type: 'negative', message: 'Odaberite odjel, službu ili projekt.' });
-      return;
-    }
+  if (step.value === 1 && !form.value.department) {
+    $q.notify({ type: 'negative', message: 'Odaberite odjel, službu ili projekt.' });
+    return;
   }
 
-  // Korak 2: odabir obavezan
-  if (step.value === 2) {
-    if (form.value.hasOffer === null) {
-      $q.notify({ type: 'negative', message: 'Odaberite jednu od opcija.' });
-      return;
-    }
+  if (step.value === 2 && form.value.hasOffer === null) {
+    $q.notify({ type: 'negative', message: 'Odaberite jednu od opcija.' });
+    return;
   }
 
-  // Korak 3 - IMA ponudu: svrha obavezna, datoteka preporučena
+  // Korak 3a - IMA ponudu
   if (step.value === 3 && form.value.hasOffer === true) {
-    if (!form.value.reasonName.trim()) {
-      $q.notify({ type: 'negative', message: 'Unesite svrhu nabave.' });
+    if (form.value.offerFiles.length === 0) {
+      $q.notify({ type: 'negative', message: 'Priložite barem jednu ponudu.' });
+      return;
+    }
+    if (!form.value.estimatedAmount || form.value.estimatedAmount <= 0) {
+      $q.notify({ type: 'negative', message: 'Ukupni iznos je obavezan kad imate ponudu.' });
       return;
     }
     if (!form.value.category) {
       $q.notify({ type: 'negative', message: 'Odaberite kategoriju nabave.' });
       return;
     }
-    if (!form.value.offerFile) {
-      $q.dialog({
-        title: 'Upozorenje',
-        message: 'Niste priložili ponudu/račun. Nastaviti bez priloga?',
-        cancel: { flat: true, label: 'Natrag' },
-        ok: { color: 'primary', label: 'Nastavi bez ponude', unelevated: true },
-      }).onOk(() => { step.value++; });
+    if (!form.value.reasonName.trim()) {
+      $q.notify({ type: 'negative', message: 'Unesite svrhu nabave.' });
       return;
     }
   }
 
-  // Korak 3 - NEMA ponudu: svrha i min 1 stavka obavezni
+  // Korak 3b - NEMA ponudu
   if (step.value === 3 && form.value.hasOffer === false) {
     if (!form.value.reasonName.trim()) {
       $q.notify({ type: 'negative', message: 'Unesite svrhu nabave.' });
@@ -562,7 +574,6 @@ const formatCurrency = (value) => {
 const submitWizard = async () => {
   submitting.value = true;
 
-  // Stavke: ako ima ponudu → jedna stavka iz kategorije, ako nema → lista stavki
   const items = form.value.hasOffer === true
     ? [{ fk_item_category: form.value.category, item_name: selectedCategoryLabel.value, quantity: 1 }]
     : form.value.items.map((it) => ({ fk_item_category: it.category, item_name: it.item_name, quantity: it.quantity }));
@@ -579,23 +590,24 @@ const submitWizard = async () => {
   try {
     const { data } = await api.post('/requests', payload);
 
-    // Upload ponude ako postoji
-    if (form.value.hasOffer === true && form.value.offerFile) {
-      try {
-        const formData = new FormData();
-        formData.append('file', form.value.offerFile);
-        formData.append('document_type', 'Ponuda');
-        await api.post(`/requests/${data.id_purchase_request}/attachments`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-      } catch {
-        $q.notify({
-          type: 'warning',
-          message: `Zahtjev ${data.request_number} kreiran, ali upload ponude nije uspio. Možete je dodati na stranici detalja.`,
-          timeout: 5000,
-        });
-        router.push(`/requests/${data.id_purchase_request}`);
-        return;
+    // Upload svih ponuda jedna po jedna
+    if (form.value.hasOffer === true && form.value.offerFiles.length > 0) {
+      for (const file of form.value.offerFiles) {
+        try {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('document_type', 'Ponuda');
+          await api.post(`/requests/${data.id_purchase_request}/attachments`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+        } catch (uploadError) {
+          console.error('Upload failed for file:', file.name, uploadError);
+          $q.notify({
+            type: 'warning',
+            message: `Zahtjev ${data.request_number} kreiran, ali upload "${file.name}" nije uspio.`,
+            timeout: 5000,
+          });
+        }
       }
     }
 
@@ -721,6 +733,49 @@ onMounted(() => { fetchReferenceData(); });
   letter-spacing: 0.06em;
   color: #94a3b8;
   margin-bottom: 8px;
+}
+
+/* Lista ponuda */
+.offers-list {
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.offer-file-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.04);
+}
+
+.offer-file-row:last-of-type { border-bottom: none; }
+
+.offer-file-row__name {
+  flex: 1;
+  font-size: 0.875rem;
+  color: #0f172a;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.offer-file-row__size {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.offers-list__footer {
+  padding: 8px 14px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-align: right;
+  border-top: 1px solid rgba(15, 23, 42, 0.04);
+  background: white;
 }
 
 .add-item-form {
