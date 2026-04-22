@@ -350,7 +350,7 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
   // Komentar obavezan za reject i return-for-revision
   if ((action === 'reject' || action === 'return-for-revision') && (!comment || !comment.trim())) {
     return res.status(400).json({
-      message: 'Komentar je obavezan pri odbijanju ili vraćanju na dopunu.',
+      message: 'Komentar je obavezan pri odbijanju ili vraćanju na izmjenu.',
     });
   }
 
@@ -600,20 +600,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
       VALUES ?
       `,
       [itemValues]
-    );
-
-    // Upiši u history
-    let historyComment = isAdmin
-      ? 'Zahtjev izmijenjen od strane administratora.'
-      : 'Zahtjev izmijenjen od strane korisnika.';
-
-    await connection.query(
-      `
-      INSERT INTO RequestStatusHistory
-        (fk_purchase_request, fk_request_status, fk_changed_by_user, comment)
-      VALUES (?, ?, ?, ?)
-      `,
-      [id, newStatus, userId, historyComment]
     );
 
     await connection.commit();

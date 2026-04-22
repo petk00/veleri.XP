@@ -44,21 +44,18 @@
           </div>
         </section>
 
-        <q-banner
-          v-if="returnMessageText"
-          rounded
-          class="bg-orange-1 text-orange-10 q-mb-lg"
-        >
-          <div class="text-subtitle2 text-weight-bold q-mb-xs">Poruka administratora</div>
-          <div>{{ returnMessageText }}</div>
-        </q-banner>
-
         <q-card v-if="canApproveOrReject" flat class="actions-card q-mb-lg">
           <q-card-section class="row items-center justify-between">
             <div>
               <div class="text-subtitle1 text-weight-bold">Potrebna vaša odluka</div>
               <div class="text-body2 text-grey-7">
-                Zahtjev čeka odobrenje. Možete ga odobriti, odbiti ili vratiti na dopunu.
+                Zahtjev čeka odobrenje. Možete ga odobriti, odbiti ili vratiti na izmjenu.
+              </div>
+              <div v-if="!canApprove" class="text-body2 text-negative q-mt-sm">
+                Nedostaje -
+                <span v-if="!hasPonuda"> ponuda</span>
+                <span v-if="!hasPonuda && (request?.total_amount == null || Number(request?.total_amount) <= 0)">,</span>
+                <span v-if="request?.total_amount == null || Number(request?.total_amount) <= 0"> procijenjeni iznos</span>
               </div>
             </div>
             <div class="row q-gutter-sm">
@@ -67,7 +64,7 @@
                 no-caps
                 color="warning"
                 icon="undo"
-                label="Vrati na dopunu"
+                label="Vrati na izmjenu"
                 @click="openActionDialog('return-for-revision')"
               />
               <q-btn
@@ -94,7 +91,7 @@
         <q-card v-if="canUserResubmit" flat class="actions-card q-mb-lg">
           <q-card-section class="row items-center justify-between">
             <div>
-              <div class="text-subtitle1 text-weight-bold">Zahtjev je vraćen na dopunu</div>
+              <div class="text-subtitle1 text-weight-bold">Zahtjev je vraćen na izmjenu</div>
               <div class="text-body2 text-grey-7">
                 Uredite zahtjev prema komentaru administratora i pošaljite ga ponovno.
               </div>
@@ -124,12 +121,9 @@
         <q-card v-if="canComplete" flat class="complete-card q-mb-lg">
           <q-card-section class="row items-center justify-between">
             <div>
-              <div class="text-subtitle1 text-weight-bold">Zahtjev je odobren</div>
               <div class="text-body2 text-grey-7">
                 <span v-if="!canCloseRequest" class="text-negative">
-                  Za zatvaranje zahtjeva potrebna je Ponuda i Otpremnica.
-                  <span v-if="!hasPonuda"> Nedostaje: Ponuda.</span>
-                  <span v-if="!hasOtpremnica"> Nedostaje: Otpremnica.</span>
+                  Nedostaje - otpremnica
                 </span>
                 <span v-else>Svi dokumenti su priloženi. Zahtjev možete označiti kao završen.</span>
               </div>
@@ -363,7 +357,6 @@ const request = ref(null);
 const items = ref([]);
 const history = ref([]);
 const attachments = ref([]);
-const returnMessageText = ref('');
 
 const uploading = ref(false);
 const uploadForm = ref({ document_type: null, file: null });
@@ -389,7 +382,7 @@ const canCloseRequest = computed(() => hasPonuda.value && hasOtpremnica.value);
 const actionDialogTitle = computed(() => {
   if (pendingAction.value === 'approve') return 'Odobravanje zahtjeva';
   if (pendingAction.value === 'reject') return 'Odbijanje zahtjeva';
-  if (pendingAction.value === 'return-for-revision') return 'Vraćanje na dopunu';
+  if (pendingAction.value === 'return-for-revision') return 'Vraćanje na izmjenu';
   return 'Akcija nad zahtjevom';
 });
 
@@ -419,7 +412,7 @@ const actionDialogButtonIcon = computed(() => {
 
 const actionDialogButtonLabel = computed(() => {
   if (pendingAction.value === 'approve') return 'Odobri';
-  if (pendingAction.value === 'return-for-revision') return 'Vrati na dopunu';
+  if (pendingAction.value === 'return-for-revision') return 'Vrati na izmjenu';
   return 'Odbij';
 });
 
@@ -431,7 +424,6 @@ const itemsColumns = [
 
 const fetchRequestDetails = async () => {
   loading.value = true;
-  returnMessageText.value = '';
 
   try {
     const [detailsRes, attachmentsRes] = await Promise.all([
@@ -443,17 +435,6 @@ const fetchRequestDetails = async () => {
     items.value = detailsRes.data.items || [];
     history.value = detailsRes.data.history || [];
     attachments.value = Array.isArray(attachmentsRes.data) ? attachmentsRes.data : [];
-
-    const returnEntries = history.value.filter((entry) => entry.id_request_status === 3);
-    if (returnEntries.length > 0) {
-      const lastReturn = returnEntries[returnEntries.length - 1];
-      if (
-        lastReturn.comment
-        && lastReturn.comment !== 'Zahtjev vraćen na dopunu / izmjenu.'
-      ) {
-        returnMessageText.value = lastReturn.comment;
-      }
-    }
   } catch (error) {
     console.error('Greška:', error);
     $q.notify({
