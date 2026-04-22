@@ -67,13 +67,13 @@
 <script setup>
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { getStoredUser } from 'src/utils/authStorage';
 
 const router = useRouter();
 const route = useRoute();
 
 const user = computed(() => {
-  const raw = localStorage.getItem('user');
-  return raw ? JSON.parse(raw) : null;
+  return getStoredUser();
 });
 
 const fullName = computed(() => {

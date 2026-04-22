@@ -35,6 +35,15 @@
 
         <q-separator />
 
+        <q-banner
+          v-if="errorMessage"
+          inline-actions
+          rounded
+          class="bg-red-1 text-negative q-ma-md"
+        >
+          {{ errorMessage }}
+        </q-banner>
+
         <q-card-section class="q-pa-none">
           <q-table
             :rows="rows"
@@ -117,6 +126,7 @@ import { api } from 'boot/axios';
 const router = useRouter();
 const loading = ref(false);
 const rows = ref([]);
+const errorMessage = ref('');
 
 const columns = [
   {
@@ -171,12 +181,16 @@ const columns = [
 
 const fetchRequests = async () => {
   loading.value = true;
+  errorMessage.value = '';
 
   try {
     const response = await api.get('/requests');
-    rows.value = response.data;
+    rows.value = Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error('Greška kod dohvaćanja zahtjeva:', error);
+    errorMessage.value =
+      error.response?.data?.message || 'Zahtjevi se trenutno ne mogu dohvatiti.';
+    rows.value = [];
   } finally {
     loading.value = false;
   }
@@ -201,16 +215,20 @@ const formatDate = (value) => {
 
 const statusClass = (status) => {
   switch ((status || '').toLowerCase()) {
-    case 'skica':
-      return 'status-chip--draft';
-    case 'u obradi':
-      return 'status-chip--submitted';
+    case 'poslano':
+      return 'status-chip--sent';
+    case 'na odobrenju':
+      return 'status-chip--pending';
+    case 'vraćeno na dopunu / izmjenu':
+      return 'status-chip--returned';
     case 'odobreno':
       return 'status-chip--approved';
     case 'odbijeno':
       return 'status-chip--rejected';
-    case 'završeno':
-      return 'status-chip--completed';
+    case 'naručeno':
+      return 'status-chip--ordered';
+    case 'zatvoreno':
+      return 'status-chip--closed';
     default:
       return 'status-chip--default';
   }
@@ -301,14 +319,19 @@ onMounted(() => {
   padding: 6px 10px;
 }
 
-.status-chip--draft {
+.status-chip--sent {
   background: #eef2ff;
   color: #4f46e5;
 }
 
-.status-chip--submitted {
+.status-chip--pending {
   background: #eff6ff;
   color: #2563eb;
+}
+
+.status-chip--returned {
+  background: #fdf2f8;
+  color: #be185d;
 }
 
 .status-chip--approved {
@@ -321,7 +344,12 @@ onMounted(() => {
   color: #dc2626;
 }
 
-.status-chip--completed {
+.status-chip--ordered {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.status-chip--closed {
   background: #f0fdf4;
   color: #166534;
 }
