@@ -2,13 +2,21 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const authenticateToken = require('../middleware/authMiddleware');
-// Status ID-jevi (moraju odgovarati onima u tablici RequestStatus)
+
 const STATUS = {
-  DRAFT: 1,
-  SUBMITTED: 2,
-  APPROVED: 3,
-  REJECTED: 4,
-  COMPLETED: 5,
+  PENDING_APPROVAL: 1,            // Na odobrenju
+  RETURNED_FOR_REVISION: 2,       // Vraćeno na izmjenu
+  APPROVED: 3,                    // Odobreno
+  REJECTED: 4,                    // Odbijeno
+  CLOSED: 5,                      // Zatvoreno
+};
+
+const STATUS_LABELS = {
+  [STATUS.PENDING_APPROVAL]: 'Na odobrenju',
+  [STATUS.RETURNED_FOR_REVISION]: 'Vraćeno na izmjenu',
+  [STATUS.APPROVED]: 'Odobreno',
+  [STATUS.REJECTED]: 'Odbijeno',
+  [STATUS.CLOSED]: 'Zatvoreno',
 };
 
 const getRequestAccessCondition = (user) => {
@@ -18,7 +26,6 @@ const getRequestAccessCondition = (user) => {
       params: [],
     };
   }
-
   return {
     clause: 'pr.id_purchase_request = ? AND pr.fk_created_by_user = ?',
     params: [user.id_user],
@@ -28,15 +35,8 @@ const getRequestAccessCondition = (user) => {
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const isAdmin = req.user.role_name === 'Administrator';
-
-    // Admin vidi sve, zaposlenik vidi samo svoje
-    const whereClause = isAdmin
-      ? ''
-      : 'WHERE pr.fk_created_by_user = ?';
-
-    const params = isAdmin
-      ? []
-      : [req.user.id_user];
+    const whereClause = isAdmin ? '' : 'WHERE pr.fk_created_by_user = ?';
+    const params = isAdmin ? [] : [req.user.id_user];
 
     const [rows] = await db.query(`
       SELECT
@@ -44,21 +44,22 @@ router.get('/', authenticateToken, async (req, res) => {
         pr.request_number,
         fy.year AS fiscal_year,
         d.name AS department_name,
-        rs.name AS status_name,
+        pr.fk_request_status,
         CONCAT(u.first_name, ' ', u.last_name) AS created_by,
         pr.total_amount,
         pr.created_at
       FROM PurchaseRequest pr
       INNER JOIN FiscalYear fy ON pr.fk_fiscal_year = fy.id_fiscal_year
       INNER JOIN Department d ON pr.fk_department = d.id_department
-      INNER JOIN RequestStatus rs ON pr.fk_request_status = rs.id_request_status
       INNER JOIN AppUser u ON pr.fk_created_by_user = u.id_user
       ${whereClause}
       ORDER BY pr.created_at DESC, pr.id_purchase_request DESC
     `, params);
 
-    
-    res.json(rows);
+    res.json(rows.map((row) => ({
+      ...row,
+      status_name: STATUS_LABELS[row.fk_request_status] || `Status #${row.fk_request_status}`,
+    })));
   } catch (error) {
     console.error('GET /api/requests error:', error);
     res.status(500).json({
@@ -80,7 +81,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
         pr.request_number,
         fy.year AS fiscal_year,
         d.name AS department_name,
-        rs.name AS status_name,
+        pr.fk_request_status,
         CONCAT(u.first_name, ' ', u.last_name) AS created_by,
         pr.total_amount,
         pr.justification,
@@ -89,7 +90,6 @@ router.get('/:id', authenticateToken, async (req, res) => {
       FROM PurchaseRequest pr
       INNER JOIN FiscalYear fy ON pr.fk_fiscal_year = fy.id_fiscal_year
       INNER JOIN Department d ON pr.fk_department = d.id_department
-      INNER JOIN RequestStatus rs ON pr.fk_request_status = rs.id_request_status
       INNER JOIN AppUser u ON pr.fk_created_by_user = u.id_user
       WHERE ${access.clause}
       LIMIT 1
@@ -122,13 +122,11 @@ router.get('/:id', authenticateToken, async (req, res) => {
       `
       SELECT
         rsh.id_request_status_history,
-        rs.name AS status_name,
-        rs.id_request_status,
+        rsh.fk_request_status AS id_request_status,
         CONCAT(u.first_name, ' ', u.last_name) AS changed_by,
         rsh.changed_at,
         rsh.comment
       FROM RequestStatusHistory rsh
-      INNER JOIN RequestStatus rs ON rsh.fk_request_status = rs.id_request_status
       INNER JOIN AppUser u ON rsh.fk_changed_by_user = u.id_user
       WHERE rsh.fk_purchase_request = ?
       ORDER BY rsh.changed_at ASC, rsh.id_request_status_history ASC
@@ -136,10 +134,20 @@ router.get('/:id', authenticateToken, async (req, res) => {
       [id]
     );
 
+    const request = {
+      ...requestRows[0],
+      status_name:
+        STATUS_LABELS[requestRows[0].fk_request_status]
+        || `Status #${requestRows[0].fk_request_status}`,
+    };
+
     res.json({
-      request: requestRows[0],
+      request,
       items: itemRows,
-      history: historyRows,  // ← NOVO
+      history: historyRows.map((entry) => ({
+        ...entry,
+        status_name: STATUS_LABELS[entry.id_request_status] || `Status #${entry.id_request_status}`,
+      })),
     });
   } catch (error) {
     console.error('GET /api/requests/:id error:', error);
@@ -149,22 +157,10 @@ router.get('/:id', authenticateToken, async (req, res) => {
     });
   }
 });
+
 /**
  * POST /api/requests
  * Kreira novi zahtjev sa svim stavkama i prvi unos u status history.
- *
- * Expected body:
- * {
- *   fk_fiscal_year: number,
- *   fk_department: number,
- *   justification: string,
- *   estimated_amount: number | null,
- *   save_mode: 'draft' | 'submit',
- *   items: [
- *     { fk_item_category: number, item_name: string, quantity: number },
- *     ...
- *   ]
- * }
  */
 router.post('/', authenticateToken, async (req, res) => {
   const {
@@ -176,7 +172,6 @@ router.post('/', authenticateToken, async (req, res) => {
     items,
   } = req.body;
 
-  // --- 1. VALIDACIJA INPUTA ---
   if (!fk_fiscal_year || !fk_department) {
     return res.status(400).json({
       message: 'Fiskalna godina i odjel su obavezni.',
@@ -208,17 +203,14 @@ router.post('/', authenticateToken, async (req, res) => {
     }
   }
 
-  // --- 2. ODREĐIVANJE STATUSA I USER-A ---
-  const statusId = save_mode === 'submit' ? STATUS.SUBMITTED : STATUS.DRAFT;
+  const statusId = STATUS.PENDING_APPROVAL;
   const userId = req.user.id_user;
 
-  // --- 3. TRANSAKCIJA ---
   const connection = await db.getConnection();
 
   try {
     await connection.beginTransaction();
 
-    // 3a) Dohvati godinu fiskalne godine (trebamo je za request_number)
     const [fyRows] = await connection.query(
       'SELECT year FROM FiscalYear WHERE id_fiscal_year = ? LIMIT 1',
       [fk_fiscal_year]
@@ -232,9 +224,8 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     const year = fyRows[0].year;
-
-    // 3b) Generiraj sljedeći request_number - s FOR UPDATE lock-om
     const prefix = `PR-${year}-`;
+
     const [maxRows] = await connection.query(
       `
       SELECT request_number
@@ -249,7 +240,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     let nextSeq = 1;
     if (maxRows.length > 0) {
-      const lastNumber = maxRows[0].request_number; // npr. "PR-2026-0007"
+      const lastNumber = maxRows[0].request_number;
       const lastSeq = parseInt(lastNumber.split('-')[2], 10);
       if (!Number.isNaN(lastSeq)) {
         nextSeq = lastSeq + 1;
@@ -258,7 +249,6 @@ router.post('/', authenticateToken, async (req, res) => {
 
     const requestNumber = `${prefix}${String(nextSeq).padStart(4, '0')}`;
 
-    // 3c) INSERT u PurchaseRequest (glavni red)
     const [insertResult] = await connection.query(
       `
       INSERT INTO PurchaseRequest
@@ -279,7 +269,6 @@ router.post('/', authenticateToken, async (req, res) => {
 
     const newRequestId = insertResult.insertId;
 
-    // 3d) INSERT svih stavki odjednom (bulk insert)
     const itemValues = items.map((it) => [
       newRequestId,
       it.fk_item_category,
@@ -296,11 +285,7 @@ router.post('/', authenticateToken, async (req, res) => {
       [itemValues]
     );
 
-    // 3e) INSERT prvog unosa u RequestStatusHistory (audit trail)
-    const historyComment =
-      statusId === STATUS.SUBMITTED
-        ? 'Zahtjev kreiran i poslan na odobravanje.'
-        : 'Zahtjev kreiran kao skica.';
+  const historyComment = 'Zahtjev kreiran i poslan na odobravanje.';
 
     await connection.query(
       `
@@ -311,7 +296,6 @@ router.post('/', authenticateToken, async (req, res) => {
       [newRequestId, statusId, userId, historyComment]
     );
 
-    // 3f) Sve je prošlo -> COMMIT
     await connection.commit();
 
     return res.status(201).json({
@@ -321,7 +305,6 @@ router.post('/', authenticateToken, async (req, res) => {
       status_id: statusId,
     });
   } catch (error) {
-    // Ako bilo što pukne -> ROLLBACK (sve se vrati kao da nije bilo)
     await connection.rollback();
     console.error('POST /api/requests error:', error);
 
@@ -336,63 +319,70 @@ router.post('/', authenticateToken, async (req, res) => {
       error: error.message,
     });
   } finally {
-    // Uvijek vrati konekciju u pool, bez obzira je li uspjelo ili puklo
     connection.release();
   }
 });
 
 /**
  * PATCH /api/requests/:id/status
- * Odobravanje ili odbijanje zahtjeva (samo Admin).
- *
- * Expected body:
- * {
- *   action: 'approve' | 'reject',
- *   comment: string (opcionalno)
- * }
+ * Akcije: approve, reject, return-for-revision, complete, resubmit
+ * Admin: approve, reject, return-for-revision, complete
+ * User: resubmit (samo kad je Vraćeno na izmjenu)
  */
 router.patch('/:id/status', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { action, comment } = req.body;
 
-  // --- 1. Autorizacija: samo Admin smije odobravati/odbijati ---
-  if (req.user.role_name !== 'Administrator') {
+  const validActions = ['approve', 'reject', 'return-for-revision', 'complete', 'resubmit'];
+  if (!validActions.includes(action)) {
+    return res.status(400).json({
+      message: `Nevažeća akcija. Očekuje se: ${validActions.join(', ')}.`,
+    });
+  }
+
+  // Resubmit ne zahtijeva admin, za ostale trebam biti admin
+  if (action !== 'resubmit' && req.user.role_name !== 'Administrator') {
     return res.status(403).json({
-      message: 'Samo administrator može odobravati ili odbijati zahtjeve.',
+      message: 'Samo administrator može obavljati ovu akciju.',
     });
   }
 
-  // --- 2. Validacija action-a ---
-  if (action !== 'approve' && action !== 'reject' && action !== 'complete') {
+  // Komentar obavezan za reject i return-for-revision
+  if ((action === 'reject' || action === 'return-for-revision') && (!comment || !comment.trim())) {
     return res.status(400).json({
-      message: 'Nevažeća akcija. Očekuje se "approve", "reject" ili "complete".',
+      message: 'Komentar je obavezan pri odbijanju ili vraćanju na dopunu.',
     });
   }
 
-  // --- 3. Ako je Reject, komentar je obavezan ---
-  if (action === 'reject' && (!comment || !comment.trim())) {
-    return res.status(400).json({
-      message: 'Komentar je obavezan pri odbijanju zahtjeva.',
-    });
+  let newStatusId;
+  let allowedFrom;
+
+  if (action === 'approve') {
+    newStatusId = STATUS.APPROVED;
+    allowedFrom = STATUS.PENDING_APPROVAL;
+  } else if (action === 'reject') {
+    newStatusId = STATUS.REJECTED;
+    allowedFrom = STATUS.PENDING_APPROVAL;
+  } else if (action === 'return-for-revision') {
+    newStatusId = STATUS.RETURNED_FOR_REVISION;
+    allowedFrom = STATUS.PENDING_APPROVAL;
+  } else if (action === 'complete') {
+    newStatusId = STATUS.CLOSED;
+    allowedFrom = STATUS.APPROVED;
+  } else if (action === 'resubmit') {
+    newStatusId = STATUS.PENDING_APPROVAL;
+    allowedFrom = STATUS.RETURNED_FOR_REVISION;
   }
 
-  const newStatusId = action === 'approve'
-  ? STATUS.APPROVED
-  : action === 'reject'
-    ? STATUS.REJECTED
-    : STATUS.COMPLETED;
   const userId = req.user.id_user;
-
-  // --- 4. Transakcija ---
   const connection = await db.getConnection();
 
   try {
     await connection.beginTransaction();
 
-    // 4a) Dohvati trenutni status zahtjeva (s lockom, da se ne može paralelno mijenjati)
     const [requestRows] = await connection.query(
       `
-      SELECT fk_request_status
+      SELECT fk_request_status, fk_created_by_user
       FROM PurchaseRequest
       WHERE id_purchase_request = ?
       FOR UPDATE
@@ -407,26 +397,54 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       });
     }
 
-      const lockedStatuses = [STATUS.REJECTED, STATUS.COMPLETED];
-        if (lockedStatuses.includes(requestRows[0].fk_request_status)) {
-          await connection.rollback();
-          return res.status(400).json({
-            message: 'Zahtjev je zaključan i više se ne može mijenjati.',
-          });
-}
-
     const currentStatus = requestRows[0].fk_request_status;
+    const isCreator = requestRows[0].fk_created_by_user === userId;
 
-    // 4b) Provjeri da je zahtjev u statusu Submitted (samo tad se može odobriti/odbiti)
-    const allowedFrom = action === 'complete' ? STATUS.APPROVED : STATUS.SUBMITTED;
-      if (currentStatus !== allowedFrom) {
+    // Za resubmit, trebam biti kreitaor zahtjeva
+    if (action === 'resubmit' && !isCreator) {
       await connection.rollback();
-      return res.status(400).json({
-        message: 'Zahtjev nije u statusu "Poslano na odobravanje" i ne može se mijenjati.',
+      return res.status(403).json({
+        message: 'Možete ponovno poslati samo svoje zahtjeve.',
       });
     }
 
-    // 4c) Promijeni status u PurchaseRequest
+    // Provjera je li zahtjev zaključan
+    const lockedStatuses = [STATUS.REJECTED, STATUS.CLOSED];
+    if (lockedStatuses.includes(currentStatus)) {
+      await connection.rollback();
+      return res.status(400).json({
+        message: 'Zahtjev je zaključan i više se ne može mijenjati.',
+      });
+    }
+
+    // Provjera je li zahtjev u dozvoljenom statusu
+    if (currentStatus !== allowedFrom) {
+      await connection.rollback();
+      return res.status(400).json({
+        message: `Zahtjev nije u dozvoljenom statusu za akciju "${action}".`,
+      });
+    }
+
+    // Ako je approve ili complete, provjeri ponudu i iznos
+    if (action === 'approve') {
+      const [hasOffer] = await connection.query(
+        'SELECT COUNT(*) as count FROM Attachment WHERE fk_purchase_request = ? AND document_type = "Ponuda"',
+        [id]
+      );
+
+      const [hasAmount] = await connection.query(
+        'SELECT total_amount FROM PurchaseRequest WHERE id_purchase_request = ?',
+        [id]
+      );
+
+      if (hasOffer[0].count === 0 || !hasAmount[0].total_amount || hasAmount[0].total_amount <= 0) {
+        await connection.rollback();
+        return res.status(400).json({
+          message: 'Zahtjev se ne može odobriti bez ponude i iznosa.',
+        });
+      }
+    }
+
     await connection.query(
       `
       UPDATE PurchaseRequest
@@ -436,13 +454,18 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       [newStatusId, id]
     );
 
-    // 4d) Upiši u history (audit trail)
     const historyComment =
       comment && comment.trim()
         ? comment.trim()
         : action === 'approve'
           ? 'Zahtjev odobren.'
-          : 'Zahtjev odbijen.';
+          : action === 'reject'
+            ? 'Zahtjev odbijen.'
+            : action === 'return-for-revision'
+              ? 'Zahtjev vraćen na izmjenu.'
+              : action === 'resubmit'
+                ? 'Zahtjev ponovno poslan na odobravanje nakon ispravke.'
+                : 'Zahtjev označen kao završen.';
 
     await connection.query(
       `
@@ -456,14 +479,14 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     await connection.commit();
 
     return res.json({
-      message: action === 'approve' ? 'Zahtjev je odobren.' : 'Zahtjev je odbijen.',
+      message: `Akcija "${action}" je uspješno izvršena.`,
       new_status_id: newStatusId,
     });
   } catch (error) {
     await connection.rollback();
     console.error('PATCH /api/requests/:id/status error:', error);
     return res.status(500).json({
-      message: 'Greška pri promjeni statusa zahtjeva.',
+      message: 'Greška pri izvršavanju akcije.',
       error: error.message,
     });
   } finally {
@@ -473,18 +496,15 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
 
 /**
  * PUT /api/requests/:id
- * Ažuriranje zahtjeva (samo Admin).
+ * Ažuriranje zahtjeva
+ * - Admin: može editirati bilo koji zahtjev u bilo kojem statusu (osim zaključanih)
+ * - Korisnik: može editirati samo kad je "Vraćeno na izmjenu" (2)
  */
 router.put('/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { fk_department, justification, estimated_amount, items } = req.body;
   const userId = req.user.id_user;
-
-  if (req.user.role_name !== 'Administrator') {
-    return res.status(403).json({
-      message: 'Samo administrator može uređivati zahtjeve.',
-    });
-  }
+  const isAdmin = req.user.role_name === 'Administrator';
 
   if (!fk_department) {
     return res.status(400).json({ message: 'Odjel je obavezan.' });
@@ -501,9 +521,13 @@ router.put('/:id', authenticateToken, async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    // Provjeri postoji li zahtjev
     const [requestRows] = await connection.query(
-      'SELECT id_purchase_request, fk_request_status FROM PurchaseRequest WHERE id_purchase_request = ? FOR UPDATE',
+      `
+      SELECT id_purchase_request, fk_request_status, fk_created_by_user
+      FROM PurchaseRequest
+      WHERE id_purchase_request = ?
+      FOR UPDATE
+      `,
       [id]
     );
 
@@ -512,23 +536,56 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Zahtjev nije pronađen.' });
     }
 
-    // Ažuriraj osnovne podatke
+    const currentStatus = requestRows[0].fk_request_status;
+    const isCreator = requestRows[0].fk_created_by_user === userId;
+
+    // Provjera dozvole za editiranje
+    const lockedStatuses = [STATUS.REJECTED, STATUS.CLOSED];
+    if (lockedStatuses.includes(currentStatus)) {
+      await connection.rollback();
+      return res.status(400).json({
+        message: 'Zahtjev je zaključan i više se ne može mijenjati.',
+      });
+    }
+
+    if (!isAdmin) {
+      // Zaposlenik može editirati samo ako je "Vraćeno na izmjenu"
+      if (currentStatus !== STATUS.RETURNED_FOR_REVISION) {
+        await connection.rollback();
+        return res.status(403).json({
+          message: 'Zahtjev se može editirati samo kad je vraćen na izmjenu.',
+        });
+      }
+      if (!isCreator) {
+        await connection.rollback();
+        return res.status(403).json({
+          message: 'Možete editirati samo svoje zahtjeve.',
+        });
+      }
+    }
+
+    let newStatus = currentStatus;
+
     await connection.query(
-      `UPDATE PurchaseRequest
-       SET fk_department = ?,
-           justification = ?,
-           total_amount = ?,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id_purchase_request = ?`,
-      [fk_department, justification.trim(), estimated_amount || null, id]
+      `
+      UPDATE PurchaseRequest
+      SET fk_department = ?,
+          justification = ?,
+          total_amount = ?,
+          fk_request_status = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id_purchase_request = ?
+      `,
+      [fk_department, justification.trim(), estimated_amount || null, newStatus, id]
     );
 
-    // Obriši stare stavke i upiši nove
+    // Obriši stare stavke
     await connection.query(
       'DELETE FROM PurchaseRequestItem WHERE fk_purchase_request = ?',
       [id]
     );
 
+    // Upiši nove stavke
     const itemValues = items.map((it) => [
       id,
       it.fk_item_category,
@@ -537,23 +594,26 @@ router.put('/:id', authenticateToken, async (req, res) => {
     ]);
 
     await connection.query(
-      `INSERT INTO PurchaseRequestItem
-         (fk_purchase_request, fk_item_category, item_name, quantity)
-       VALUES ?`,
+      `
+      INSERT INTO PurchaseRequestItem
+        (fk_purchase_request, fk_item_category, item_name, quantity)
+      VALUES ?
+      `,
       [itemValues]
     );
 
     // Upiši u history
+    let historyComment = isAdmin
+      ? 'Zahtjev izmijenjen od strane administratora.'
+      : 'Zahtjev izmijenjen od strane korisnika.';
+
     await connection.query(
-      `INSERT INTO RequestStatusHistory
-         (fk_purchase_request, fk_request_status, fk_changed_by_user, comment)
-       VALUES (?, ?, ?, ?)`,
-      [
-        id,
-        requestRows[0].fk_request_status,
-        userId,
-        'Zahtjev izmijenjen od strane administratora.',
-      ]
+      `
+      INSERT INTO RequestStatusHistory
+        (fk_purchase_request, fk_request_status, fk_changed_by_user, comment)
+      VALUES (?, ?, ?, ?)
+      `,
+      [id, newStatus, userId, historyComment]
     );
 
     await connection.commit();
