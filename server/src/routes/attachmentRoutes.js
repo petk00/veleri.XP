@@ -20,6 +20,14 @@ const ALLOWED_TYPES = [
 
 const DOCUMENT_TYPES = ['Ponuda', 'Otpremnica'];
 
+const STATUS = {
+  PENDING_APPROVAL: 1,
+  RETURNED_FOR_REVISION: 2,
+  APPROVED: 3,
+  REJECTED: 4,
+  CLOSED: 5,
+};
+
 const assertRequestAccess = async (requestId, user) => {
   const isAdmin = user.role_name === 'Administrator';
   const query = isAdmin
@@ -93,7 +101,14 @@ const upload = multer({
   },
 });
 
-// POST /api/requests/:id/attachments
+/**
+ * POST /api/requests/:id/attachments
+ * Upload dokumenta (Ponuda ili Otpremnica)
+ * 
+ * Logika:
+ * - Ponuda i Otpremnica se samo spremaju kao dokumenti
+ * - Audit trail u RequestStatusHistory za sve uploade
+ */
 router.post('/:id/attachments', authenticateToken, upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({
@@ -112,23 +127,31 @@ router.post('/:id/attachments', authenticateToken, upload.single('file'), async 
     });
   }
 
+  const connection = await db.getConnection();
+
   try {
+    await connection.beginTransaction();
+
     const request = await assertRequestAccess(id, req.user);
 
     if (!request) {
       fs.unlinkSync(req.file.path);
+      await connection.rollback();
       return res.status(404).json({ message: 'Zahtjev nije pronađen.' });
     }
 
-    const [result] = await db.query(
+    const currentStatus = request.fk_request_status;
+
+    // INSERT attachment
+    const [result] = await connection.query(
       `INSERT INTO Attachment
         (fk_purchase_request, fk_uploaded_by_user, file_name, file_path, file_type, document_type)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [id, userId, req.file.originalname, req.file.path, req.file.mimetype, document_type]
     );
-    // Upiši u status history (audit trail za dokumente)
-    const currentStatus = request.fk_request_status;
-    await db.query(
+
+    // Upiši u status history - audit trail za dokument
+    await connection.query(
       `INSERT INTO RequestStatusHistory
         (fk_purchase_request, fk_request_status, fk_changed_by_user, comment)
        VALUES (?, ?, ?, ?)`,
@@ -139,23 +162,34 @@ router.post('/:id/attachments', authenticateToken, upload.single('file'), async 
         `Dokument dodan: ${document_type} - ${req.file.originalname}`,
       ]
     );
+
+    await connection.commit();
+
     return res.status(201).json({
       message: 'Fajl uspješno uploadan.',
       id_attachment: result.insertId,
       file_name: req.file.originalname,
       document_type,
+      status_changed: false,
+      new_status_id: currentStatus,
     });
   } catch (error) {
+    await connection.rollback();
     if (req.file?.path) fs.unlinkSync(req.file.path);
     console.error('POST attachment error:', error);
     return res.status(500).json({
       message: 'Greška pri spremanju fajla.',
       error: error.message,
     });
+  } finally {
+    connection.release();
   }
 });
 
-// GET /api/requests/:id/attachments
+/**
+ * GET /api/requests/:id/attachments
+ * Dohvata sve attachmente za zahtjev
+ */
 router.get('/:id/attachments', authenticateToken, async (req, res) => {
   const { id } = req.params;
 
@@ -191,7 +225,10 @@ router.get('/:id/attachments', authenticateToken, async (req, res) => {
   }
 });
 
-// GET /api/attachments/download/:id
+/**
+ * GET /api/attachments/download/:id
+ * Download specifičnog attachmenta
+ */
 router.get('/download/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
 
@@ -218,7 +255,10 @@ router.get('/download/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// DELETE /api/attachments/delete/:id
+/**
+ * DELETE /api/attachments/delete/:id
+ * Brisanje attachmenta (samo admin ili uploader)
+ */
 router.delete('/delete/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id_user;

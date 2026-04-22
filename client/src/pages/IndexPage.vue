@@ -75,7 +75,9 @@
 </template>
 
 <script setup>
-const user = JSON.parse(localStorage.getItem('user') || 'null');
+import { getStoredUser } from 'src/utils/authStorage';
+
+const user = getStoredUser();
 </script>
 
 <style scoped>
