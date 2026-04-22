@@ -82,20 +82,20 @@
           </q-card-section>
         </q-card>
 
-        <!-- Osnovni podaci + Obrazloženje -->
+        <!-- Osnovni podaci + Svrha nabave -->
         <div class="row q-col-gutter-lg q-mb-lg">
           <div class="col-12 col-md-6">
             <q-card flat class="info-card">
               <q-card-section>
                 <div class="card-title">Osnovni podaci</div>
                 <div class="info-row"><span>Fiskalna godina</span><strong>{{ request.fiscal_year }}</strong></div>
-                <div class="info-row"><span>Odjel</span><strong>{{ request.department_name }}</strong></div>
+                <div class="info-row"><span>Odjel / Služba / Projekt:</span><strong>{{ request.department_name }}</strong></div>
                 <div class="info-row">
                   <span>Status</span>
                   <q-chip dense class="status-chip" :class="statusClass(request.status_name)">{{ request.status_name }}</q-chip>
                 </div>
-                <div class="info-row"><span>Kreirao</span><strong>{{ request.created_by }}</strong></div>
-                <div class="info-row"><span>Procjena iznosa</span><strong>{{ formatCurrency(request.total_amount) }}</strong></div>
+                <div class="info-row"><span>Zahtjev podnio</span><strong>{{ request.created_by }}</strong></div>
+                <div class="info-row"><span>Ukupna nabava se procjenjuje na iznos od</span><strong>{{ formatCurrency(request.total_amount) }}</strong></div>
                 <div class="info-row"><span>Datum kreiranja</span><strong>{{ formatDate(request.created_at) }}</strong></div>
                 <div v-if="request.updated_at" class="info-row"><span>Zadnja izmjena</span><strong>{{ formatDate(request.updated_at) }}</strong></div>
               </q-card-section>
@@ -104,8 +104,8 @@
           <div class="col-12 col-md-6">
             <q-card flat class="info-card">
               <q-card-section>
-                <div class="card-title">Obrazloženje</div>
-                <div class="justification-text">{{ request.justification || 'Nema obrazloženja.' }}</div>
+                <div class="card-title">Svrha nabave:</div>
+                <div class="justification-text">{{ request.justification || 'Nema svrhe nabave.' }}</div>
               </q-card-section>
             </q-card>
           </div>
