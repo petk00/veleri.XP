@@ -44,6 +44,26 @@
           </div>
         </section>
 
+        <q-card v-if="canSubmitForReview" flat class="submit-card q-mb-lg">
+          <q-card-section class="row items-center justify-between">
+            <div>
+              <div class="text-subtitle1 text-weight-bold">Novi zahtjev čeka pregled</div>
+              <div class="text-body2 text-grey-7">
+                Pregledajte zahtjev i pošaljite ga na formalno odobrenje.
+              </div>
+            </div>
+            <q-btn
+              unelevated
+              no-caps
+              color="primary"
+              icon="send"
+              label="Pošalji na odobrenje"
+              :loading="submittingAction"
+              @click="submitForReview"
+            />
+          </q-card-section>
+        </q-card>
+
         <q-card v-if="canApproveOrReject" flat class="actions-card q-mb-lg">
           <q-card-section class="row items-center justify-between">
             <div>
@@ -375,7 +395,8 @@ const hasPonuda = computed(() => attachments.value.some((a) => a.document_type =
 const hasOtpremnica = computed(() => attachments.value.some((a) => a.document_type === 'Otpremnica'));
 const canApprove = computed(() => hasPonuda.value && Number(request.value?.total_amount) > 0);
 const canApproveOrReject = computed(() => isAdmin.value && request.value?.status_name === 'Na odobrenju');
-const canUserResubmit = computed(() => !isAdmin.value && request.value?.status_name === 'Vraćeno na izmjenu');
+const canUserResubmit = computed(() => !isAdmin.value && request.value?.status_name === 'Vraćeno na dopunu / izmjenu');
+const canSubmitForReview = computed(() => isAdmin.value && request.value?.status_name === 'Poslano');
 const canComplete = computed(() => isAdmin.value && request.value?.status_name === 'Odobreno');
 const canCloseRequest = computed(() => hasPonuda.value && hasOtpremnica.value);
 
@@ -574,6 +595,19 @@ const confirmAction = async () => {
   }
 };
 
+const submitForReview = async () => {
+  submittingAction.value = true;
+  try {
+    await api.patch(`/requests/${route.params.id}/status`, { action: 'submit-for-review' });
+    $q.notify({ type: 'positive', message: 'Zahtjev poslan na odobrenje.' });
+    await fetchRequestDetails();
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Greška pri slanju na odobrenje.' });
+  } finally {
+    submittingAction.value = false;
+  }
+};
+
 const resubmitRequest = async () => {
   submittingAction.value = true;
 
@@ -622,7 +656,7 @@ const statusClass = (status) => {
       return 'status-chip--draft';
     case 'na odobrenju':
       return 'status-chip--submitted';
-    case 'vraćeno na izmjenu':
+    case 'vraćeno na dopunu / izmjenu':
       return 'status-chip--returned';
     case 'odobreno':
       return 'status-chip--approved';
@@ -650,7 +684,7 @@ const timelineColor = (title) => {
       return 'indigo';
     case 'na odobrenju':
       return 'blue';
-    case 'vraćeno na izmjenu':
+    case 'vraćeno na dopunu / izmjenu':
       return 'orange';
     case 'odobreno':
       return 'positive';
@@ -673,7 +707,7 @@ const timelineIcon = (title) => {
       return 'outbox';
     case 'na odobrenju':
       return 'send';
-    case 'vraćeno na izmjenu':
+    case 'vraćeno na dopunu / izmjenu':
       return 'undo';
     case 'odobreno':
       return 'check_circle';
@@ -741,6 +775,13 @@ onMounted(() => {
   border: 1px solid rgba(15, 23, 42, 0.06);
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
   height: 100%;
+}
+
+.submit-card {
+  border-radius: 20px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.1);
 }
 
 .actions-card {
