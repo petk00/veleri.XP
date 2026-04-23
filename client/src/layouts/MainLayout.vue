@@ -65,12 +65,16 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getStoredUser } from 'src/utils/authStorage';
+import { useActionableRequestsNotifier } from 'src/composables/useActionableRequestsNotifier';
 
 const router = useRouter();
 const route = useRoute();
+
+// 🔔 Notifikator za zahtjeve koji zahtijevaju akciju korisnika
+const { checkActionableRequests, resetNotifier } = useActionableRequestsNotifier();
 
 const user = computed(() => {
   return getStoredUser();
@@ -98,10 +102,16 @@ const isActive = (path) => {
 };
 
 const logout = () => {
+  resetNotifier();                 // ← notifikacije će se opet prikazati pri sljedećem loginu
   localStorage.removeItem('token');
   localStorage.removeItem('user');
   router.replace('/login');
 };
+
+// Čim se layout montira (korisnik je prijavljen) pokreni provjeru
+onMounted(() => {
+  checkActionableRequests();
+});
 </script>
 
 <style scoped>
@@ -228,5 +238,36 @@ const logout = () => {
   .brand-subtitle {
     display: none;
   }
+}
+</style>
+
+<!--
+  GLOBALNI stilovi za actionable notifikaciju.
+  Mora biti BEZ `scoped` atributa jer q-notification živi izvan ovog DOM podstabla.
+-->
+<style>
+.actionable-request-notify {
+  min-width: 380px;
+  max-width: 480px;
+  border-radius: 14px !important;
+  padding: 14px 16px !important;
+  box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.25) !important;
+}
+
+.actionable-request-notify .q-notification__message {
+  font-weight: 700;
+  font-size: 0.92rem;
+  letter-spacing: -0.01em;
+}
+
+.actionable-request-notify .q-notification__caption {
+  margin-top: 3px;
+  opacity: 0.92;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.actionable-request-notify .q-notification__actions {
+  margin-top: 8px;
 }
 </style>
