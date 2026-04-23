@@ -1,19 +1,31 @@
 <template>
-  <q-page class="new-request-page q-pa-lg">
+  <q-page class="new-request-page">
+    <!-- Dekorativni pozadinski akcenti -->
+    <div class="bg-orbs" aria-hidden="true">
+      <div class="bg-orb bg-orb--one"></div>
+      <div class="bg-orb bg-orb--two"></div>
+      <div class="bg-orb bg-orb--three"></div>
+    </div>
+
     <div class="page-shell">
 
-      <section class="page-hero q-mb-xl">
-        <div>
-          <div class="text-overline text-primary text-weight-bold letter-spacing-wide">
-            NOVI ZAHTJEV ZA NABAVU
+      <!-- HERO -->
+      <section class="page-hero">
+        <div class="page-hero__text">
+          <div class="eyebrow">
+            <span class="eyebrow__dot"></span>
+            Novi zahtjev za nabavu
           </div>
-          <div class="text-h4 text-weight-bold q-mt-xs page-title">
-            Pokretanje novog zahtjeva
-          </div>
+          <h1 class="page-title">Pokretanje novog zahtjeva</h1>
+          <p class="page-subtitle">
+            Ispunite korake u nastavku. Svi podaci se spremaju automatski između koraka.
+          </p>
         </div>
         <q-btn
-          flat no-caps color="primary" icon="arrow_back"
+          flat no-caps
+          icon="arrow_back"
           label="Odustani"
+          class="btn-ghost"
           @click="$router.push('/requests')"
         />
       </section>
@@ -25,7 +37,14 @@
       <div v-else class="wizard-layout">
 
         <!-- SIDEBAR -->
-        <div class="wizard-sidebar">
+        <aside class="wizard-sidebar">
+          <div class="sidebar-progress-line" aria-hidden="true">
+            <div
+              class="sidebar-progress-line__fill"
+              :style="{ height: progressLineHeight }"
+            ></div>
+          </div>
+
           <div
             v-for="s in currentSteps"
             :key="s.key"
@@ -36,367 +55,412 @@
             }"
           >
             <div class="sidebar-step__indicator">
-              <q-icon v-if="step > s.step" name="check" size="16px" />
+              <q-icon v-if="step > s.step" name="check" size="14px" />
               <span v-else>{{ s.number }}</span>
             </div>
-            <div class="sidebar-step__label">{{ s.title }}</div>
+            <div class="sidebar-step__body">
+              <div class="sidebar-step__label">{{ s.title }}</div>
+              <div class="sidebar-step__hint">{{ s.hint }}</div>
+            </div>
           </div>
-        </div>
+        </aside>
 
         <!-- CONTENT -->
         <div class="wizard-content">
-          <transition name="step-fade" mode="out-in">
 
-            <!-- KORAK 1: Odjel -->
-            <div v-if="step === 1" key="1">
-              <div class="step-header">
-                <div class="step-number">01</div>
-                <div>
-                  <div class="text-h5 text-weight-bold">Odaberite odjel, službu ili projekt</div>
-                  <div class="text-body1 text-grey-6 q-mt-xs">
-                    Za koji se odjel, službu ili projekt otvara zahtjev za nabavu?
-                  </div>
-                </div>
-              </div>
-              <div class="q-mt-xl">
-                <q-select
-                  v-model="form.department"
-                  :options="departmentOptions"
-                  outlined emit-value map-options
-                  label="Odjel / Služba / Projekt"
-                  class="field-lg"
-                >
-                  <template #prepend><q-icon name="business" color="primary" /></template>
-                </q-select>
-              </div>
-            </div>
+          <!-- Progress bar -->
+          <div class="wizard-progress">
+            <div
+              class="wizard-progress__fill"
+              :style="{ width: `${((step - 1) / 3) * 100}%` }"
+            ></div>
+          </div>
 
-            <!-- KORAK 2: Imaš li ponudu? -->
-            <div v-else-if="step === 2" key="2">
-              <div class="step-header">
-                <div class="step-number">02</div>
-                <div>
-                  <div class="text-h5 text-weight-bold">Imaš li ponudu ili račun?</div>
-                  <div class="text-body1 text-grey-6 q-mt-xs">
-                    Ovisno o odgovoru, nastavak zahtjeva će biti prilagođen.
-                  </div>
-                </div>
-              </div>
-              <div class="offer-choice q-mt-xl">
-                <div
-                  class="offer-option"
-                  :class="{ 'offer-option--selected': form.hasOffer === true }"
-                  @click="form.hasOffer = true"
-                >
-                  <q-icon name="receipt_long" size="28px" color="primary" />
+          <div class="wizard-content__inner">
+            <transition name="step-fade" mode="out-in">
+
+              <!-- KORAK 1: Odjel -->
+              <div v-if="step === 1" key="1">
+                <div class="step-header">
+                  <div class="step-number">01</div>
                   <div>
-                    <div class="text-weight-bold">Da, imam ponudu / račun</div>
-                    <div class="text-caption text-grey-6">Mogu priložiti jednu ili više ponuda</div>
-                  </div>
-                  <q-icon v-if="form.hasOffer === true" name="check_circle" color="primary" size="22px" class="offer-option__check" />
-                </div>
-
-                <div
-                  class="offer-option"
-                  :class="{ 'offer-option--selected': form.hasOffer === false }"
-                  @click="form.hasOffer = false; form.offerFiles = []; form.estimatedAmount = null"
-                >
-                  <q-icon name="format_list_bulleted" size="28px" color="grey-5" />
-                  <div>
-                    <div class="text-weight-bold">Nemam ponudu</div>
-                    <div class="text-caption text-grey-6">Unijet ću stavke koje trebam nabaviti</div>
-                  </div>
-                  <q-icon v-if="form.hasOffer === false" name="check_circle" color="primary" size="22px" class="offer-option__check" />
-                </div>
-              </div>
-            </div>
-
-            <!-- KORAK 3a: IMA ponudu → Multiple upload + iznos + kategorija + svrha -->
-            <div v-else-if="step === 3 && form.hasOffer === true" key="3a">
-              <div class="step-header">
-                <div class="step-number">03</div>
-                <div>
-                  <div class="text-h5 text-weight-bold">Detalji nabave</div>
-                  <div class="text-body1 text-grey-6 q-mt-xs">
-                    Priložite jednu ili više ponuda i unesite potrebne podatke.
-                  </div>
-                </div>
-              </div>
-
-              <div class="q-mt-xl row q-col-gutter-lg">
-
-                <!-- Multiple upload ponuda -->
-                <div class="col-12">
-                  <div class="field-section-label">Ponude / računi</div>
-
-                  <q-file
-                    v-model="newOfferFile"
-                    outlined
-                    label="Dodaj ponudu"
-                    class="field-lg"
-                    @update:model-value="onAddOffer"
-                  >
-                    <template #prepend><q-icon name="attach_file" color="primary" /></template>
-                    <template #hint>PDF, Word, Excel, slike — max 10MB po datoteci</template>
-                  </q-file>
-
-                  <!-- Lista dodanih ponuda -->
-                  <div v-if="form.offerFiles.length > 0" class="offers-list q-mt-md">
-                    <div
-                      v-for="(file, index) in form.offerFiles"
-                      :key="index"
-                      class="offer-file-row"
-                    >
-                      <q-icon name="description" color="primary" size="20px" />
-                      <div class="offer-file-row__name">{{ file.name }}</div>
-                      <div class="offer-file-row__size">{{ formatFileSize(file.size) }}</div>
-                      <q-btn
-                        flat round dense
-                        icon="close" color="grey-5" size="sm"
-                        @click="removeOffer(index)"
-                      />
-                    </div>
-                    <div class="offers-list__footer">
-                      {{ form.offerFiles.length }} {{ form.offerFiles.length === 1 ? 'ponuda' : 'ponuda' }} dodano
-                    </div>
+                    <h2 class="step-title">Odaberite odjel, službu ili projekt</h2>
+                    <p class="step-description">
+                      Za koji se odjel, službu ili projekt otvara zahtjev za nabavu?
+                    </p>
                   </div>
                 </div>
 
-                <!-- Iznos (obavezan) -->
-                <div class="col-12 col-md-6">
-                  <div class="field-section-label">
-                    Ukupni iznos *
-                  </div>
-                  <div class="amount-input-row">
-                    <q-input
-                      v-model.number="form.estimatedAmount"
-                      type="number" min="0" step="0.01"
-                      outlined
-                      placeholder="0.00"
-                      class="amount-input"
-                    />
-                    <div class="amount-input-currency">EUR</div>
-                  </div>
-                  <div class="amount-hint">
-                    <q-icon name="info_outline" size="14px" class="q-mr-xs" />
-                    <span v-if="form.offerFiles.length > 1">
-                      Imate {{ form.offerFiles.length }} ponuda - upišite ukupni zbroj svih iznosa.
-                    </span>
-                    <span v-else>
-                      Upišite iznos s ponude. Administrator može korigirati naknadno.
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Kategorija -->
-                <div class="col-12 col-md-6">
-                  <div class="field-section-label">Kategorija nabave</div>
+                <div class="step-body">
                   <q-select
-                    v-model="form.category"
-                    :options="categoryOptions"
-                    label="Odaberi kategoriju"
+                    v-model="form.department"
+                    :options="departmentOptions"
                     outlined emit-value map-options
+                    label="Odjel / Služba / Projekt"
+                    class="field-lg field-modern"
                   >
-                    <template #prepend><q-icon name="category" color="primary" /></template>
+                    <template #prepend><q-icon name="business" class="field-icon" /></template>
                   </q-select>
                 </div>
+              </div>
 
-                <!-- Svrha -->
-                <div class="col-12">
+              <!-- KORAK 2: Imaš li ponudu? -->
+              <div v-else-if="step === 2" key="2">
+                <div class="step-header">
+                  <div class="step-number">02</div>
+                  <div>
+                    <h2 class="step-title">Imaš li ponudu ili račun?</h2>
+                    <p class="step-description">
+                      Ovisno o odgovoru, nastavak zahtjeva će biti prilagođen.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="step-body">
+                  <div class="offer-choice">
+                    <button
+                      type="button"
+                      class="offer-option"
+                      :class="{ 'offer-option--selected': form.hasOffer === true }"
+                      @click="form.hasOffer = true"
+                    >
+                      <div class="offer-option__icon offer-option__icon--primary">
+                        <q-icon name="receipt_long" size="24px" />
+                      </div>
+                      <div class="offer-option__text">
+                        <div class="offer-option__title">Da, imam ponudu / račun</div>
+                        <div class="offer-option__subtitle">Mogu priložiti jednu ili više ponuda</div>
+                      </div>
+                      <div class="offer-option__check">
+                        <q-icon v-if="form.hasOffer === true" name="check" size="16px" />
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="offer-option"
+                      :class="{ 'offer-option--selected': form.hasOffer === false }"
+                      @click="form.hasOffer = false; form.offerFiles = []; form.estimatedAmount = null"
+                    >
+                      <div class="offer-option__icon">
+                        <q-icon name="format_list_bulleted" size="24px" />
+                      </div>
+                      <div class="offer-option__text">
+                        <div class="offer-option__title">Nemam ponudu</div>
+                        <div class="offer-option__subtitle">Unijet ću stavke koje trebam nabaviti</div>
+                      </div>
+                      <div class="offer-option__check">
+                        <q-icon v-if="form.hasOffer === false" name="check" size="16px" />
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- KORAK 3a: IMA ponudu -->
+              <div v-else-if="step === 3 && form.hasOffer === true" key="3a">
+                <div class="step-header">
+                  <div class="step-number">03</div>
+                  <div>
+                    <h2 class="step-title">Detalji nabave</h2>
+                    <p class="step-description">
+                      Priložite jednu ili više ponuda i unesite potrebne podatke.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="step-body">
+                  <div class="row q-col-gutter-lg">
+
+                    <div class="col-12">
+                      <div class="field-section-label">Ponude / računi</div>
+
+                      <q-file
+                        v-model="newOfferFile"
+                        outlined
+                        label="Dodaj ponudu"
+                        class="field-modern"
+                        @update:model-value="onAddOffer"
+                      >
+                        <template #prepend><q-icon name="attach_file" class="field-icon" /></template>
+                        <template #hint>PDF, Word, Excel, slike — max 10MB po datoteci</template>
+                      </q-file>
+
+                      <div v-if="form.offerFiles.length > 0" class="offers-list">
+                        <div
+                          v-for="(file, index) in form.offerFiles"
+                          :key="index"
+                          class="offer-file-row"
+                        >
+                          <div class="offer-file-row__icon">
+                            <q-icon name="description" size="18px" />
+                          </div>
+                          <div class="offer-file-row__name">{{ file.name }}</div>
+                          <div class="offer-file-row__size">{{ formatFileSize(file.size) }}</div>
+                          <q-btn
+                            flat round dense
+                            icon="close"
+                            class="offer-file-row__remove"
+                            size="sm"
+                            @click="removeOffer(index)"
+                          />
+                        </div>
+                        <div class="offers-list__footer">
+                          <q-icon name="check_circle" size="14px" class="q-mr-xs" />
+                          {{ form.offerFiles.length }} {{ form.offerFiles.length === 1 ? 'ponuda priložena' : 'ponuda priloženo' }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                      <div class="field-section-label">Ukupni iznos *</div>
+                      <div class="amount-input-row">
+                        <q-input
+                          v-model.number="form.estimatedAmount"
+                          type="number" min="0" step="0.01"
+                          outlined
+                          placeholder="0.00"
+                          class="amount-input field-modern"
+                        />
+                        <div class="amount-input-currency">EUR</div>
+                      </div>
+                      <div class="amount-hint">
+                        <q-icon name="info_outline" size="14px" class="q-mr-xs" />
+                        <span v-if="form.offerFiles.length > 1">
+                          Imate {{ form.offerFiles.length }} ponuda — upišite ukupni zbroj svih iznosa.
+                        </span>
+                        <span v-else>
+                          Upišite iznos s ponude. Administrator može korigirati naknadno.
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                      <div class="field-section-label">Kategorija nabave</div>
+                      <q-select
+                        v-model="form.category"
+                        :options="categoryOptions"
+                        label="Odaberi kategoriju"
+                        outlined emit-value map-options
+                        class="field-modern"
+                      >
+                        <template #prepend><q-icon name="category" class="field-icon" /></template>
+                      </q-select>
+                    </div>
+
+                    <div class="col-12">
+                      <div class="field-section-label">Svrha nabave</div>
+                      <q-input
+                        v-model="form.reasonName"
+                        type="textarea"
+                        outlined autogrow rows="4"
+                        counter maxlength="1000"
+                        placeholder="Opišite zašto se ova nabava vrši i čemu služi..."
+                        class="field-modern"
+                      />
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+              <!-- KORAK 3b: NEMA ponudu -->
+              <div v-else-if="step === 3 && form.hasOffer === false" key="3b">
+                <div class="step-header">
+                  <div class="step-number">03</div>
+                  <div>
+                    <h2 class="step-title">Stavke i svrha nabave</h2>
+                    <p class="step-description">
+                      Navedite što trebate nabaviti i zašto.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="step-body">
                   <div class="field-section-label">Svrha nabave</div>
                   <q-input
                     v-model="form.reasonName"
                     type="textarea"
-                    outlined autogrow rows="4"
+                    outlined autogrow rows="3"
                     counter maxlength="1000"
                     placeholder="Opišite zašto se ova nabava vrši i čemu služi..."
+                    class="field-modern q-mb-lg"
                   />
-                </div>
 
-              </div>
-            </div>
-
-            <!-- KORAK 3b: NEMA ponudu → Stavke + svrha -->
-            <div v-else-if="step === 3 && form.hasOffer === false" key="3b">
-              <div class="step-header">
-                <div class="step-number">03</div>
-                <div>
-                  <div class="text-h5 text-weight-bold">Stavke i svrha nabave</div>
-                  <div class="text-body1 text-grey-6 q-mt-xs">
-                    Navedite što trebate nabaviti i zašto.
-                  </div>
-                </div>
-              </div>
-
-              <div class="q-mt-xl">
-                <div class="field-section-label">Svrha nabave</div>
-                <q-input
-                  v-model="form.reasonName"
-                  type="textarea"
-                  outlined autogrow rows="3"
-                  counter maxlength="1000"
-                  placeholder="Opišite zašto se ova nabava vrši i čemu služi..."
-                  class="q-mb-lg"
-                />
-
-                <div class="field-section-label">Stavke zahtjeva</div>
-                <div class="add-item-form q-mb-md">
-                  <div class="row q-col-gutter-md">
-                    <div class="col-12 col-md-4">
-                      <q-select
-                        v-model="itemForm.category"
-                        :options="categoryOptions"
-                        label="Kategorija"
-                        outlined dense emit-value map-options
-                      />
-                    </div>
-                    <div class="col-12 col-md-5">
-                      <q-input
-                        v-model="itemForm.item_name"
-                        label="Naziv artikla / usluge"
-                        outlined dense
-                        @keyup.enter="addItem"
-                      />
-                    </div>
-                    <div class="col-12 col-md-2">
-                      <q-input
-                        v-model.number="itemForm.quantity"
-                        label="Kol." type="number" min="1"
-                        outlined dense
-                      />
-                    </div>
-                    <div class="col-12 col-md-1 flex items-center">
-                      <q-btn unelevated round color="primary" icon="add" size="md" @click="addItem">
-                        <q-tooltip>Dodaj stavku</q-tooltip>
-                      </q-btn>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="items-list">
-                  <div v-if="form.items.length === 0" class="items-empty">
-                    <q-icon name="inventory_2" size="36px" color="grey-4" />
-                    <div class="text-grey-5 q-mt-sm">Još nema dodanih stavki</div>
-                  </div>
-
-                  <transition-group name="item-list" tag="div">
-                    <div v-for="(item, index) in form.items" :key="index" class="item-row">
-                      <div class="item-row__index">{{ index + 1 }}</div>
-                      <div class="item-row__content">
-                        <div class="text-weight-medium">{{ item.item_name }}</div>
-                        <div class="text-caption text-grey-6">{{ item.category_label }}</div>
+                  <div class="field-section-label">Stavke zahtjeva</div>
+                  <div class="add-item-form">
+                    <div class="row q-col-gutter-md">
+                      <div class="col-12 col-md-4">
+                        <q-select
+                          v-model="itemForm.category"
+                          :options="categoryOptions"
+                          label="Kategorija"
+                          outlined dense emit-value map-options
+                          class="field-modern"
+                        />
                       </div>
-                      <div class="item-row__quantity">
-                        <q-chip dense color="primary" text-color="white" size="sm">× {{ item.quantity }}</q-chip>
+                      <div class="col-12 col-md-5">
+                        <q-input
+                          v-model="itemForm.item_name"
+                          label="Naziv artikla / usluge"
+                          outlined dense
+                          class="field-modern"
+                          @keyup.enter="addItem"
+                        />
                       </div>
-                      <q-btn flat round dense icon="close" color="grey-5" size="sm" @click="removeItem(index)" />
+                      <div class="col-12 col-md-2">
+                        <q-input
+                          v-model.number="itemForm.quantity"
+                          label="Kol." type="number" min="1"
+                          outlined dense
+                          class="field-modern"
+                        />
+                      </div>
+                      <div class="col-12 col-md-1 flex items-center justify-center">
+                        <q-btn unelevated round color="primary" icon="add" class="btn-add" @click="addItem">
+                          <q-tooltip>Dodaj stavku</q-tooltip>
+                        </q-btn>
+                      </div>
                     </div>
-                  </transition-group>
+                  </div>
 
-                  <div v-if="form.items.length > 0" class="items-footer">
-                    {{ form.items.length }} {{ form.items.length === 1 ? 'stavka' : 'stavki' }} ukupno
+                  <div class="items-list">
+                    <div v-if="form.items.length === 0" class="items-empty">
+                      <div class="items-empty__icon">
+                        <q-icon name="inventory_2" size="32px" />
+                      </div>
+                      <div class="items-empty__text">Još nema dodanih stavki</div>
+                      <div class="items-empty__hint">Unesite naziv artikla iznad i kliknite +</div>
+                    </div>
+
+                    <transition-group name="item-list" tag="div">
+                      <div v-for="(item, index) in form.items" :key="index" class="item-row">
+                        <div class="item-row__index">{{ index + 1 }}</div>
+                        <div class="item-row__content">
+                          <div class="item-row__name">{{ item.item_name }}</div>
+                          <div class="item-row__category">{{ item.category_label }}</div>
+                        </div>
+                        <div class="item-row__quantity">× {{ item.quantity }}</div>
+                        <q-btn flat round dense icon="close" class="item-row__remove" size="sm" @click="removeItem(index)" />
+                      </div>
+                    </transition-group>
+
+                    <div v-if="form.items.length > 0" class="items-footer">
+                      {{ form.items.length }} {{ form.items.length === 1 ? 'stavka' : 'stavki' }} ukupno
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- KORAK 4: Pregled -->
-            <div v-else-if="step === 4" key="4">
-              <div class="step-header">
-                <div class="step-number">04</div>
-                <div>
-                  <div class="text-h5 text-weight-bold">Pregled zahtjeva</div>
-                  <div class="text-body1 text-grey-6 q-mt-xs">
-                    Provjerite unesene podatke prije slanja.
+              <!-- KORAK 4: Pregled -->
+              <div v-else-if="step === 4" key="4">
+                <div class="step-header">
+                  <div class="step-number">04</div>
+                  <div>
+                    <h2 class="step-title">Pregled zahtjeva</h2>
+                    <p class="step-description">
+                      Provjerite unesene podatke prije slanja.
+                    </p>
                   </div>
                 </div>
-              </div>
 
-              <div class="review-grid q-mt-xl">
+                <div class="step-body">
+                  <div class="review-grid">
 
-                <div class="review-meta">
-                  <div class="review-field">
-                    <div class="review-field__label">Odjel / Služba / Projekt</div>
-                    <div class="review-field__value">{{ selectedDepartmentLabel || '-' }}</div>
-                  </div>
-                  <div class="review-field">
-                    <div class="review-field__label">Svrha nabave</div>
-                    <div class="review-field__value review-field__value--multiline">{{ form.reasonName || '-' }}</div>
-                  </div>
-                  <div class="review-field">
-                    <div class="review-field__label">Ponude / Računi</div>
-                    <div class="review-field__value">
-                      <div v-if="form.hasOffer === true && form.offerFiles.length > 0">
-                        <div v-for="(file, index) in form.offerFiles" :key="index" class="text-positive" style="margin-bottom: 4px;">
-                          <q-icon name="check_circle" size="16px" class="q-mr-xs" />{{ file.name }}
+                    <div class="review-meta">
+                      <div class="review-field">
+                        <div class="review-field__label">Odjel / Služba / Projekt</div>
+                        <div class="review-field__value">{{ selectedDepartmentLabel || '—' }}</div>
+                      </div>
+                      <div class="review-field">
+                        <div class="review-field__label">Svrha nabave</div>
+                        <div class="review-field__value review-field__value--multiline">{{ form.reasonName || '—' }}</div>
+                      </div>
+                      <div class="review-field">
+                        <div class="review-field__label">Ponude / Računi</div>
+                        <div class="review-field__value">
+                          <div v-if="form.hasOffer === true && form.offerFiles.length > 0">
+                            <div v-for="(file, index) in form.offerFiles" :key="index" class="review-file">
+                              <q-icon name="check_circle" size="14px" class="review-file__check" />
+                              <span>{{ file.name }}</span>
+                            </div>
+                          </div>
+                          <span v-else class="review-field__muted">
+                            <q-icon name="schedule" size="14px" class="q-mr-xs" />
+                            Bez ponude — dodaje se naknadno
+                          </span>
                         </div>
                       </div>
-                      <span v-else class="text-grey-6">
-                        <q-icon name="schedule" size="16px" class="q-mr-xs" />Bez ponude — dodaje se naknadno
-                      </span>
+                      <div v-if="form.estimatedAmount" class="review-field">
+                        <div class="review-field__label">Ukupni iznos</div>
+                        <div class="review-field__value review-field__value--amount">
+                          {{ formatCurrency(form.estimatedAmount) }}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div v-if="form.estimatedAmount" class="review-field">
-                    <div class="review-field__label">Ukupni iznos</div>
-                    <div class="review-field__value">{{ formatCurrency(form.estimatedAmount) }}</div>
+
+                    <div class="review-items">
+                      <div class="review-items__header">
+                        <span v-if="form.hasOffer === false">Stavke zahtjeva</span>
+                        <span v-else>Kategorija</span>
+                        <q-badge v-if="form.hasOffer === false" class="review-items__count">{{ form.items.length }}</q-badge>
+                      </div>
+                      <div class="review-items__list">
+                        <div v-if="form.hasOffer === true" class="review-item-row">
+                          <span class="review-item-row__index">—</span>
+                          <div class="review-item-row__main">
+                            <span class="review-item-row__name">{{ selectedCategoryLabel || '—' }}</span>
+                          </div>
+                        </div>
+                        <div v-else v-for="(item, index) in form.items" :key="index" class="review-item-row">
+                          <span class="review-item-row__index">{{ index + 1 }}</span>
+                          <div class="review-item-row__main">
+                            <span class="review-item-row__name">{{ item.item_name }}</span>
+                            <span class="review-item-row__category">{{ item.category_label }}</span>
+                          </div>
+                          <span class="review-item-row__qty">× {{ item.quantity }}</span>
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
+              </div>
 
-                <div class="review-items">
-                  <div class="review-items__header">
-                    <span v-if="form.hasOffer === false">Stavke zahtjeva</span>
-                    <span v-else>Kategorija</span>
-                    <q-badge v-if="form.hasOffer === false" color="primary" class="q-ml-sm">{{ form.items.length }}</q-badge>
-                  </div>
-                  <div class="review-items__list">
-                    <div v-if="form.hasOffer === true" class="review-item-row">
-                      <span class="review-item-row__index">—</span>
-                      <span class="review-item-row__name">{{ selectedCategoryLabel || '-' }}</span>
-                    </div>
-                    <div v-else v-for="(item, index) in form.items" :key="index" class="review-item-row">
-                      <span class="review-item-row__index">{{ index + 1 }}.</span>
-                      <span class="review-item-row__name">{{ item.item_name }}</span>
-                      <span class="review-item-row__category">{{ item.category_label }}</span>
-                      <span class="review-item-row__qty">× {{ item.quantity }}</span>
-                    </div>
-                  </div>
-                </div>
+            </transition>
 
+            <!-- NAV -->
+            <div class="wizard-nav">
+              <q-btn
+                v-if="step > 1"
+                flat no-caps
+                icon="arrow_back" label="Natrag"
+                class="btn-ghost"
+                :disable="submitting"
+                @click="step--"
+              />
+              <div v-else />
+
+              <div class="row q-gutter-sm">
+                <q-btn
+                  v-if="step < 4"
+                  unelevated no-caps
+                  icon-right="arrow_forward" label="Dalje"
+                  class="btn-primary"
+                  @click="nextStep"
+                />
+                <q-btn
+                  v-else
+                  unelevated no-caps
+                  icon="send" label="Pošalji na obradu"
+                  class="btn-primary btn-primary--submit"
+                  :loading="submitting"
+                  :disable="submitting"
+                  @click="submitWizard"
+                />
               </div>
             </div>
-
-          </transition>
-
-          <!-- NAV -->
-          <div class="wizard-nav q-mt-xl">
-            <q-btn
-              v-if="step > 1"
-              flat no-caps color="grey-7"
-              icon="arrow_back" label="Natrag"
-              :disable="submitting"
-              @click="step--"
-            />
-            <div v-else />
-
-            <div class="row q-gutter-sm">
-              <q-btn
-                v-if="step < 4"
-                unelevated no-caps color="primary"
-                icon-right="arrow_forward" label="Dalje"
-                @click="nextStep"
-              />
-              <q-btn
-                v-else
-                unelevated no-caps color="primary"
-                icon="send" label="Pošalji na obradu"
-                size="lg"
-                :loading="submitting"
-                :disable="submitting"
-                @click="submitWizard"
-              />
-            </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -436,28 +500,35 @@ const form = ref({
 const itemForm = ref({ category: null, item_name: '', quantity: 1 });
 
 const currentSteps = computed(() => {
+  const base = [
+    { key: 'odjel',  step: 1, number: '01', title: 'Odjel',  hint: 'Jedinica zahtjeva' },
+    { key: 'ponuda', step: 2, number: '02', title: 'Ponuda', hint: 'Imate li dokument?' },
+  ];
   if (form.value.hasOffer === true) {
     return [
-      { key: 'odjel',   step: 1, number: '01', title: 'Odjel' },
-      { key: 'ponuda',  step: 2, number: '02', title: 'Ponuda' },
-      { key: 'detalji', step: 3, number: '03', title: 'Detalji' },
-      { key: 'pregled', step: 4, number: '04', title: 'Pregled' },
+      ...base,
+      { key: 'detalji', step: 3, number: '03', title: 'Detalji', hint: 'Iznos i kategorija' },
+      { key: 'pregled', step: 4, number: '04', title: 'Pregled', hint: 'Potvrda i slanje' },
     ];
   }
   if (form.value.hasOffer === false) {
     return [
-      { key: 'odjel',   step: 1, number: '01', title: 'Odjel' },
-      { key: 'ponuda',  step: 2, number: '02', title: 'Ponuda' },
-      { key: 'stavke',  step: 3, number: '03', title: 'Stavke' },
-      { key: 'pregled', step: 4, number: '04', title: 'Pregled' },
+      ...base,
+      { key: 'stavke',  step: 3, number: '03', title: 'Stavke',  hint: 'Popis artikala' },
+      { key: 'pregled', step: 4, number: '04', title: 'Pregled', hint: 'Potvrda i slanje' },
     ];
   }
   return [
-    { key: 'odjel',   step: 1, number: '01', title: 'Odjel' },
-    { key: 'ponuda',  step: 2, number: '02', title: 'Ponuda' },
-    { key: 'detalji', step: 3, number: '03', title: 'Detalji' },
-    { key: 'pregled', step: 4, number: '04', title: 'Pregled' },
+    ...base,
+    { key: 'detalji', step: 3, number: '03', title: 'Detalji', hint: 'Podaci zahtjeva' },
+    { key: 'pregled', step: 4, number: '04', title: 'Pregled', hint: 'Potvrda i slanje' },
   ];
+});
+
+const progressLineHeight = computed(() => {
+  const totalSteps = currentSteps.value.length;
+  if (totalSteps <= 1) return '0%';
+  return `${((step.value - 1) / (totalSteps - 1)) * 100}%`;
 });
 
 const selectedDepartmentLabel = computed(() =>
@@ -488,7 +559,6 @@ const fetchReferenceData = async () => {
   }
 };
 
-// Kad user odabere novu ponudu, dodaj je u listu i resetiraj input
 const onAddOffer = (file) => {
   if (!file) return;
   form.value.offerFiles.push(file);
@@ -514,7 +584,6 @@ const nextStep = () => {
     return;
   }
 
-  // Korak 3a - IMA ponudu
   if (step.value === 3 && form.value.hasOffer === true) {
     if (form.value.offerFiles.length === 0) {
       $q.notify({ type: 'negative', message: 'Priložite barem jednu ponudu.' });
@@ -534,7 +603,6 @@ const nextStep = () => {
     }
   }
 
-  // Korak 3b - NEMA ponudu
   if (step.value === 3 && form.value.hasOffer === false) {
     if (!form.value.reasonName.trim()) {
       $q.notify({ type: 'negative', message: 'Unesite svrhu nabave.' });
@@ -567,7 +635,7 @@ const addItem = () => {
 const removeItem = (index) => form.value.items.splice(index, 1);
 
 const formatCurrency = (value) => {
-  if (value == null || value === '') return '-';
+  if (value == null || value === '') return '—';
   return new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(Number(value));
 };
 
@@ -590,7 +658,6 @@ const submitWizard = async () => {
   try {
     const { data } = await api.post('/requests', payload);
 
-    // Upload svih ponuda jedna po jedna
     if (form.value.hasOffer === true && form.value.offerFiles.length > 0) {
       for (const file of form.value.offerFiles) {
         try {
@@ -626,298 +693,820 @@ onMounted(() => { fetchReferenceData(); });
 </script>
 
 <style scoped>
+/* =========================================================
+   DESIGN TOKENS
+   ========================================================= */
 .new-request-page {
-  background: linear-gradient(160deg, #f0f4ff 0%, #f8fafc 50%, #f4f7fb 100%);
+  --brand-50:  #e3f2fd;
+  --brand-100: #bbdefb;
+  --brand-500: #42a5f5;
+  --brand-600: #1976d2;
+  --brand-700: #1565c0;
+  --brand-800: #0d47a1;
+
+  --ink-900: #0b1020;
+  --ink-800: #1e293b;
+  --ink-700: #334155;
+  --ink-500: #64748b;
+  --ink-400: #94a3b8;
+  --ink-300: #cbd5e1;
+  --ink-200: #e2e8f0;
+  --ink-100: #f1f5f9;
+  --ink-50:  #f8fafc;
+
+  --success: #10b981;
+  --success-bg: #ecfdf5;
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 20px 48px -12px rgba(15, 23, 42, 0.12), 0 4px 12px rgba(15, 23, 42, 0.06);
+  --shadow-brand: 0 10px 24px -6px rgba(25, 118, 210, 0.32);
+
+  position: relative;
   min-height: 100vh;
+  padding: 48px 24px 80px;
+  background: linear-gradient(160deg, #f0f4ff 0%, #f8fafc 50%, #f4f7fb 100%);
+  overflow: hidden;
 }
 
-.page-shell { max-width: 1100px; margin: 0 auto; }
+/* Dekorativni blur orb-ovi u pozadini */
+.bg-orbs {
+  display: none;
+}
 
+.page-shell {
+  position: relative;
+  z-index: 1;
+  max-width: 1160px;
+  margin: 0 auto;
+}
+
+/* =========================================================
+   HERO
+   ========================================================= */
 .page-hero {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 20px;
+  gap: 24px;
   flex-wrap: wrap;
+  margin-bottom: 40px;
 }
 
-.page-title { letter-spacing: -0.03em; }
-.letter-spacing-wide { letter-spacing: 0.08em; }
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--brand-700);
+  background: var(--brand-50);
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--brand-100);
+}
+.eyebrow__dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--brand-600);
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.18);
+}
 
+.page-title {
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  color: var(--ink-900);
+  margin: 14px 0 6px;
+  line-height: 1.1;
+}
+
+.page-subtitle {
+  color: var(--ink-500);
+  font-size: 0.975rem;
+  margin: 0;
+  max-width: 520px;
+}
+
+.btn-ghost {
+  color: var(--ink-500) !important;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  padding: 6px 14px;
+}
+.btn-ghost:hover { color: var(--ink-800) !important; background: var(--ink-100); }
+
+/* =========================================================
+   LAYOUT
+   ========================================================= */
 .wizard-layout {
   display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 32px;
+  grid-template-columns: 260px 1fr;
+  gap: 40px;
   align-items: start;
 }
 
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
 .wizard-sidebar {
   position: sticky;
-  top: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 24px 0;
+  top: 32px;
+  padding: 8px 0;
+}
+
+.sidebar-progress-line {
+  position: absolute;
+  left: 22px;
+  top: 40px;
+  bottom: 40px;
+  width: 2px;
+  background: var(--ink-200);
+  border-radius: 1px;
+  z-index: 0;
+}
+.sidebar-progress-line__fill {
+  width: 100%;
+  background: linear-gradient(to bottom, var(--brand-500), var(--brand-700));
+  border-radius: 1px;
+  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-step {
+  position: relative;
+  z-index: 1;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  border-radius: 12px;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
   transition: background 0.2s;
+  margin-bottom: 4px;
 }
 
 .sidebar-step__indicator {
-  width: 28px;
-  height: 28px;
+  width: 28px; height: 28px;
   border-radius: 50%;
-  background: #e2e8f0;
-  color: #94a3b8;
-  font-size: 12px;
+  background: white;
+  border: 2px solid var(--ink-200);
+  color: var(--ink-400);
+  font-size: 11px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
 }
+
+.sidebar-step__body { padding-top: 3px; }
 
 .sidebar-step__label {
   font-size: 0.875rem;
-  color: #94a3b8;
-  font-weight: 500;
+  color: var(--ink-400);
+  font-weight: 600;
   transition: color 0.2s;
+  letter-spacing: -0.01em;
 }
 
-.sidebar-step--active { background: rgba(25, 118, 210, 0.06); }
-.sidebar-step--active .sidebar-step__indicator { background: #1976d2; color: white; }
-.sidebar-step--active .sidebar-step__label { color: #1976d2; font-weight: 700; }
-.sidebar-step--done .sidebar-step__indicator { background: #dcfce7; color: #16a34a; }
-.sidebar-step--done .sidebar-step__label { color: #64748b; }
+.sidebar-step__hint {
+  font-size: 0.72rem;
+  color: var(--ink-400);
+  margin-top: 2px;
+  opacity: 0.8;
+}
 
+.sidebar-step--active .sidebar-step__indicator {
+  background: var(--brand-600);
+  border-color: var(--brand-600);
+  color: white;
+  box-shadow: var(--shadow-brand);
+  transform: scale(1.08);
+}
+.sidebar-step--active .sidebar-step__label { color: var(--ink-900); }
+.sidebar-step--active .sidebar-step__hint { color: var(--brand-600); opacity: 1; }
+
+.sidebar-step--done .sidebar-step__indicator {
+  background: var(--brand-600);
+  border-color: var(--brand-600);
+  color: white;
+}
+.sidebar-step--done .sidebar-step__label { color: var(--ink-700); }
+
+/* =========================================================
+   CONTENT CARD
+   ========================================================= */
 .wizard-content {
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 24px;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.06);
-  padding: 40px 48px;
-  min-height: 480px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  min-height: 560px;
   display: flex;
   flex-direction: column;
 }
 
+.wizard-progress {
+  height: 3px;
+  background: var(--ink-100);
+  position: relative;
+}
+.wizard-progress__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--brand-500), var(--brand-700));
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 12px rgba(25, 118, 210, 0.4);
+}
+
+.wizard-content__inner {
+  padding: 48px 56px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================================================
+   STEP
+   ========================================================= */
 .step-header {
   display: flex;
   align-items: flex-start;
-  gap: 20px;
+  gap: 24px;
 }
 
 .step-number {
-  font-size: 2.5rem;
+  font-size: 3rem;
   font-weight: 800;
-  color: rgba(25, 118, 210, 0.12);
-  letter-spacing: -0.05em;
-  line-height: 1;
+  background: linear-gradient(135deg, var(--brand-500), var(--brand-800));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  opacity: 0.22;
+  letter-spacing: -0.06em;
+  line-height: 0.85;
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.step-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink-900);
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.step-description {
+  color: var(--ink-500);
+  font-size: 0.95rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.step-body {
+  margin-top: 36px;
+}
+
+/* =========================================================
+   FORMS
+   ========================================================= */
+.field-lg { max-width: 520px; }
+
+.field-section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-500);
+  margin-bottom: 10px;
+}
+
+.field-icon { color: var(--brand-600); }
+
+/* Refinement Quasar outlined inputs */
+:deep(.field-modern .q-field__control) {
+  border-radius: var(--radius-md);
+  background: white;
+  transition: all 0.2s;
+}
+:deep(.field-modern .q-field__control:before) {
+  border-color: var(--ink-200);
+  transition: border-color 0.2s;
+}
+:deep(.field-modern .q-field__control:hover:before) {
+  border-color: var(--brand-500);
+}
+:deep(.field-modern.q-field--focused .q-field__control:after) {
+  border-width: 2px;
+  border-color: var(--brand-600);
+}
+:deep(.field-modern.q-field--focused .q-field__label) {
+  color: var(--brand-600);
+}
+
+/* =========================================================
+   STEP 2 — Offer choice cards
+   ========================================================= */
+.offer-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 560px;
+}
+
+.offer-option {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 24px;
+  border: 2px solid var(--ink-200);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  background: white;
+  position: relative;
+  box-sizing: border-box;
+}
+.offer-option:hover {
+  border-color: var(--brand-500);
+  background: var(--brand-50);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.offer-option__icon {
+  width: 48px; height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--ink-100);
+  color: var(--ink-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.25s;
+}
+.offer-option__icon--primary {
+  background: linear-gradient(135deg, var(--brand-50), var(--brand-100));
+  color: var(--brand-600);
+}
+
+.offer-option__text { flex: 1; }
+.offer-option__title {
+  font-weight: 700;
+  color: var(--ink-900);
+  font-size: 0.975rem;
+  letter-spacing: -0.01em;
+}
+.offer-option__subtitle {
+  font-size: 0.825rem;
+  color: var(--ink-500);
   margin-top: 2px;
 }
 
-.field-lg { max-width: 480px; }
-
-.field-section-label {
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #94a3b8;
-  margin-bottom: 8px;
+.offer-option__check {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--ink-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  transition: all 0.2s;
+  flex-shrink: 0;
 }
 
-/* Lista ponuda */
+.offer-option--selected {
+  border-color: var(--brand-600);
+  background: rgba(25, 118, 210, 0.04);
+  box-shadow: var(--shadow-brand);
+}
+.offer-option--selected .offer-option__icon--primary {
+  background: var(--brand-600);
+  color: white;
+}
+.offer-option--selected .offer-option__icon:not(.offer-option__icon--primary) {
+  background: var(--brand-100);
+  color: var(--brand-600);
+}
+.offer-option--selected .offer-option__check {
+  background: var(--brand-600);
+  border-color: var(--brand-600);
+  color: white;
+}
+
+/* =========================================================
+   STEP 3a — File list
+   ========================================================= */
 .offers-list {
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 12px;
+  margin-top: 14px;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  background: #f8fafc;
+  background: white;
 }
 
 .offer-file-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.04);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ink-100);
+  transition: background 0.15s;
 }
-
+.offer-file-row:hover { background: var(--ink-50); }
 .offer-file-row:last-of-type { border-bottom: none; }
 
-.offer-file-row__name {
-  flex: 1;
-  font-size: 0.875rem;
-  color: #0f172a;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.offer-file-row__size {
-  font-size: 0.75rem;
-  color: #94a3b8;
+.offer-file-row__icon {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  background: var(--brand-50);
+  color: var(--brand-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
-.offers-list__footer {
-  padding: 8px 14px;
-  font-size: 0.75rem;
-  color: #94a3b8;
-  text-align: right;
-  border-top: 1px solid rgba(15, 23, 42, 0.04);
-  background: white;
+.offer-file-row__name {
+  flex: 1;
+  font-size: 0.88rem;
+  color: var(--ink-900);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
 }
 
+.offer-file-row__size {
+  font-size: 0.72rem;
+  color: var(--ink-400);
+  font-weight: 500;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.offer-file-row__remove {
+  color: var(--ink-400) !important;
+  transition: color 0.15s;
+}
+.offer-file-row__remove:hover { color: #ef4444 !important; }
+
+.offers-list__footer {
+  padding: 10px 16px;
+  font-size: 0.75rem;
+  color: var(--success);
+  font-weight: 600;
+  text-align: right;
+  background: var(--success-bg);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* =========================================================
+   AMOUNT
+   ========================================================= */
+.amount-input-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.amount-input { flex: 1; max-width: 300px; }
+.amount-input-currency {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--brand-700);
+  letter-spacing: 0.02em;
+}
+.amount-hint {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: var(--ink-500);
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+}
+
+/* =========================================================
+   STEP 3b — Items
+   ========================================================= */
 .add-item-form {
   background: #f8fafc;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 16px;
-  padding: 20px;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  margin-bottom: 20px;
+}
+
+.btn-add {
+  background: var(--brand-600) !important;
+  color: white !important;
+  box-shadow: var(--shadow-brand);
 }
 
 .items-list {
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 16px;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-lg);
   overflow: hidden;
+  background: white;
 }
 
-.items-empty { padding: 40px; text-align: center; }
+.items-empty {
+  padding: 56px 20px;
+  text-align: center;
+}
+.items-empty__icon {
+  width: 64px; height: 64px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: var(--ink-100);
+  color: var(--ink-400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.items-empty__text {
+  color: var(--ink-700);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.items-empty__hint {
+  color: var(--ink-400);
+  font-size: 0.82rem;
+  margin-top: 4px;
+}
 
 .item-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.04);
+  gap: 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--ink-100);
   transition: background 0.15s;
 }
 .item-row:last-child { border-bottom: none; }
-.item-row:hover { background: #f8fafc; }
+.item-row:hover { background: var(--ink-50); }
 
 .item-row__index {
-  width: 24px; height: 24px;
+  width: 26px; height: 26px;
   border-radius: 50%;
-  background: #f1f5f9; color: #64748b;
-  font-size: 11px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-
-.item-row__content { flex: 1; }
-.item-row__quantity { flex-shrink: 0; }
-
-.items-footer {
-  padding: 10px 16px;
-  background: #f8fafc;
-  font-size: 0.8rem;
-  color: #94a3b8;
-  text-align: right;
-  border-top: 1px solid rgba(15, 23, 42, 0.04);
-}
-
-.amount-input-row { display: flex; align-items: center; gap: 12px; }
-.amount-input { flex: 1; max-width: 280px; }
-.amount-input-currency { font-size: 1.25rem; font-weight: 700; color: #1976d2; }
-.amount-hint { margin-top: 10px; font-size: 0.8rem; color: #94a3b8; line-height: 1.5; display: flex; align-items: flex-start; }
-
-.offer-choice { display: flex; flex-direction: column; gap: 12px; max-width: 480px; }
-
-.offer-option {
+  background: var(--brand-50);
+  color: var(--brand-700);
+  font-size: 11px;
+  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px 24px;
-  border: 2px solid #e2e8f0;
-  border-radius: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-}
-.offer-option:hover { border-color: #93c5fd; background: #f0f9ff; }
-.offer-option--selected { border-color: #1976d2; background: rgba(25, 118, 210, 0.04); }
-.offer-option__check { margin-left: auto; }
-
-.review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-
-.review-meta {
-  display: flex; flex-direction: column;
-  background: #f8fafc;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 16px;
-  overflow: hidden;
+  justify-content: center;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
-.review-field { padding: 14px 20px; border-bottom: 1px solid rgba(15, 23, 42, 0.05); }
-.review-field:last-child { border-bottom: none; }
-.review-field__label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; margin-bottom: 4px; }
-.review-field__value { font-size: 0.95rem; font-weight: 600; color: #0f172a; }
-.review-field__value--multiline { white-space: pre-wrap; font-weight: 400; color: #334155; line-height: 1.5; }
+.item-row__content { flex: 1; min-width: 0; }
+.item-row__name {
+  font-weight: 600;
+  color: var(--ink-900);
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+}
+.item-row__category {
+  font-size: 0.76rem;
+  color: var(--ink-400);
+  margin-top: 2px;
+}
 
+.item-row__quantity {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--brand-700);
+  padding: 4px 10px;
+  background: var(--brand-50);
+  border-radius: 999px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.item-row__remove { color: var(--ink-400) !important; }
+.item-row__remove:hover { color: #ef4444 !important; }
+
+.items-footer {
+  padding: 12px 18px;
+  background: var(--ink-50);
+  font-size: 0.76rem;
+  color: var(--ink-500);
+  font-weight: 600;
+  text-align: right;
+  border-top: 1px solid var(--ink-100);
+}
+
+/* =========================================================
+   REVIEW
+   ========================================================= */
+.review-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.review-meta,
 .review-items {
-  background: #f8fafc;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 16px;
+  background: white;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-lg);
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
+
+.review-field {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--ink-100);
+}
+.review-field:last-child { border-bottom: none; }
+
+.review-field__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-400);
+  margin-bottom: 6px;
+}
+.review-field__value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-900);
+  letter-spacing: -0.01em;
+}
+.review-field__value--multiline {
+  white-space: pre-wrap;
+  font-weight: 400;
+  color: var(--ink-700);
+  line-height: 1.55;
+}
+.review-field__value--amount {
+  font-size: 1.15rem;
+  color: var(--brand-700);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.review-field__muted {
+  color: var(--ink-500);
+  font-weight: 500;
+  font-size: 0.88rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.review-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--success);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.review-file:last-child { margin-bottom: 0; }
 
 .review-items__header {
-  padding: 14px 20px;
-  font-size: 0.75rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.06em;
-  color: #94a3b8;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
-  display: flex; align-items: center;
+  padding: 16px 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-400);
+  border-bottom: 1px solid var(--ink-100);
+  background: var(--ink-50);
+  display: flex;
+  align-items: center;
+}
+.review-items__count {
+  background: var(--brand-600) !important;
+  color: white !important;
+  margin-left: 8px;
+  font-weight: 700;
 }
 
-.review-items__list { padding: 8px 0; }
+.review-items__list { padding: 6px 0; }
 
 .review-item-row {
   display: grid;
-  grid-template-columns: 24px 1fr auto auto;
+  grid-template-columns: 24px 1fr auto;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 10px 20px;
   font-size: 0.875rem;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.04);
-  user-select: text;
+  border-bottom: 1px solid var(--ink-100);
 }
 .review-item-row:last-child { border-bottom: none; }
-.review-item-row__index { color: #94a3b8; font-size: 0.75rem; }
-.review-item-row__name { font-weight: 600; color: #0f172a; }
-.review-item-row__category { color: #94a3b8; font-size: 0.75rem; }
-.review-item-row__qty { font-weight: 700; color: #1976d2; white-space: nowrap; }
 
-.wizard-nav {
-  display: flex; align-items: center; justify-content: space-between;
-  padding-top: 32px; margin-top: auto;
-  border-top: 1px solid rgba(15, 23, 42, 0.06);
+.review-item-row__index {
+  color: var(--ink-400);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.review-item-row__main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.review-item-row__name {
+  font-weight: 600;
+  color: var(--ink-900);
+  letter-spacing: -0.01em;
+}
+.review-item-row__category {
+  color: var(--ink-400);
+  font-size: 0.72rem;
+}
+.review-item-row__qty {
+  font-weight: 700;
+  color: var(--brand-700);
+  font-size: 0.82rem;
+  padding: 3px 9px;
+  background: var(--brand-50);
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
 }
 
-.step-fade-enter-active, .step-fade-leave-active { transition: all 0.2s ease; }
-.step-fade-enter-from { opacity: 0; transform: translateX(12px); }
-.step-fade-leave-to { opacity: 0; transform: translateX(-12px); }
+/* =========================================================
+   NAV
+   ========================================================= */
+.wizard-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 36px;
+  margin-top: auto;
+  border-top: 1px solid var(--ink-100);
+}
 
-.fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.btn-primary {
+  background: linear-gradient(135deg, var(--brand-600), var(--brand-700)) !important;
+  color: white !important;
+  border-radius: var(--radius-md);
+  padding: 10px 22px;
+  font-weight: 600;
+  box-shadow: var(--shadow-brand);
+  transition: all 0.2s;
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 32px -8px rgba(25, 118, 210, 0.45);
+}
+.btn-primary--submit {
+  padding: 12px 28px;
+  font-size: 0.95rem;
+}
 
-.item-list-enter-active { transition: all 0.2s ease; }
+/* =========================================================
+   TRANSITIONS
+   ========================================================= */
+.step-fade-enter-active, .step-fade-leave-active {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.step-fade-enter-from { opacity: 0; transform: translateX(16px); }
+.step-fade-leave-to { opacity: 0; transform: translateX(-16px); }
+
+.item-list-enter-active { transition: all 0.25s ease; }
 .item-list-enter-from { opacity: 0; transform: translateY(-8px); }
+.item-list-leave-active { transition: all 0.2s ease; position: absolute; }
+.item-list-leave-to { opacity: 0; transform: translateX(20px); }
 
-@media (max-width: 768px) {
-  .wizard-layout { grid-template-columns: 1fr; }
-  .wizard-sidebar { display: none; }
-  .wizard-content { padding: 24px 20px; }
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+@media (max-width: 900px) {
+  .new-request-page { padding: 24px 16px 60px; }
+  .wizard-layout { grid-template-columns: 1fr; gap: 20px; }
+  .wizard-sidebar {
+    position: static;
+    display: flex;
+    overflow-x: auto;
+    padding: 8px 4px;
+    gap: 6px;
+  }
+  .sidebar-progress-line { display: none; }
+  .sidebar-step { flex: 0 0 auto; padding: 8px 12px; }
+  .sidebar-step__hint { display: none; }
+  .wizard-content__inner { padding: 28px 22px; }
+  .step-number { font-size: 2rem; }
+  .page-title { font-size: 1.8rem; }
+  .step-title { font-size: 1.25rem; }
   .review-grid { grid-template-columns: 1fr; }
-  .step-number { font-size: 1.8rem; }
 }
 </style>
