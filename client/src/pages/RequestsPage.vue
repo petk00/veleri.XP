@@ -121,12 +121,17 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
+import { getStoredUser } from 'src/utils/authStorage';
 
 const router = useRouter();
+const $q = useQuasar();
 const loading = ref(false);
 const rows = ref([]);
 const errorMessage = ref('');
+const currentUser = ref(null);
+const isAdmin = ref(false);
 
 const columns = [
   {
@@ -186,6 +191,38 @@ const fetchRequests = async () => {
   try {
     const response = await api.get('/requests');
     rows.value = Array.isArray(response.data) ? response.data : [];
+
+    // Notifikacije nakon učitavanja
+    if (isAdmin.value) {
+      // Admin: zahtjevi koji čekaju pregled (Poslano)
+      const cekaju = rows.value.filter(r => r.status_name === 'Poslano');
+      if (cekaju.length === 1) {
+        $q.notify({
+          type: 'info',
+          icon: 'inbox',
+          message: `Zahtjev ${cekaju[0].request_number} čeka vaš pregled.`,
+          timeout: 5000,
+        });
+      } else if (cekaju.length > 1) {
+        $q.notify({
+          type: 'info',
+          icon: 'inbox',
+          message: `${cekaju.length} zahtjeva čeka vaš pregled.`,
+          timeout: 5000,
+        });
+      }
+    } else {
+      // Korisnik: njegovi zahtjevi koji su odobreni i čekaju otpremnicu
+      const cekajuOtpremnicu = rows.value.filter(r => r.status_name === 'Odobreno');
+      cekajuOtpremnicu.forEach(r => {
+        $q.notify({
+          type: 'positive',
+          icon: 'local_shipping',
+          message: `Zahtjev ${r.request_number} čeka otpremnicu. Dodaj otpremnicu kako bi zahtjev mogao biti zatvoren.`,
+          timeout: 7000,
+        });
+      });
+    }
   } catch (error) {
     console.error('Greška kod dohvaćanja zahtjeva:', error);
     errorMessage.value =
@@ -235,6 +272,8 @@ const statusClass = (status) => {
 };
 
 onMounted(() => {
+  currentUser.value = getStoredUser();
+  isAdmin.value = currentUser.value?.role_name === 'Administrator';
   fetchRequests();
 });
 </script>
