@@ -18,7 +18,7 @@
           </div>
           <h1 class="page-title">Pokretanje novog zahtjeva</h1>
           <p class="page-subtitle">
-            Ispunite korake u nastavku. Svi podaci se spremaju automatski između koraka.
+            Ispunite korake u nastavku. Uneseni podaci ostaju sačuvani dok prolazite kroz obrazac.
           </p>
         </div>
         <q-btn
@@ -72,7 +72,7 @@
           <div class="wizard-progress">
             <div
               class="wizard-progress__fill"
-              :style="{ width: `${((step - 1) / 3) * 100}%` }"
+              :style="{ width: progressBarWidth }"
             ></div>
           </div>
 
@@ -122,7 +122,7 @@
                       type="button"
                       class="offer-option"
                       :class="{ 'offer-option--selected': form.hasOffer === true }"
-                      @click="form.hasOffer = true"
+                      @click="selectHasOffer(true)"
                     >
                       <div class="offer-option__icon offer-option__icon--primary">
                         <q-icon name="receipt_long" size="24px" />
@@ -140,7 +140,7 @@
                       type="button"
                       class="offer-option"
                       :class="{ 'offer-option--selected': form.hasOffer === false }"
-                      @click="form.hasOffer = false; form.offerFiles = []; form.estimatedAmount = null"
+                      @click="selectHasOffer(false)"
                     >
                       <div class="offer-option__icon">
                         <q-icon name="format_list_bulleted" size="24px" />
@@ -177,6 +177,7 @@
 
                       <q-file
                         v-model="newOfferFile"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt,.zip"
                         outlined
                         label="Dodaj ponudu"
                         class="field-modern"
@@ -475,6 +476,18 @@ import { api } from 'boot/axios';
 
 const $q = useQuasar();
 const router = useRouter();
+const MAX_OFFER_FILE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_OFFER_MIME_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'image/jpeg',
+  'image/png',
+  'text/plain',
+  'application/zip',
+];
 
 const step = ref(1);
 const loadingReferenceData = ref(false);
@@ -531,6 +544,12 @@ const progressLineHeight = computed(() => {
   return `${((step.value - 1) / (totalSteps - 1)) * 100}%`;
 });
 
+const progressBarWidth = computed(() => {
+  const totalSteps = currentSteps.value.length;
+  if (totalSteps <= 1) return '0%';
+  return `${((step.value - 1) / (totalSteps - 1)) * 100}%`;
+});
+
 const selectedDepartmentLabel = computed(() =>
   departmentOptions.value.find((x) => x.value === form.value.department)?.label || ''
 );
@@ -559,8 +578,91 @@ const fetchReferenceData = async () => {
   }
 };
 
+const notifyValidationError = (message) => {
+  $q.notify({ type: 'negative', message });
+};
+
+const validateStep = (stepToValidate = step.value) => {
+  if (loadingReferenceData.value) {
+    notifyValidationError('Pričekajte da se referentni podaci učitaju.');
+    return false;
+  }
+
+  if (!activeFiscalYearId.value) {
+    notifyValidationError('Aktivna fiskalna godina nije dostupna. Osvježite stranicu i pokušajte ponovno.');
+    return false;
+  }
+
+  if (stepToValidate >= 1 && !form.value.department) {
+    notifyValidationError('Odaberite odjel, službu ili projekt.');
+    return false;
+  }
+
+  if (stepToValidate >= 2 && form.value.hasOffer === null) {
+    notifyValidationError('Odaberite jednu od opcija.');
+    return false;
+  }
+
+  if (stepToValidate >= 3 && form.value.hasOffer === true) {
+    if (form.value.offerFiles.length === 0) {
+      notifyValidationError('Priložite barem jednu ponudu.');
+      return false;
+    }
+    if (!form.value.estimatedAmount || form.value.estimatedAmount <= 0) {
+      notifyValidationError('Ukupni iznos je obavezan kad imate ponudu.');
+      return false;
+    }
+    if (!form.value.category) {
+      notifyValidationError('Odaberite kategoriju nabave.');
+      return false;
+    }
+    if (!form.value.reasonName.trim()) {
+      notifyValidationError('Unesite svrhu nabave.');
+      return false;
+    }
+  }
+
+  if (stepToValidate >= 3 && form.value.hasOffer === false) {
+    if (!form.value.reasonName.trim()) {
+      notifyValidationError('Unesite svrhu nabave.');
+      return false;
+    }
+    if (form.value.items.length === 0) {
+      notifyValidationError('Dodajte barem jednu stavku.');
+      return false;
+    }
+  }
+
+  return true;
+};
+
 const onAddOffer = (file) => {
   if (!file) return;
+
+  if (!ALLOWED_OFFER_MIME_TYPES.includes(file.type)) {
+    notifyValidationError('Odabrana datoteka nije podržanog tipa.');
+    newOfferFile.value = null;
+    return;
+  }
+
+  if (file.size > MAX_OFFER_FILE_SIZE) {
+    notifyValidationError('Datoteka je veća od 10 MB.');
+    newOfferFile.value = null;
+    return;
+  }
+
+  const alreadyExists = form.value.offerFiles.some((existingFile) =>
+    existingFile.name === file.name
+    && existingFile.size === file.size
+    && existingFile.lastModified === file.lastModified
+  );
+
+  if (alreadyExists) {
+    notifyValidationError('Ta je datoteka već dodana.');
+    newOfferFile.value = null;
+    return;
+  }
+
   form.value.offerFiles.push(file);
   newOfferFile.value = null;
 };
@@ -573,46 +675,21 @@ const formatFileSize = (bytes) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
+const selectHasOffer = (hasOffer) => {
+  form.value.hasOffer = hasOffer;
+
+  if (hasOffer) {
+    return;
+  }
+
+  form.value.offerFiles = [];
+  form.value.estimatedAmount = null;
+  form.value.category = null;
+  newOfferFile.value = null;
+};
+
 const nextStep = () => {
-  if (step.value === 1 && !form.value.department) {
-    $q.notify({ type: 'negative', message: 'Odaberite odjel, službu ili projekt.' });
-    return;
-  }
-
-  if (step.value === 2 && form.value.hasOffer === null) {
-    $q.notify({ type: 'negative', message: 'Odaberite jednu od opcija.' });
-    return;
-  }
-
-  if (step.value === 3 && form.value.hasOffer === true) {
-    if (form.value.offerFiles.length === 0) {
-      $q.notify({ type: 'negative', message: 'Priložite barem jednu ponudu.' });
-      return;
-    }
-    if (!form.value.estimatedAmount || form.value.estimatedAmount <= 0) {
-      $q.notify({ type: 'negative', message: 'Ukupni iznos je obavezan kad imate ponudu.' });
-      return;
-    }
-    if (!form.value.category) {
-      $q.notify({ type: 'negative', message: 'Odaberite kategoriju nabave.' });
-      return;
-    }
-    if (!form.value.reasonName.trim()) {
-      $q.notify({ type: 'negative', message: 'Unesite svrhu nabave.' });
-      return;
-    }
-  }
-
-  if (step.value === 3 && form.value.hasOffer === false) {
-    if (!form.value.reasonName.trim()) {
-      $q.notify({ type: 'negative', message: 'Unesite svrhu nabave.' });
-      return;
-    }
-    if (form.value.items.length === 0) {
-      $q.notify({ type: 'negative', message: 'Dodajte barem jednu stavku.' });
-      return;
-    }
-  }
+  if (!validateStep()) return;
 
   if (step.value < 4) step.value++;
 };
@@ -640,6 +717,8 @@ const formatCurrency = (value) => {
 };
 
 const submitWizard = async () => {
+  if (!validateStep(4)) return;
+
   submitting.value = true;
 
   const items = form.value.hasOffer === true
