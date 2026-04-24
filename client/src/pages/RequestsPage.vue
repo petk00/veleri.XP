@@ -152,14 +152,28 @@ const fetchRequests = async () => {
           color: 'dark',
           icon: 'inbox',
           message: `Zahtjev ${cekaju[0].request_number} čeka vaš pregled.`,
-          timeout: 5000,
+          timeout: 8000,
+          actions: [
+            {
+              label: 'Otvori',
+              color: 'white',
+              handler: () => router.push(`/requests/${cekaju[0].id_purchase_request}`),
+            },
+          ],
         });
       } else if (cekaju.length > 1) {
         $q.notify({
           color: 'dark',
           icon: 'inbox',
           message: `${cekaju.length} zahtjeva čeka vaš pregled.`,
-          timeout: 5000,
+          timeout: 8000,
+          actions: [
+            {
+              label: 'Prikaži sve',
+              color: 'white',
+              handler: () => router.push('/requests'),
+            },
+          ],
         });
       }
     } else {
