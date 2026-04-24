@@ -49,18 +49,26 @@
             <div>
               <div class="text-subtitle1 text-weight-bold">Novi zahtjev čeka pregled</div>
               <div class="text-body2 text-grey-7">
-                Pregledajte zahtjev i pošaljite ga na formalno odobrenje.
+                Pregledajte zahtjev i pošaljite ga na odobrenje ili ga odbijte.
               </div>
             </div>
-            <q-btn
-              unelevated
-              no-caps
-              color="primary"
-              icon="send"
-              label="Pošalji na odobrenje"
-              :loading="submittingAction"
-              @click="submitForReview"
-            />
+            <div class="row q-gutter-sm">
+              <q-btn
+                unelevated no-caps
+                color="negative"
+                icon="close"
+                label="Odbij"
+                @click="openActionDialog('reject')"
+              />
+              <q-btn
+                unelevated no-caps
+                color="primary"
+                icon="send"
+                label="Pošalji na odobrenje"
+                :loading="submittingAction"
+                @click="submitForReview"
+              />
+            </div>
           </q-card-section>
         </q-card>
 
@@ -69,7 +77,7 @@
             <div>
               <div class="text-subtitle1 text-weight-bold">Potrebna vaša odluka</div>
               <div class="text-body2 text-grey-7">
-                Zahtjev čeka odobrenje. Možete ga odobriti, odbiti ili vratiti na izmjenu.
+                Zahtjev je na odobrenju. Možete ga odobriti ili vratiti korisniku na dopunu.
               </div>
               <div v-if="!canApprove" class="text-body2 text-negative q-mt-sm">
                 Nedostaje -
@@ -84,16 +92,8 @@
                 no-caps
                 color="warning"
                 icon="undo"
-                label="Vrati na izmjenu"
+                label="Vrati na dopunu"
                 @click="openActionDialog('return-for-revision')"
-              />
-              <q-btn
-                unelevated
-                no-caps
-                color="negative"
-                icon="close"
-                label="Odbij"
-                @click="openActionDialog('reject')"
               />
               <q-btn
                 unelevated
@@ -109,31 +109,38 @@
         </q-card>
 
         <q-card v-if="canUserResubmit" flat class="actions-card q-mb-lg">
-          <q-card-section class="row items-center justify-between">
-            <div>
-              <div class="text-subtitle1 text-weight-bold">Zahtjev je vraćen na izmjenu</div>
-              <div class="text-body2 text-grey-7">
-                Uredite zahtjev prema komentaru administratora i pošaljite ga ponovno.
+          <q-card-section>
+            <div class="row items-start justify-between q-mb-md">
+              <div>
+                <div class="text-subtitle1 text-weight-bold">Zahtjev je vraćen na dopunu / izmjenu</div>
+                <div class="text-body2 text-grey-7">
+                  Pregledajte komentar administratora, uredite zahtjev i potvrdite izmjene.
+                </div>
+              </div>
+              <div class="row q-gutter-sm">
+                <q-btn
+                  flat
+                  no-caps
+                  color="primary"
+                  icon="edit"
+                  label="Uredi zahtjev"
+                  @click="editRequest"
+                />
+                <q-btn
+                  unelevated
+                  no-caps
+                  color="primary"
+                  icon="send"
+                  label="Potvrdi izmjene"
+                  :loading="submittingAction"
+                  @click="resubmitRequest"
+                />
               </div>
             </div>
-            <div class="row q-gutter-sm">
-              <q-btn
-                flat
-                no-caps
-                color="primary"
-                icon="edit"
-                label="Uredi zahtjev"
-                @click="editRequest"
-              />
-              <q-btn
-                unelevated
-                no-caps
-                color="primary"
-                icon="send"
-                label="Ponovno pošalji"
-                :loading="submittingAction"
-                @click="resubmitRequest"
-              />
+
+            <div v-if="lastReturnComment" class="return-comment">
+              <div class="return-comment__label">Komentar administratora</div>
+              <div class="return-comment__text">{{ lastReturnComment }}</div>
             </div>
           </q-card-section>
         </q-card>
@@ -395,8 +402,17 @@ const hasPonuda = computed(() => attachments.value.some((a) => a.document_type =
 const hasOtpremnica = computed(() => attachments.value.some((a) => a.document_type === 'Otpremnica'));
 const canApprove = computed(() => hasPonuda.value && Number(request.value?.total_amount) > 0);
 const canApproveOrReject = computed(() => isAdmin.value && request.value?.status_name === 'Na odobrenju');
-const canUserResubmit = computed(() => !isAdmin.value && request.value?.status_name === 'Vraćeno na dopunu / izmjenu');
 const canSubmitForReview = computed(() => isAdmin.value && request.value?.status_name === 'Poslano');
+const canUserResubmit = computed(() => !isAdmin.value && request.value?.status_name === 'Vraćeno na dopunu / izmjenu');
+
+const lastReturnComment = computed(() => {
+  const returnEntries = history.value.filter(
+    (h) => h.status_name === 'Vraćeno na dopunu / izmjenu'
+  );
+  if (returnEntries.length === 0) return null;
+  const last = returnEntries[returnEntries.length - 1];
+  return last.comment || null;
+});
 const canComplete = computed(() => isAdmin.value && request.value?.status_name === 'Odobreno');
 const canCloseRequest = computed(() => hasPonuda.value && hasOtpremnica.value);
 
@@ -531,6 +547,19 @@ const deleteAttachment = (att) => {
   });
 };
 
+const submitForReview = async () => {
+  submittingAction.value = true;
+  try {
+    await api.patch(`/requests/${route.params.id}/status`, { action: 'submit-for-review' });
+    $q.notify({ type: 'positive', message: 'Zahtjev poslan na odobrenje.' });
+    await fetchRequestDetails();
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Greška pri slanju na odobrenje.' });
+  } finally {
+    submittingAction.value = false;
+  }
+};
+
 const completeRequest = async () => {
   submittingComplete.value = true;
 
@@ -595,19 +624,6 @@ const confirmAction = async () => {
   }
 };
 
-const submitForReview = async () => {
-  submittingAction.value = true;
-  try {
-    await api.patch(`/requests/${route.params.id}/status`, { action: 'submit-for-review' });
-    $q.notify({ type: 'positive', message: 'Zahtjev poslan na odobrenje.' });
-    await fetchRequestDetails();
-  } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Greška pri slanju na odobrenje.' });
-  } finally {
-    submittingAction.value = false;
-  }
-};
-
 const resubmitRequest = async () => {
   submittingAction.value = true;
 
@@ -656,7 +672,7 @@ const statusClass = (status) => {
       return 'status-chip--draft';
     case 'na odobrenju':
       return 'status-chip--submitted';
-    case 'vraćeno na dopunu / izmjenu':
+    case 'vraćeno na izmjenu':
       return 'status-chip--returned';
     case 'odobreno':
       return 'status-chip--approved';
@@ -684,7 +700,7 @@ const timelineColor = (title) => {
       return 'indigo';
     case 'na odobrenju':
       return 'blue';
-    case 'vraćeno na dopunu / izmjenu':
+    case 'vraćeno na izmjenu':
       return 'orange';
     case 'odobreno':
       return 'positive';
@@ -707,7 +723,7 @@ const timelineIcon = (title) => {
       return 'outbox';
     case 'na odobrenju':
       return 'send';
-    case 'vraćeno na dopunu / izmjenu':
+    case 'vraćeno na izmjenu':
       return 'undo';
     case 'odobreno':
       return 'check_circle';
@@ -781,7 +797,7 @@ onMounted(() => {
   border-radius: 20px;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.08);
 }
 
 .actions-card {
@@ -882,6 +898,29 @@ onMounted(() => {
 .status-chip--default {
   background: #f1f5f9;
   color: #475569;
+}
+
+.return-comment {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+.return-comment__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #92400e;
+  margin-bottom: 6px;
+}
+
+.return-comment__text {
+  color: #0f172a;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 .items-table :deep(.q-table thead tr) {
