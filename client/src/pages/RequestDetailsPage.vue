@@ -49,18 +49,26 @@
             <div>
               <div class="text-subtitle1 text-weight-bold">Novi zahtjev čeka pregled</div>
               <div class="text-body2 text-grey-7">
-                Pregledajte zahtjev i pošaljite ga na formalno odobrenje.
+                Pregledajte zahtjev i pošaljite ga na odobrenje ili ga odbijte.
               </div>
             </div>
-            <q-btn
-              unelevated
-              no-caps
-              color="primary"
-              icon="send"
-              label="Pošalji na odobrenje"
-              :loading="submittingAction"
-              @click="submitForReview"
-            />
+            <div class="row q-gutter-sm">
+              <q-btn
+                unelevated no-caps
+                color="negative"
+                icon="close"
+                label="Odbij"
+                @click="openActionDialog('reject')"
+              />
+              <q-btn
+                unelevated no-caps
+                color="primary"
+                icon="send"
+                label="Pošalji na odobrenje"
+                :loading="submittingAction"
+                @click="submitForReview"
+              />
+            </div>
           </q-card-section>
         </q-card>
 
@@ -69,7 +77,7 @@
             <div>
               <div class="text-subtitle1 text-weight-bold">Potrebna vaša odluka</div>
               <div class="text-body2 text-grey-7">
-                Zahtjev čeka odobrenje. Možete ga odobriti, odbiti ili vratiti na izmjenu.
+                Zahtjev je na odobrenju. Možete ga odobriti ili vratiti korisniku na dopunu.
               </div>
               <div v-if="!canApprove" class="text-body2 text-negative q-mt-sm">
                 Nedostaje -
@@ -84,16 +92,8 @@
                 no-caps
                 color="warning"
                 icon="undo"
-                label="Vrati na izmjenu"
+                label="Vrati na dopunu"
                 @click="openActionDialog('return-for-revision')"
-              />
-              <q-btn
-                unelevated
-                no-caps
-                color="negative"
-                icon="close"
-                label="Odbij"
-                @click="openActionDialog('reject')"
               />
               <q-btn
                 unelevated
@@ -395,8 +395,8 @@ const hasPonuda = computed(() => attachments.value.some((a) => a.document_type =
 const hasOtpremnica = computed(() => attachments.value.some((a) => a.document_type === 'Otpremnica'));
 const canApprove = computed(() => hasPonuda.value && Number(request.value?.total_amount) > 0);
 const canApproveOrReject = computed(() => isAdmin.value && request.value?.status_name === 'Na odobrenju');
-const canUserResubmit = computed(() => !isAdmin.value && request.value?.status_name === 'Vraćeno na dopunu / izmjenu');
 const canSubmitForReview = computed(() => isAdmin.value && request.value?.status_name === 'Poslano');
+const canUserResubmit = computed(() => !isAdmin.value && request.value?.status_name === 'Vraćeno na izmjenu');
 const canComplete = computed(() => isAdmin.value && request.value?.status_name === 'Odobreno');
 const canCloseRequest = computed(() => hasPonuda.value && hasOtpremnica.value);
 
@@ -531,6 +531,19 @@ const deleteAttachment = (att) => {
   });
 };
 
+const submitForReview = async () => {
+  submittingAction.value = true;
+  try {
+    await api.patch(`/requests/${route.params.id}/status`, { action: 'submit-for-review' });
+    $q.notify({ type: 'positive', message: 'Zahtjev poslan na odobrenje.' });
+    await fetchRequestDetails();
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Greška pri slanju na odobrenje.' });
+  } finally {
+    submittingAction.value = false;
+  }
+};
+
 const completeRequest = async () => {
   submittingComplete.value = true;
 
@@ -595,19 +608,6 @@ const confirmAction = async () => {
   }
 };
 
-const submitForReview = async () => {
-  submittingAction.value = true;
-  try {
-    await api.patch(`/requests/${route.params.id}/status`, { action: 'submit-for-review' });
-    $q.notify({ type: 'positive', message: 'Zahtjev poslan na odobrenje.' });
-    await fetchRequestDetails();
-  } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Greška pri slanju na odobrenje.' });
-  } finally {
-    submittingAction.value = false;
-  }
-};
-
 const resubmitRequest = async () => {
   submittingAction.value = true;
 
@@ -656,7 +656,7 @@ const statusClass = (status) => {
       return 'status-chip--draft';
     case 'na odobrenju':
       return 'status-chip--submitted';
-    case 'vraćeno na dopunu / izmjenu':
+    case 'vraćeno na izmjenu':
       return 'status-chip--returned';
     case 'odobreno':
       return 'status-chip--approved';
@@ -684,7 +684,7 @@ const timelineColor = (title) => {
       return 'indigo';
     case 'na odobrenju':
       return 'blue';
-    case 'vraćeno na dopunu / izmjenu':
+    case 'vraćeno na izmjenu':
       return 'orange';
     case 'odobreno':
       return 'positive';
@@ -707,7 +707,7 @@ const timelineIcon = (title) => {
       return 'outbox';
     case 'na odobrenju':
       return 'send';
-    case 'vraćeno na dopunu / izmjenu':
+    case 'vraćeno na izmjenu':
       return 'undo';
     case 'odobreno':
       return 'check_circle';
@@ -781,7 +781,7 @@ onMounted(() => {
   border-radius: 20px;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.08);
 }
 
 .actions-card {
