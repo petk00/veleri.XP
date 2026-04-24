@@ -263,12 +263,12 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
   }
 
   const actionMap = {
-    'submit-for-review':   { newStatus: STATUS.PENDING_APPROVAL,     allowedFrom: STATUS.SENT },
-    'approve':             { newStatus: STATUS.APPROVED,              allowedFrom: STATUS.PENDING_APPROVAL },
-    'reject':              { newStatus: STATUS.REJECTED,              allowedFrom: STATUS.PENDING_APPROVAL },
-    'return-for-revision': { newStatus: STATUS.RETURNED_FOR_REVISION, allowedFrom: STATUS.PENDING_APPROVAL },
-    'complete':            { newStatus: STATUS.CLOSED,                allowedFrom: STATUS.APPROVED },
-    'resubmit':            { newStatus: STATUS.PENDING_APPROVAL,      allowedFrom: STATUS.RETURNED_FOR_REVISION },
+    'submit-for-review':   { newStatus: STATUS.PENDING_APPROVAL,     allowedFrom: [STATUS.SENT] },
+    'approve':             { newStatus: STATUS.APPROVED,              allowedFrom: [STATUS.PENDING_APPROVAL] },
+    'reject':              { newStatus: STATUS.REJECTED,              allowedFrom: [STATUS.PENDING_APPROVAL, STATUS.SENT] },
+    'return-for-revision': { newStatus: STATUS.RETURNED_FOR_REVISION, allowedFrom: [STATUS.PENDING_APPROVAL] },
+    'complete':            { newStatus: STATUS.CLOSED,                allowedFrom: [STATUS.APPROVED] },
+    'resubmit':            { newStatus: STATUS.PENDING_APPROVAL,      allowedFrom: [STATUS.RETURNED_FOR_REVISION] },
   };
 
   const { newStatus: newStatusId, allowedFrom } = actionMap[action];
@@ -301,7 +301,7 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       return res.status(400).json({ message: 'Zahtjev je zaključan i više se ne može mijenjati.' });
     }
 
-    if (currentStatus !== allowedFrom) {
+    if (!allowedFrom.includes(currentStatus)) {
       await connection.rollback();
       return res.status(400).json({ message: `Zahtjev nije u ispravnom statusu za akciju "${action}".` });
     }
