@@ -2,72 +2,64 @@
   <q-page class="dashboard-page q-pa-lg">
     <div class="page-shell">
       <section class="hero-section q-mb-xl">
-        <div class="text-overline text-primary text-weight-bold">
-          XP · SUSTAV NABAVE
-        </div>
+        <div class="hero-eyebrow">XP · SUSTAV NABAVE</div>
 
-        <div class="text-h3 text-weight-bold q-mt-sm hero-title">
+        <div class="hero-title">
           Dobrodošao{{ user ? `, ${user.first_name}` : '' }}
         </div>
 
-        <div class="text-subtitle1 text-grey-7 q-mt-md hero-subtitle">
+        <div class="hero-subtitle">
           Odaberite jednu od glavnih akcija za nastavak rada u sustavu.
         </div>
       </section>
 
       <section class="row q-col-gutter-lg">
         <div class="col-12 col-md-6">
-          <q-card
+          <div
             class="action-card action-card--primary cursor-pointer"
-            flat
             @click="$router.push('/requests/new')"
           >
-            <q-card-section class="card-content">
-              <div class="icon-wrap bg-primary text-white">
-                <q-icon name="add_shopping_cart" size="30px" />
-              </div>
+            <div class="action-card__icon action-card__icon--blue">
+              <q-icon name="add_shopping_cart" size="22px" />
+            </div>
 
-              <div class="text-h5 text-weight-bold q-mt-lg">
-                Novi zahtjev za nabavu
-              </div>
+            <div class="action-card__title">
+              Novi zahtjev za nabavu
+            </div>
 
-              <div class="text-body1 text-grey-7 q-mt-sm">
-                Pokrenite novi zahtjev i prođite kroz korake unosa podataka.
-              </div>
+            <div class="action-card__desc">
+              Pokrenite novi zahtjev i prođite kroz korake unosa podataka.
+            </div>
 
-              <div class="row items-center q-mt-xl text-primary text-weight-medium">
-                <span>Započni</span>
-                <q-icon name="arrow_forward" class="q-ml-sm" />
-              </div>
-            </q-card-section>
-          </q-card>
+            <div class="action-card__cta">
+              <span>Započni</span>
+              <q-icon name="arrow_forward" size="16px" />
+            </div>
+          </div>
         </div>
 
         <div class="col-12 col-md-6">
-          <q-card
+          <div
             class="action-card cursor-pointer"
-            flat
             @click="$router.push('/requests')"
           >
-            <q-card-section class="card-content">
-              <div class="icon-wrap bg-grey-2 text-primary">
-                <q-icon name="description" size="30px" />
-              </div>
+            <div class="action-card__icon action-card__icon--neutral">
+              <q-icon name="description" size="22px" />
+            </div>
 
-              <div class="text-h5 text-weight-bold q-mt-lg">
-                Pregled zahtjeva
-              </div>
+            <div class="action-card__title">
+              Pregled zahtjeva
+            </div>
 
-              <div class="text-body1 text-grey-7 q-mt-sm">
-                Pregledajte postojeće zahtjeve, status i nastavite rad na njima.
-              </div>
+            <div class="action-card__desc">
+              Pregledajte postojeće zahtjeve, status i nastavite rad na njima.
+            </div>
 
-              <div class="row items-center q-mt-xl text-primary text-weight-medium">
-                <span>Otvori pregled</span>
-                <q-icon name="arrow_forward" class="q-ml-sm" />
-              </div>
-            </q-card-section>
-          </q-card>
+            <div class="action-card__cta">
+              <span>Otvori pregled</span>
+              <q-icon name="arrow_forward" size="16px" />
+            </div>
+          </div>
         </div>
       </section>
     </div>
@@ -82,62 +74,108 @@ const user = getStoredUser();
 
 <style scoped>
 .dashboard-page {
-  background:
-    radial-gradient(circle at top left, rgba(25, 118, 210, 0.08), transparent 28%),
-    linear-gradient(180deg, #f8fafc 0%, #f3f6fb 100%);
+  background: #F9FAFB;
   min-height: 100vh;
 }
 
 .page-shell {
-  max-width: 1200px;
+  max-width: 1000px;
   margin: 0 auto;
+  padding-top: 16px;
 }
 
 .hero-section {
   padding-top: 8px;
 }
 
+.hero-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
 .hero-title {
-  letter-spacing: -0.02em;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 10px;
 }
 
 .hero-subtitle {
-  max-width: 700px;
+  font-size: 0.95rem;
+  color: #6B7280;
+  max-width: 520px;
   line-height: 1.6;
 }
 
 .action-card {
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
-  min-height: 280px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 28px;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .action-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.12);
-  border-color: rgba(25, 118, 210, 0.18);
+  border-color: #BFDBFE;
+  box-shadow: 0 4px 16px rgba(30, 64, 175, 0.08);
 }
 
 .action-card--primary {
-  background: linear-gradient(135deg, #ffffff 0%, #f7fbff 100%);
+  border-color: #DBEAFE;
+  background: #FAFEFF;
 }
 
-.card-content {
-  padding: 28px;
-}
-
-.icon-wrap {
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
+.action-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 18px;
+}
+
+.action-card__icon--blue {
+  background: #EFF6FF;
+  color: #1E40AF;
+}
+
+.action-card__icon--neutral {
+  background: #F3F4F6;
+  color: #374151;
+}
+
+.action-card__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+.action-card__desc {
+  font-size: 0.875rem;
+  color: #6B7280;
+  line-height: 1.55;
+  flex: 1;
+}
+
+.action-card__cta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1E40AF;
+  margin-top: 20px;
 }
 </style>

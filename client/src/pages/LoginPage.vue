@@ -1,54 +1,63 @@
 <template>
-  <q-page class="flex flex-center bg-grey-2">
-    <q-card style="width: 400px; max-width: 90vw;">
-      <q-card-section>
-        <div class="text-h5 text-center q-mb-md">Prijava</div>
-      </q-card-section>
+  <q-page class="login-page flex flex-center">
+    <div class="login-shell">
+      <div class="login-brand">
+        <div class="login-brand__badge">
+          <q-icon name="inventory_2" size="20px" />
+        </div>
+        <div class="login-brand__name">XP Sustav nabave</div>
+      </div>
 
-      <q-card-section class="q-gutter-md">
-        <q-input
-          v-model="email"
-          label="Email"
-          type="email"
-          outlined
-          autocomplete="username"
-        />
+      <div class="login-heading">Prijava u sustav</div>
 
-        <q-input
-          v-model="password"
-          label="Lozinka"
-          :type="showPassword ? 'text' : 'password'"
-          outlined
-          autocomplete="current-password"
-          @keyup.enter="handleLogin"
-        >
-          <template #append>
-            <q-icon
-              :name="showPassword ? 'visibility_off' : 'visibility'"
-              class="cursor-pointer"
-              @click="showPassword = !showPassword"
-            />
-          </template>
-        </q-input>
+      <div class="login-form">
+        <div class="form-field">
+          <q-input
+            v-model="email"
+            label="Email adresa"
+            type="email"
+            outlined
+            autocomplete="username"
+            class="clean-input"
+          />
+        </div>
 
-        <q-banner
-          v-if="errorMessage"
-          class="bg-red-1 text-red-8"
-          rounded
-        >
-          {{ errorMessage }}
-        </q-banner>
-      </q-card-section>
+        <div class="form-field">
+          <q-input
+            v-model="password"
+            label="Lozinka"
+            :type="showPassword ? 'text' : 'password'"
+            outlined
+            autocomplete="current-password"
+            class="clean-input"
+            @keyup.enter="handleLogin"
+          >
+            <template #append>
+              <q-icon
+                :name="showPassword ? 'visibility_off' : 'visibility'"
+                class="cursor-pointer text-grey-5"
+                @click="showPassword = !showPassword"
+              />
+            </template>
+          </q-input>
+        </div>
 
-      <q-card-actions align="right" class="q-pa-md">
+        <div v-if="errorMessage" class="error-banner">
+          <q-icon name="error_outline" size="16px" />
+          <span>{{ errorMessage }}</span>
+        </div>
+
         <q-btn
+          unelevated
+          no-caps
           color="primary"
           label="Prijavi se"
+          class="login-btn"
           :loading="loading"
           @click="handleLogin"
         />
-      </q-card-actions>
-    </q-card>
+      </div>
+    </div>
   </q-page>
 </template>
 
@@ -95,3 +104,86 @@ const handleLogin = async () => {
   }
 };
 </script>
+
+<style scoped>
+.login-page {
+  background: #F9FAFB;
+  min-height: 100vh;
+}
+
+.login-shell {
+  width: 380px;
+  max-width: 90vw;
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 32px;
+  justify-content: center;
+}
+
+.login-brand__badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #1E40AF;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-brand__name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.login-heading {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 28px;
+  text-align: center;
+  letter-spacing: -0.02em;
+}
+
+.login-form {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-field {
+  width: 100%;
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 6px;
+  color: #991B1B;
+  font-size: 0.875rem;
+}
+
+.login-btn {
+  width: 100%;
+  height: 44px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background: #1E40AF !important;
+  margin-top: 4px;
+}
+</style>

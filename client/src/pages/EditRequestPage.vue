@@ -5,15 +5,9 @@
       <!-- HEADER -->
       <section class="page-hero q-mb-lg">
         <div>
-          <div class="text-overline text-primary text-weight-bold">
-            UREĐIVANJE ZAHTJEVA
-          </div>
-          <div class="text-h4 text-weight-bold q-mt-sm page-title">
-            {{ requestNumber }}
-          </div>
-          <div class="text-subtitle1 text-grey-7 q-mt-xs">
-            Samo administrator može mijenjati podatke zahtjeva.
-          </div>
+          <div class="page-eyebrow">UREĐIVANJE ZAHTJEVA</div>
+          <div class="page-title">{{ requestNumber }}</div>
+          <div class="page-meta">Samo administrator može mijenjati podatke zahtjeva.</div>
         </div>
         <q-btn
           flat no-caps color="primary"
@@ -24,158 +18,146 @@
 
       <!-- LOADING -->
       <div v-if="loading" class="row justify-center q-pa-xl">
-        <q-spinner color="primary" size="40px" />
+        <q-spinner color="primary" size="36px" />
       </div>
 
       <div v-else-if="form">
 
         <!-- OSNOVNI PODACI -->
-        <q-card flat class="edit-card q-mb-lg">
-          <q-card-section>
-            <div class="card-title q-mb-lg">Osnovni podaci</div>
+        <div class="edit-card q-mb-lg">
+          <div class="edit-card__title">Osnovni podaci</div>
 
-            <div class="row q-col-gutter-lg">
-              <div class="col-12 col-md-6">
-                <q-select
-                  v-model="form.fk_department"
-                  :options="departmentOptions"
-                  label="Odjel / Služba / Projekt"
-                  outlined
-                  emit-value
-                  map-options
-                >
-                  <template #prepend>
-                    <q-icon name="business" color="primary" />
-                  </template>
-                </q-select>
-              </div>
-
-              <div class="col-12 col-md-6">
-                <q-input
-                  :model-value="fiscalYear"
-                  label="Fiskalna godina"
-                  outlined
-                  readonly
-                  hint="Fiskalna godina se ne može mijenjati"
-                >
-                  <template #prepend>
-                    <q-icon name="calendar_today" color="grey-5" />
-                  </template>
-                </q-input>
-              </div>
-
-              <div class="col-12">
-                <q-input
-                  v-model="form.justification"
-                  type="textarea"
-                  label="Obrazloženje nabave"
-                  outlined
-                  autogrow
-                  rows="4"
-                  counter
-                  maxlength="1000"
-                />
-              </div>
-
-              <div class="col-12 col-md-4">
-                <q-input
-                  v-model.number="form.estimated_amount"
-                  label="Procijenjeni iznos"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  outlined
-                  suffix="EUR"
-                  hint="Admin može ažurirati iznos"
-                />
-              </div>
+          <div class="row q-col-gutter-lg">
+            <div class="col-12 col-md-6">
+              <q-select
+                v-model="form.fk_department"
+                :options="departmentOptions"
+                label="Odjel / Služba / Projekt"
+                outlined
+                emit-value
+                map-options
+              >
+                <template #prepend>
+                  <q-icon name="business" color="primary" />
+                </template>
+              </q-select>
             </div>
-          </q-card-section>
-        </q-card>
+
+            <div class="col-12 col-md-6">
+              <q-input
+                :model-value="fiscalYear"
+                label="Fiskalna godina"
+                outlined
+                readonly
+                hint="Fiskalna godina se ne može mijenjati"
+              >
+                <template #prepend>
+                  <q-icon name="calendar_today" color="grey-5" />
+                </template>
+              </q-input>
+            </div>
+
+            <div class="col-12">
+              <q-input
+                v-model="form.justification"
+                type="textarea"
+                label="Obrazloženje nabave"
+                outlined
+                autogrow
+                rows="4"
+                counter
+                maxlength="1000"
+              />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <q-input
+                v-model.number="form.estimated_amount"
+                label="Procijenjeni iznos"
+                type="number"
+                min="0"
+                step="0.01"
+                outlined
+                suffix="EUR"
+                hint="Admin može ažurirati iznos"
+              />
+            </div>
+          </div>
+        </div>
 
         <!-- STAVKE -->
-        <q-card flat class="edit-card q-mb-lg">
-          <q-card-section>
-            <div class="card-title q-mb-lg">Stavke zahtjeva</div>
+        <div class="edit-card q-mb-lg">
+          <div class="edit-card__title">Stavke zahtjeva</div>
 
-            <!-- Forma za dodavanje nove stavke -->
-            <div class="add-item-form q-mb-lg">
-              <div class="text-caption text-grey-6 q-mb-sm text-weight-bold">
-                DODAJ STAVKU
+          <div class="add-item-form q-mb-lg">
+            <div class="add-item-form__label">DODAJ STAVKU</div>
+            <div class="row q-col-gutter-md items-end">
+              <div class="col-12 col-md-4">
+                <q-select
+                  v-model="itemForm.category"
+                  :options="categoryOptions"
+                  label="Kategorija"
+                  outlined dense
+                  emit-value map-options
+                />
               </div>
-              <div class="row q-col-gutter-md items-end">
-                <div class="col-12 col-md-4">
-                  <q-select
-                    v-model="itemForm.category"
-                    :options="categoryOptions"
-                    label="Kategorija"
-                    outlined dense
-                    emit-value map-options
-                  />
-                </div>
-                <div class="col-12 col-md-5">
-                  <q-input
-                    v-model="itemForm.item_name"
-                    label="Naziv artikla / usluge"
-                    outlined dense
-                    @keyup.enter="addItem"
-                  />
-                </div>
-                <div class="col-12 col-md-2">
-                  <q-input
-                    v-model.number="itemForm.quantity"
-                    label="Količina"
-                    type="number" min="1"
-                    outlined dense
-                  />
-                </div>
-                <div class="col-12 col-md-1">
-                  <q-btn
-                    unelevated round color="primary"
-                    icon="add"
-                    @click="addItem"
-                  >
-                    <q-tooltip>Dodaj stavku</q-tooltip>
-                  </q-btn>
-                </div>
+              <div class="col-12 col-md-5">
+                <q-input
+                  v-model="itemForm.item_name"
+                  label="Naziv artikla / usluge"
+                  outlined dense
+                  @keyup.enter="addItem"
+                />
+              </div>
+              <div class="col-12 col-md-2">
+                <q-input
+                  v-model.number="itemForm.quantity"
+                  label="Količina"
+                  type="number" min="1"
+                  outlined dense
+                />
+              </div>
+              <div class="col-12 col-md-1">
+                <q-btn
+                  unelevated round color="primary"
+                  icon="add"
+                  @click="addItem"
+                >
+                  <q-tooltip>Dodaj stavku</q-tooltip>
+                </q-btn>
               </div>
             </div>
+          </div>
 
-            <!-- Lista stavki -->
-            <div v-if="form.items.length === 0" class="text-grey-5 text-center q-py-lg">
-              <q-icon name="inventory_2" size="32px" />
-              <div class="q-mt-sm">Nema stavki</div>
-            </div>
+          <div v-if="form.items.length === 0" class="items-empty">
+            <q-icon name="inventory_2" size="28px" color="grey-4" />
+            <div class="items-empty__text">Nema stavki</div>
+          </div>
 
-            <q-list v-else separator class="items-list">
+          <div v-else class="items-list">
+            <q-list separator>
               <q-item v-for="(item, index) in form.items" :key="index">
                 <q-item-section avatar>
                   <div class="item-index">{{ index + 1 }}</div>
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label class="text-weight-medium">{{ item.item_name }}</q-item-label>
-                  <q-item-label caption>{{ item.category_label }}</q-item-label>
+                  <q-item-label class="item-name">{{ item.item_name }}</q-item-label>
+                  <q-item-label caption class="item-category">{{ item.category_label }}</q-item-label>
                 </q-item-section>
                 <q-item-section side>
                   <div class="row items-center q-gutter-sm">
-                    <q-chip dense color="primary" text-color="white" size="sm">
-                      × {{ item.quantity }}
-                    </q-chip>
-                    <q-btn
-                      flat round dense
-                      icon="delete" color="negative" size="sm"
-                      @click="removeItem(index)"
-                    />
+                    <q-chip dense color="primary" text-color="white" size="sm">× {{ item.quantity }}</q-chip>
+                    <q-btn flat round dense icon="delete" color="negative" size="sm" @click="removeItem(index)" />
                   </div>
                 </q-item-section>
               </q-item>
             </q-list>
+          </div>
 
-            <div v-if="form.items.length > 0" class="text-caption text-grey-5 text-right q-mt-sm">
-              {{ form.items.length }} {{ form.items.length === 1 ? 'stavka' : 'stavki' }} ukupno
-            </div>
-          </q-card-section>
-        </q-card>
+          <div v-if="form.items.length > 0" class="items-count">
+            {{ form.items.length }} {{ form.items.length === 1 ? 'stavka' : 'stavki' }} ukupno
+          </div>
+        </div>
 
         <!-- AKCIJE -->
         <div class="row justify-between items-center">
@@ -188,7 +170,7 @@
           <q-btn
             unelevated no-caps color="primary"
             icon="save" label="Spremi izmjene"
-            size="lg"
+            class="save-btn"
             :loading="saving"
             @click="saveChanges"
           />
@@ -196,8 +178,7 @@
 
       </div>
 
-      <!-- Error state -->
-      <div v-else class="text-grey-6 text-center q-pa-xl">
+      <div v-else class="empty-state q-pa-xl text-center">
         Zahtjev nije pronađen.
       </div>
 
@@ -227,7 +208,6 @@ const form = ref(null);
 
 const itemForm = ref({ category: null, item_name: '', quantity: 1 });
 
-// Dohvati detalje zahtjeva i referentne podatke
 const fetchData = async () => {
   loading.value = true;
   try {
@@ -253,7 +233,6 @@ const fetchData = async () => {
       value: c.id_item_category,
     }));
 
-    // Pre-fill forme s postojećim podacima
     form.value = {
       fk_department: departmentOptions.value.find(
         (d) => d.label === request.department_name
@@ -342,13 +321,14 @@ onMounted(() => { fetchData(); });
 
 <style scoped>
 .edit-page {
-  background:
-    radial-gradient(circle at top right, rgba(25, 118, 210, 0.06), transparent 24%),
-    linear-gradient(180deg, #f8fafc 0%, #f4f7fb 100%);
+  background: #F9FAFB;
   min-height: 100vh;
 }
 
-.page-shell { max-width: 1000px; margin: 0 auto; }
+.page-shell {
+  max-width: 1000px;
+  margin: 0 auto;
+}
 
 .page-hero {
   display: flex;
@@ -356,46 +336,117 @@ onMounted(() => { fetchData(); });
   justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
+  padding-top: 8px;
 }
 
-.page-title { letter-spacing: -0.02em; }
+.page-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.page-meta {
+  font-size: 0.875rem;
+  color: #9CA3AF;
+}
 
 .edit-card {
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 24px;
 }
 
-.card-title {
-  font-size: 1.05rem;
+.edit-card__title {
+  font-size: 0.95rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #111827;
+  margin-bottom: 20px;
 }
 
 .add-item-form {
-  background: #f8fafc;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 16px;
-  padding: 16px 20px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.add-item-form__label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  margin-bottom: 12px;
 }
 
 .items-list {
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 12px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
   overflow: hidden;
 }
 
+.items-empty {
+  padding: 32px;
+  text-align: center;
+}
+
+.items-empty__text {
+  font-size: 0.875rem;
+  color: #9CA3AF;
+  margin-top: 8px;
+}
+
 .item-index {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: #f1f5f9;
-  color: #64748b;
+  background: #F3F4F6;
+  color: #6B7280;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.item-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.item-category {
+  font-size: 0.8rem;
+  color: #9CA3AF;
+}
+
+.items-count {
+  text-align: right;
+  font-size: 0.75rem;
+  color: #9CA3AF;
+  padding: 8px 4px 0;
+}
+
+.save-btn {
+  border-radius: 8px;
+  background: #1E40AF !important;
+  font-weight: 600;
+}
+
+.empty-state {
+  font-size: 0.875rem;
+  color: #9CA3AF;
 }
 </style>

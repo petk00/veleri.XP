@@ -3,13 +3,9 @@
     <div class="page-shell">
       <section class="page-hero q-mb-lg">
         <div>
-          <div class="text-overline text-primary text-weight-bold">
-            ZAHTJEVI ZA NABAVU
-          </div>
-          <div class="text-h4 text-weight-bold q-mt-sm page-title">
-            Pregled zahtjeva
-          </div>
-          <div class="text-subtitle1 text-grey-7 q-mt-sm page-subtitle">
+          <div class="page-eyebrow">ZAHTJEVI ZA NABAVU</div>
+          <div class="page-title">Pregled zahtjeva</div>
+          <div class="page-subtitle">
             Pregledajte postojeće zahtjeve, njihov status i otvorite detalje za nastavak rada.
           </div>
         </div>
@@ -25,95 +21,91 @@
         />
       </section>
 
-      <q-card flat class="table-card">
-        <q-card-section class="table-toolbar">
-          <div class="text-h6 text-weight-bold">Svi zahtjevi</div>
-          <div class="text-body2 text-grey-6">
-            Ukupno: {{ rows.length }}
-          </div>
-        </q-card-section>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div class="table-toolbar__title">Svi zahtjevi</div>
+          <div class="table-toolbar__count">Ukupno: {{ rows.length }}</div>
+        </div>
 
-        <q-separator />
+        <q-separator color="grey-2" />
 
         <q-banner
           v-if="errorMessage"
           inline-actions
           rounded
-          class="bg-red-1 text-negative q-ma-md"
+          class="error-banner q-ma-md"
         >
           {{ errorMessage }}
         </q-banner>
 
-        <q-card-section class="q-pa-none">
-          <q-table
-            :rows="rows"
-            :columns="columns"
-            row-key="id_purchase_request"
-            :loading="loading"
-            flat
-            :pagination="{ rowsPerPage: 10 }"
-            class="requests-table"
-          >
-            <template #body-cell-request_number="props">
-              <q-td :props="props">
-                <q-btn
-                  flat
-                  no-caps
-                  class="request-link"
-                  :label="props.row.request_number"
-                  @click="openRequest(props.row.id_purchase_request)"
-                />
-              </q-td>
-            </template>
+        <q-table
+          :rows="rows"
+          :columns="columns"
+          row-key="id_purchase_request"
+          :loading="loading"
+          flat
+          :pagination="{ rowsPerPage: 10 }"
+          class="requests-table"
+        >
+          <template #body-cell-request_number="props">
+            <q-td :props="props">
+              <q-btn
+                flat
+                no-caps
+                class="request-link"
+                :label="props.row.request_number"
+                @click="openRequest(props.row.id_purchase_request)"
+              />
+            </q-td>
+          </template>
 
-            <template #body-cell-status_name="props">
-              <q-td :props="props">
-                <q-chip
-                  dense
-                  class="status-chip"
-                  :class="statusClass(props.row.status_name)"
-                >
-                  {{ props.row.status_name }}
-                </q-chip>
-              </q-td>
-            </template>
+          <template #body-cell-status_name="props">
+            <q-td :props="props">
+              <q-chip
+                dense
+                class="status-chip"
+                :class="statusClass(props.row.status_name)"
+              >
+                {{ props.row.status_name }}
+              </q-chip>
+            </q-td>
+          </template>
 
-            <template #body-cell-total_amount="props">
-              <q-td :props="props" class="text-right">
-                {{ formatCurrency(props.row.total_amount) }}
-              </q-td>
-            </template>
+          <template #body-cell-total_amount="props">
+            <q-td :props="props" class="text-right">
+              {{ formatCurrency(props.row.total_amount) }}
+            </q-td>
+          </template>
 
-            <template #body-cell-created_at="props">
-              <q-td :props="props">
-                {{ formatDate(props.row.created_at) }}
-              </q-td>
-            </template>
+          <template #body-cell-created_at="props">
+            <q-td :props="props">
+              {{ formatDate(props.row.created_at) }}
+            </q-td>
+          </template>
 
-            <template #body-cell-actions="props">
-              <q-td :props="props" class="text-right">
-                <q-btn
-                  flat
-                  round
-                  dense
-                  icon="arrow_forward"
-                  color="primary"
-                  @click="openRequest(props.row.id_purchase_request)"
-                >
-                  <q-tooltip>Otvori detalje</q-tooltip>
-                </q-btn>
-              </q-td>
-            </template>
+          <template #body-cell-actions="props">
+            <q-td :props="props" class="text-right">
+              <q-btn
+                flat
+                round
+                dense
+                icon="arrow_forward"
+                color="primary"
+                @click="openRequest(props.row.id_purchase_request)"
+              >
+                <q-tooltip>Otvori detalje</q-tooltip>
+              </q-btn>
+            </q-td>
+          </template>
 
-            <template #no-data>
-              <div class="full-width row flex-center q-gutter-sm q-pa-xl text-grey-6">
-                <q-icon name="inbox" size="28px" />
-                <span>Nema zahtjeva za prikaz.</span>
-              </div>
-            </template>
-          </q-table>
-        </q-card-section>
-      </q-card>
+          <template #no-data>
+            <div class="full-width row flex-center q-gutter-sm q-pa-xl text-grey-5">
+              <q-icon name="inbox" size="24px" />
+              <span style="font-size: 0.875rem;">Nema zahtjeva za prikaz.</span>
+            </div>
+          </template>
+        </q-table>
+      </div>
     </div>
   </q-page>
 </template>
@@ -241,9 +233,7 @@ onMounted(() => {
 
 <style scoped>
 .requests-page {
-  background:
-    radial-gradient(circle at top right, rgba(25, 118, 210, 0.06), transparent 24%),
-    linear-gradient(180deg, #f8fafc 0%, #f4f7fb 100%);
+  background: #F9FAFB;
   min-height: 100vh;
 }
 
@@ -258,28 +248,44 @@ onMounted(() => {
   justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
+  padding-top: 8px;
+}
+
+.page-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  margin-bottom: 8px;
 }
 
 .page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #111827;
   letter-spacing: -0.02em;
+  margin-bottom: 6px;
 }
 
 .page-subtitle {
-  max-width: 760px;
-  line-height: 1.6;
+  font-size: 0.875rem;
+  color: #6B7280;
+  max-width: 600px;
+  line-height: 1.55;
 }
 
 .new-request-btn {
-  border-radius: 16px;
-  padding: 10px 16px;
-  box-shadow: 0 12px 24px rgba(25, 118, 210, 0.22);
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 600;
+  background: #1E40AF !important;
 }
 
 .table-card {
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
   overflow: hidden;
 }
 
@@ -287,81 +293,108 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 20px 24px;
+  padding: 18px 24px;
+}
+
+.table-toolbar__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.table-toolbar__count {
+  font-size: 0.8rem;
+  color: #9CA3AF;
+}
+
+.error-banner {
+  background: #FEF2F2;
+  color: #991B1B;
+  border: 1px solid #FECACA;
 }
 
 .requests-table :deep(.q-table thead tr) {
-  background: #f8fafc;
+  background: #F9FAFB;
 }
 
 .requests-table :deep(.q-table thead th) {
-  color: #64748b;
-  font-weight: 700;
-  font-size: 0.82rem;
+  color: #9CA3AF;
+  font-weight: 600;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid #E5E7EB !important;
+}
+
+.requests-table :deep(.q-table tbody tr:hover td) {
+  background: #F9FAFB;
 }
 
 .requests-table :deep(.q-table tbody td) {
-  height: 68px;
+  height: 56px;
+  border-bottom: 1px solid #F3F4F6;
+  color: #374151;
+  font-size: 0.875rem;
 }
 
 .request-link {
-  color: #1976d2;
-  font-weight: 700;
+  color: #1E40AF;
+  font-weight: 600;
+  font-size: 0.875rem;
   padding-left: 0;
 }
 
 .status-chip {
-  border-radius: 999px;
-  font-weight: 700;
-  padding: 6px 10px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  height: auto;
 }
 
 .status-chip--sent {
-  background: #eef2ff;
-  color: #4f46e5;
+  background: #EEF2FF;
+  color: #4338CA;
 }
 
 .status-chip--pending {
-  background: #eff6ff;
-  color: #2563eb;
+  background: #EFF6FF;
+  color: #1D4ED8;
 }
 
 .status-chip--returned {
-  background: #fdf2f8;
-  color: #be185d;
+  background: #FFF7ED;
+  color: #C2410C;
 }
 
 .status-chip--approved {
-  background: #ecfdf3;
-  color: #15803d;
+  background: #ECFDF5;
+  color: #065F46;
 }
 
 .status-chip--rejected {
-  background: #fef2f2;
-  color: #dc2626;
+  background: #FEF2F2;
+  color: #991B1B;
 }
 
 .status-chip--ordered {
-  background: #f3e8ff;
-  color: #7e22ce;
+  background: #F5F3FF;
+  color: #5B21B6;
 }
 
 .status-chip--closed {
-  background: #f0fdf4;
-  color: #166534;
+  background: #F0FDF4;
+  color: #14532D;
 }
 
 .status-chip--default {
-  background: #f1f5f9;
-  color: #475569;
+  background: #F3F4F6;
+  color: #6B7280;
 }
 
 @media (max-width: 768px) {
   .table-toolbar {
-    padding: 18px;
+    padding: 14px 16px;
   }
 }
 </style>

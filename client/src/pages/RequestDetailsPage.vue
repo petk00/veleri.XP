@@ -7,24 +7,20 @@
         color="primary"
         icon="arrow_back"
         label="Natrag na zahtjeve"
-        class="q-mb-md"
+        class="q-mb-md back-btn"
         @click="goBack"
       />
 
       <div v-if="loading" class="row justify-center q-pa-xl">
-        <q-spinner color="primary" size="40px" />
+        <q-spinner color="primary" size="36px" />
       </div>
 
       <div v-else-if="request">
         <section class="page-hero q-mb-lg">
           <div>
-            <div class="text-overline text-primary text-weight-bold">
-              ZAHTJEV ZA NABAVU
-            </div>
+            <div class="page-eyebrow">ZAHTJEV ZA NABAVU</div>
             <div class="header-row q-mt-sm">
-              <div class="text-h4 text-weight-bold page-title">
-                {{ request.request_number }}
-              </div>
+              <div class="page-title">{{ request.request_number }}</div>
               <q-chip dense class="status-chip" :class="statusClass(request.status_name)">
                 {{ request.status_name }}
               </q-chip>
@@ -38,280 +34,222 @@
                 @click="editRequest"
               />
             </div>
-            <div class="text-subtitle1 text-grey-7 q-mt-sm">
+            <div class="page-meta q-mt-xs">
               Kreirao {{ request.created_by }} · {{ formatDate(request.created_at) }}
             </div>
           </div>
         </section>
 
-        <q-card v-if="canApproveOrReject" flat class="actions-card q-mb-lg">
-          <q-card-section class="row items-center justify-between">
-            <div>
-              <div class="text-subtitle1 text-weight-bold">Potrebna vaša odluka</div>
-              <div class="text-body2 text-grey-7">
-                Zahtjev čeka odobrenje. Možete ga odobriti, odbiti ili vratiti na izmjenu.
-              </div>
-              <div v-if="!canApprove" class="text-body2 text-negative q-mt-sm">
-                Nedostaje -
-                <span v-if="!hasPonuda"> ponuda</span>
-                <span v-if="!hasPonuda && (request?.total_amount == null || Number(request?.total_amount) <= 0)">,</span>
-                <span v-if="request?.total_amount == null || Number(request?.total_amount) <= 0"> procijenjeni iznos</span>
-              </div>
+        <!-- Approve/Reject banner -->
+        <div v-if="canApproveOrReject" class="action-banner action-banner--warning q-mb-lg">
+          <div class="action-banner__info">
+            <div class="action-banner__title">Potrebna vaša odluka</div>
+            <div class="action-banner__desc">
+              Zahtjev čeka odobrenje. Možete ga odobriti, odbiti ili vratiti na izmjenu.
             </div>
-            <div class="row q-gutter-sm">
-              <q-btn
-                unelevated
-                no-caps
-                color="warning"
-                icon="undo"
-                label="Vrati na izmjenu"
-                @click="openActionDialog('return-for-revision')"
-              />
-              <q-btn
-                unelevated
-                no-caps
-                color="negative"
-                icon="close"
-                label="Odbij"
-                @click="openActionDialog('reject')"
-              />
-              <q-btn
-                unelevated
-                no-caps
-                color="positive"
-                icon="check"
-                label="Odobri"
-                :disable="!canApprove"
-                @click="openActionDialog('approve')"
-              />
+            <div v-if="!canApprove" class="action-banner__error">
+              Nedostaje —
+              <span v-if="!hasPonuda"> ponuda</span>
+              <span v-if="!hasPonuda && (request?.total_amount == null || Number(request?.total_amount) <= 0)">,</span>
+              <span v-if="request?.total_amount == null || Number(request?.total_amount) <= 0"> procijenjeni iznos</span>
             </div>
-          </q-card-section>
-        </q-card>
-
-        <q-card v-if="canUserResubmit" flat class="actions-card q-mb-lg">
-          <q-card-section class="row items-center justify-between">
-            <div>
-              <div class="text-subtitle1 text-weight-bold">Zahtjev je vraćen na izmjenu</div>
-              <div class="text-body2 text-grey-7">
-                Uredite zahtjev prema komentaru administratora i pošaljite ga ponovno.
-              </div>
-            </div>
-            <div class="row q-gutter-sm">
-              <q-btn
-                flat
-                no-caps
-                color="primary"
-                icon="edit"
-                label="Uredi zahtjev"
-                @click="editRequest"
-              />
-              <q-btn
-                unelevated
-                no-caps
-                color="primary"
-                icon="send"
-                label="Ponovno pošalji"
-                :loading="submittingAction"
-                @click="resubmitRequest"
-              />
-            </div>
-          </q-card-section>
-        </q-card>
-
-        <q-card v-if="canComplete" flat class="complete-card q-mb-lg">
-          <q-card-section class="row items-center justify-between">
-            <div>
-              <div class="text-body2 text-grey-7">
-                <span v-if="!canCloseRequest" class="text-negative">
-                  Nedostaje - otpremnica
-                </span>
-                <span v-else>Svi dokumenti su priloženi. Zahtjev možete označiti kao završen.</span>
-              </div>
-            </div>
-            <q-btn
-              unelevated
-              no-caps
-              color="primary"
-              icon="task_alt"
-              label="Označi završeno"
-              :disable="!canCloseRequest"
-              :loading="submittingComplete"
-              @click="completeRequest"
-            />
-          </q-card-section>
-        </q-card>
-
-        <div class="row q-col-gutter-lg q-mb-lg">
-          <div class="col-12 col-md-6">
-            <q-card flat class="info-card">
-              <q-card-section>
-                <div class="card-title">Osnovni podaci</div>
-                <div class="info-row"><span>Fiskalna godina</span><strong>{{ request.fiscal_year }}</strong></div>
-                <div class="info-row"><span>Odjel / Služba / Projekt</span><strong>{{ request.department_name }}</strong></div>
-                <div class="info-row">
-                  <span>Status</span>
-                  <q-chip dense class="status-chip" :class="statusClass(request.status_name)">
-                    {{ request.status_name }}
-                  </q-chip>
-                </div>
-                <div class="info-row"><span>Zahtjev podnio</span><strong>{{ request.created_by }}</strong></div>
-                <div class="info-row"><span>Procijenjeni iznos</span><strong>{{ formatCurrency(request.total_amount) }}</strong></div>
-                <div class="info-row"><span>Datum kreiranja</span><strong>{{ formatDate(request.created_at) }}</strong></div>
-                <div v-if="request.updated_at" class="info-row"><span>Zadnja izmjena</span><strong>{{ formatDate(request.updated_at) }}</strong></div>
-              </q-card-section>
-            </q-card>
           </div>
-
-          <div class="col-12 col-md-6">
-            <q-card flat class="info-card">
-              <q-card-section>
-                <div class="card-title">Svrha nabave</div>
-                <div class="justification-text">{{ request.justification || 'Nema svrhe nabave.' }}</div>
-              </q-card-section>
-            </q-card>
+          <div class="action-banner__btns">
+            <q-btn unelevated no-caps color="warning" icon="undo" label="Vrati na izmjenu" @click="openActionDialog('return-for-revision')" />
+            <q-btn unelevated no-caps color="negative" icon="close" label="Odbij" @click="openActionDialog('reject')" />
+            <q-btn unelevated no-caps color="positive" icon="check" label="Odobri" :disable="!canApprove" @click="openActionDialog('approve')" />
           </div>
         </div>
 
-        <q-card flat class="info-card q-mb-lg">
-          <q-card-section>
-            <div class="card-title-row">
-              <div class="card-title">Stavke zahtjeva</div>
-              <div class="text-body2 text-grey-6">Ukupno: {{ items.length }}</div>
+        <!-- Resubmit banner -->
+        <div v-if="canUserResubmit" class="action-banner action-banner--info q-mb-lg">
+          <div class="action-banner__info">
+            <div class="action-banner__title">Zahtjev je vraćen na izmjenu</div>
+            <div class="action-banner__desc">
+              Uredite zahtjev prema komentaru administratora i pošaljite ga ponovno.
             </div>
-            <q-table
-              :rows="items"
-              :columns="itemsColumns"
-              row-key="id_purchase_request_item"
-              flat
-              hide-bottom
-              :pagination="{ rowsPerPage: 0 }"
-              class="items-table"
-            />
-          </q-card-section>
-        </q-card>
+          </div>
+          <div class="action-banner__btns">
+            <q-btn flat no-caps color="primary" icon="edit" label="Uredi zahtjev" @click="editRequest" />
+            <q-btn unelevated no-caps color="primary" icon="send" label="Ponovno pošalji" :loading="submittingAction" @click="resubmitRequest" />
+          </div>
+        </div>
 
-        <q-card flat class="info-card q-mb-lg">
-          <q-card-section>
-            <div class="card-title-row">
-              <div class="card-title">Dokumenti</div>
-              <div class="row q-gutter-xs">
-                <q-chip
-                  dense
-                  :color="hasPonuda ? 'positive' : 'grey-4'"
-                  :text-color="hasPonuda ? 'white' : 'grey-7'"
-                  icon="description"
-                >
-                  Ponuda
+        <!-- Complete banner -->
+        <div v-if="canComplete" class="action-banner action-banner--success q-mb-lg">
+          <div class="action-banner__info">
+            <div class="action-banner__desc">
+              <span v-if="!canCloseRequest" class="action-banner__error">Nedostaje — otpremnica</span>
+              <span v-else>Svi dokumenti su priloženi. Zahtjev možete označiti kao završen.</span>
+            </div>
+          </div>
+          <q-btn
+            unelevated no-caps color="primary"
+            icon="task_alt" label="Označi završeno"
+            :disable="!canCloseRequest"
+            :loading="submittingComplete"
+            @click="completeRequest"
+          />
+        </div>
+
+        <!-- Info cards -->
+        <div class="row q-col-gutter-lg q-mb-lg">
+          <div class="col-12 col-md-6">
+            <div class="info-card">
+              <div class="info-card__title">Osnovni podaci</div>
+              <div class="info-row"><span>Fiskalna godina</span><strong>{{ request.fiscal_year }}</strong></div>
+              <div class="info-row"><span>Odjel / Služba / Projekt</span><strong>{{ request.department_name }}</strong></div>
+              <div class="info-row">
+                <span>Status</span>
+                <q-chip dense class="status-chip" :class="statusClass(request.status_name)">
+                  {{ request.status_name }}
                 </q-chip>
-                <q-chip
-                  dense
-                  :color="hasOtpremnica ? 'positive' : 'grey-4'"
-                  :text-color="hasOtpremnica ? 'white' : 'grey-7'"
-                  icon="local_shipping"
-                >
-                  Otpremnica
-                </q-chip>
               </div>
+              <div class="info-row"><span>Zahtjev podnio</span><strong>{{ request.created_by }}</strong></div>
+              <div class="info-row"><span>Procijenjeni iznos</span><strong>{{ formatCurrency(request.total_amount) }}</strong></div>
+              <div class="info-row"><span>Datum kreiranja</span><strong>{{ formatDate(request.created_at) }}</strong></div>
+              <div v-if="request.updated_at" class="info-row"><span>Zadnja izmjena</span><strong>{{ formatDate(request.updated_at) }}</strong></div>
             </div>
+          </div>
 
-            <div v-if="attachments.length === 0" class="text-grey-6 q-py-md">
-              Još nema priloženih dokumenata.
+          <div class="col-12 col-md-6">
+            <div class="info-card">
+              <div class="info-card__title">Svrha nabave</div>
+              <div class="justification-text">{{ request.justification || 'Nema svrhe nabave.' }}</div>
             </div>
+          </div>
+        </div>
 
-            <q-list v-else separator class="q-mb-md">
-              <q-item v-for="att in attachments" :key="att.id_attachment">
-                <q-item-section avatar>
-                  <q-icon :name="fileIcon(att.file_type)" color="primary" size="28px" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-weight-medium">{{ att.file_name }}</q-item-label>
-                  <q-item-label caption>
-                    <q-badge
-                      :color="att.document_type === 'Ponuda' ? 'blue-2' : 'green-2'"
-                      :text-color="att.document_type === 'Ponuda' ? 'blue-9' : 'green-9'"
-                    >
-                      {{ att.document_type }}
-                    </q-badge>
-                    · {{ att.uploaded_by }} · {{ formatDate(att.uploaded_at) }}
-                  </q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <div class="row q-gutter-xs">
-                    <q-btn flat round dense icon="download" color="primary" @click="downloadAttachment(att)">
-                      <q-tooltip>Preuzmi</q-tooltip>
-                    </q-btn>
-                    <q-btn v-if="isAdmin" flat round dense icon="delete" color="negative" @click="deleteAttachment(att)">
-                      <q-tooltip>Obriši</q-tooltip>
-                    </q-btn>
-                  </div>
-                </q-item-section>
-              </q-item>
-            </q-list>
+        <!-- Items -->
+        <div class="info-card q-mb-lg">
+          <div class="info-card__header">
+            <div class="info-card__title">Stavke zahtjeva</div>
+            <div class="info-card__count">Ukupno: {{ items.length }}</div>
+          </div>
+          <q-table
+            :rows="items"
+            :columns="itemsColumns"
+            row-key="id_purchase_request_item"
+            flat
+            hide-bottom
+            :pagination="{ rowsPerPage: 0 }"
+            class="items-table"
+          />
+        </div>
 
-            <q-separator class="q-mb-md" />
-            <div class="text-subtitle2 text-weight-bold q-mb-sm">Dodaj dokument</div>
-            <div class="row q-col-gutter-md items-end">
-              <div class="col-12 col-md-4">
-                <q-select
-                  v-model="uploadForm.document_type"
-                  :options="['Ponuda', 'Otpremnica']"
-                  label="Tip dokumenta"
-                  outlined
-                  dense
-                />
-              </div>
-              <div class="col-12 col-md-6">
-                <q-file v-model="uploadForm.file" label="Odaberi fajl" outlined dense clearable>
-                  <template #prepend><q-icon name="attach_file" /></template>
-                </q-file>
-              </div>
-              <div class="col-12 col-md-2">
-                <q-btn
-                  unelevated
-                  no-caps
-                  color="primary"
-                  icon="upload"
-                  label="Upload"
-                  class="full-width"
-                  :loading="uploading"
-                  :disable="!uploadForm.file || !uploadForm.document_type"
-                  @click="uploadAttachment"
-                />
-              </div>
+        <!-- Documents -->
+        <div class="info-card q-mb-lg">
+          <div class="info-card__header">
+            <div class="info-card__title">Dokumenti</div>
+            <div class="row q-gutter-xs">
+              <q-chip
+                dense
+                :color="hasPonuda ? 'positive' : 'grey-4'"
+                :text-color="hasPonuda ? 'white' : 'grey-7'"
+                icon="description"
+              >Ponuda</q-chip>
+              <q-chip
+                dense
+                :color="hasOtpremnica ? 'positive' : 'grey-4'"
+                :text-color="hasOtpremnica ? 'white' : 'grey-7'"
+                icon="local_shipping"
+              >Otpremnica</q-chip>
             </div>
-          </q-card-section>
-        </q-card>
+          </div>
 
-        <q-card flat class="info-card">
-          <q-card-section>
-            <div class="card-title">Povijest aktivnosti</div>
-            <div v-if="history.length === 0" class="text-grey-6 q-py-md">Još nema zapisa povijesti.</div>
-            <q-timeline v-else color="primary" class="q-mt-md">
-              <q-timeline-entry
-                v-for="entry in history"
-                :key="entry.id_request_status_history"
-                :title="timelineTitle(entry)"
-                :subtitle="`${entry.changed_by} · ${formatDate(entry.changed_at)}`"
-                :color="timelineColor(timelineTitle(entry))"
-                :icon="timelineIcon(timelineTitle(entry))"
-              >
-                <div v-if="entry.comment" class="timeline-comment">{{ entry.comment }}</div>
-              </q-timeline-entry>
-            </q-timeline>
-          </q-card-section>
-        </q-card>
+          <div v-if="attachments.length === 0" class="empty-state">
+            Još nema priloženih dokumenata.
+          </div>
+
+          <q-list v-else separator class="attachments-list q-mb-md">
+            <q-item v-for="att in attachments" :key="att.id_attachment">
+              <q-item-section avatar>
+                <q-icon :name="fileIcon(att.file_type)" color="primary" size="24px" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-medium" style="font-size: 0.875rem;">{{ att.file_name }}</q-item-label>
+                <q-item-label caption>
+                  <q-badge
+                    :color="att.document_type === 'Ponuda' ? 'blue-2' : 'green-2'"
+                    :text-color="att.document_type === 'Ponuda' ? 'blue-9' : 'green-9'"
+                  >{{ att.document_type }}</q-badge>
+                  · {{ att.uploaded_by }} · {{ formatDate(att.uploaded_at) }}
+                </q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <div class="row q-gutter-xs">
+                  <q-btn flat round dense icon="download" color="primary" @click="downloadAttachment(att)">
+                    <q-tooltip>Preuzmi</q-tooltip>
+                  </q-btn>
+                  <q-btn v-if="isAdmin" flat round dense icon="delete" color="negative" @click="deleteAttachment(att)">
+                    <q-tooltip>Obriši</q-tooltip>
+                  </q-btn>
+                </div>
+              </q-item-section>
+            </q-item>
+          </q-list>
+
+          <q-separator class="q-mb-md" color="grey-2" />
+
+          <div class="upload-section-label">Dodaj dokument</div>
+          <div class="row q-col-gutter-md items-end">
+            <div class="col-12 col-md-4">
+              <q-select
+                v-model="uploadForm.document_type"
+                :options="['Ponuda', 'Otpremnica']"
+                label="Tip dokumenta"
+                outlined
+                dense
+              />
+            </div>
+            <div class="col-12 col-md-6">
+              <q-file v-model="uploadForm.file" label="Odaberi fajl" outlined dense clearable>
+                <template #prepend><q-icon name="attach_file" /></template>
+              </q-file>
+            </div>
+            <div class="col-12 col-md-2">
+              <q-btn
+                unelevated
+                no-caps
+                color="primary"
+                icon="upload"
+                label="Upload"
+                class="full-width upload-btn"
+                :loading="uploading"
+                :disable="!uploadForm.file || !uploadForm.document_type"
+                @click="uploadAttachment"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="info-card">
+          <div class="info-card__title">Povijest aktivnosti</div>
+          <div v-if="history.length === 0" class="empty-state">Još nema zapisa povijesti.</div>
+          <q-timeline v-else color="primary" class="q-mt-md">
+            <q-timeline-entry
+              v-for="entry in history"
+              :key="entry.id_request_status_history"
+              :title="timelineTitle(entry)"
+              :subtitle="`${entry.changed_by} · ${formatDate(entry.changed_at)}`"
+              :color="timelineColor(timelineTitle(entry))"
+              :icon="timelineIcon(timelineTitle(entry))"
+            >
+              <div v-if="entry.comment" class="timeline-comment">{{ entry.comment }}</div>
+            </q-timeline-entry>
+          </q-timeline>
+        </div>
       </div>
 
-      <div v-else class="text-grey-6 text-center q-pa-xl">Zahtjev nije pronađen.</div>
+      <div v-else class="empty-state q-pa-xl text-center">Zahtjev nije pronađen.</div>
     </div>
 
     <q-dialog v-model="actionDialog" persistent>
-      <q-card style="min-width: 450px; max-width: 90vw;">
+      <q-card style="min-width: 450px; max-width: 90vw; border-radius: 12px;">
         <q-card-section>
-          <div class="text-h6">{{ actionDialogTitle }}</div>
-          <div class="text-body2 text-grey-7 q-mt-sm">
-            {{ actionDialogDescription }}
-          </div>
+          <div class="dialog-title">{{ actionDialogTitle }}</div>
+          <div class="dialog-desc q-mt-xs">{{ actionDialogDescription }}</div>
         </q-card-section>
         <q-card-section class="q-pt-none">
           <q-input
@@ -333,6 +271,7 @@
             :icon="actionDialogButtonIcon"
             :label="actionDialogButtonLabel"
             :loading="submittingAction"
+            style="border-radius: 6px;"
             @click="confirmAction"
           />
         </q-card-actions>
@@ -646,47 +585,29 @@ const timelineTitle = (entry) => {
 
 const timelineColor = (title) => {
   switch ((title || '').toLowerCase()) {
-    case 'poslano':
-      return 'indigo';
-    case 'na odobrenju':
-      return 'blue';
-    case 'vraćeno na izmjenu':
-      return 'orange';
-    case 'odobreno':
-      return 'positive';
-    case 'odbijeno':
-      return 'negative';
-    case 'naručeno':
-      return 'deep-purple';
-    case 'zatvoreno':
-      return 'green';
-    case 'dokument dodan':
-      return 'teal';
-    default:
-      return 'grey';
+    case 'poslano': return 'indigo';
+    case 'na odobrenju': return 'blue';
+    case 'vraćeno na izmjenu': return 'orange';
+    case 'odobreno': return 'positive';
+    case 'odbijeno': return 'negative';
+    case 'naručeno': return 'deep-purple';
+    case 'zatvoreno': return 'green';
+    case 'dokument dodan': return 'teal';
+    default: return 'grey';
   }
 };
 
 const timelineIcon = (title) => {
   switch ((title || '').toLowerCase()) {
-    case 'poslano':
-      return 'outbox';
-    case 'na odobrenju':
-      return 'send';
-    case 'vraćeno na izmjenu':
-      return 'undo';
-    case 'odobreno':
-      return 'check_circle';
-    case 'odbijeno':
-      return 'cancel';
-    case 'naručeno':
-      return 'local_shipping';
-    case 'zatvoreno':
-      return 'task_alt';
-    case 'dokument dodan':
-      return 'attach_file';
-    default:
-      return 'circle';
+    case 'poslano': return 'outbox';
+    case 'na odobrenju': return 'send';
+    case 'vraćeno na izmjenu': return 'undo';
+    case 'odobreno': return 'check_circle';
+    case 'odbijeno': return 'cancel';
+    case 'naručeno': return 'local_shipping';
+    case 'zatvoreno': return 'task_alt';
+    case 'dokument dodan': return 'attach_file';
+    default: return 'circle';
   }
 };
 
@@ -708,9 +629,7 @@ onMounted(() => {
 
 <style scoped>
 .details-page {
-  background:
-    radial-gradient(circle at top right, rgba(25, 118, 210, 0.06), transparent 24%),
-    linear-gradient(180deg, #f8fafc 0%, #f4f7fb 100%);
+  background: #F9FAFB;
   min-height: 100vh;
 }
 
@@ -719,56 +638,128 @@ onMounted(() => {
   margin: 0 auto;
 }
 
+.back-btn {
+  color: #6B7280 !important;
+  font-size: 0.875rem;
+}
+
 .page-hero {
   display: flex;
   flex-direction: column;
 }
 
+.page-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
 .header-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
 .page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #111827;
   letter-spacing: -0.02em;
 }
 
-.info-card {
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
-  height: 100%;
+.page-meta {
+  font-size: 0.875rem;
+  color: #9CA3AF;
+  margin-top: 4px;
 }
 
-.actions-card {
-  border-radius: 20px;
-  background: #fefce8;
-  border: 1px solid #fde68a;
-  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.1);
-}
-
-.complete-card {
-  border-radius: 20px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.1);
-}
-
-.card-title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin-bottom: 14px;
-}
-
-.card-title-row {
+/* Action banners */
+.action-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  gap: 20px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  border: 1px solid;
+  flex-wrap: wrap;
+}
+
+.action-banner--warning {
+  background: #FFFBEB;
+  border-color: #FDE68A;
+}
+
+.action-banner--info {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+}
+
+.action-banner--success {
+  background: #F0FDF4;
+  border-color: #BBF7D0;
+}
+
+.action-banner__info { flex: 1; }
+
+.action-banner__title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 3px;
+}
+
+.action-banner__desc {
+  font-size: 0.875rem;
+  color: #6B7280;
+}
+
+.action-banner__error {
+  font-size: 0.8rem;
+  color: #991B1B;
+  margin-top: 4px;
+}
+
+.action-banner__btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Info cards */
+.info-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 20px 24px;
+  height: 100%;
+}
+
+.info-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.info-card__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 14px;
+}
+
+.info-card__header .info-card__title {
+  margin-bottom: 0;
+}
+
+.info-card__count {
+  font-size: 0.8rem;
+  color: #9CA3AF;
 }
 
 .info-row {
@@ -776,98 +767,113 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
-  color: #475569;
+  padding: 9px 0;
+  border-bottom: 1px solid #F3F4F6;
+  font-size: 0.875rem;
+  color: #6B7280;
 }
 
-.info-row:last-child {
-  border-bottom: none;
-}
+.info-row:last-child { border-bottom: none; }
 
 .info-row strong {
-  color: #0f172a;
+  color: #111827;
+  font-weight: 600;
 }
 
 .justification-text {
-  color: #334155;
+  font-size: 0.875rem;
+  color: #374151;
   line-height: 1.6;
   white-space: pre-wrap;
-  margin-top: 8px;
 }
 
+/* Status chips */
 .status-chip {
-  border-radius: 999px;
-  font-weight: 700;
-  padding: 6px 12px;
-  font-size: 0.82rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  height: auto;
 }
 
-.status-chip--draft {
-  background: #eef2ff;
-  color: #4f46e5;
-}
+.status-chip--draft { background: #EEF2FF; color: #4338CA; }
+.status-chip--submitted { background: #EFF6FF; color: #1D4ED8; }
+.status-chip--returned { background: #FFF7ED; color: #C2410C; }
+.status-chip--approved { background: #ECFDF5; color: #065F46; }
+.status-chip--rejected { background: #FEF2F2; color: #991B1B; }
+.status-chip--ordered { background: #F5F3FF; color: #5B21B6; }
+.status-chip--completed { background: #F0FDF4; color: #14532D; }
+.status-chip--default { background: #F3F4F6; color: #6B7280; }
 
-.status-chip--submitted {
-  background: #eff6ff;
-  color: #2563eb;
-}
-
-.status-chip--returned {
-  background: #fff7ed;
-  color: #c2410c;
-}
-
-.status-chip--approved {
-  background: #ecfdf3;
-  color: #15803d;
-}
-
-.status-chip--rejected {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-.status-chip--ordered {
-  background: #f5f3ff;
-  color: #6d28d9;
-}
-
-.status-chip--completed {
-  background: #f0fdf4;
-  color: #166534;
-}
-
-.status-chip--default {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.items-table :deep(.q-table thead tr) {
-  background: #f8fafc;
-}
-
+/* Table */
+.items-table :deep(.q-table thead tr) { background: #F9FAFB; }
 .items-table :deep(.q-table thead th) {
-  color: #64748b;
-  font-weight: 700;
-  font-size: 0.82rem;
+  color: #9CA3AF;
+  font-weight: 600;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
+}
+.items-table :deep(.q-table tbody td) {
+  font-size: 0.875rem;
+  color: #374151;
+  border-bottom: 1px solid #F3F4F6;
 }
 
+/* Attachments */
+.attachments-list :deep(.q-item) {
+  padding: 10px 0;
+}
+
+.empty-state {
+  font-size: 0.875rem;
+  color: #9CA3AF;
+  padding: 16px 0;
+}
+
+.upload-section-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.upload-btn {
+  border-radius: 6px;
+  background: #1E40AF !important;
+}
+
+/* Timeline */
 .timeline-comment {
-  background: #f8fafc;
-  border-left: 3px solid #cbd5e1;
-  padding: 10px 14px;
-  border-radius: 8px;
-  color: #334155;
-  margin-top: 8px;
-  font-size: 0.92rem;
+  background: #F9FAFB;
+  border-left: 2px solid #D1D5DB;
+  padding: 8px 12px;
+  border-radius: 0 6px 6px 0;
+  color: #374151;
+  font-size: 0.875rem;
   line-height: 1.5;
+  margin-top: 6px;
+}
+
+/* Dialog */
+.dialog-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.dialog-desc {
+  font-size: 0.875rem;
+  color: #6B7280;
 }
 
 @media (max-width: 768px) {
   .header-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .action-banner {
     flex-direction: column;
     align-items: flex-start;
   }
