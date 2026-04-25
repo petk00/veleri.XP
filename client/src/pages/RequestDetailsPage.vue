@@ -1,367 +1,231 @@
 <template>
   <q-page class="details-page q-pa-lg">
     <div class="page-shell">
-      <q-btn
-        flat
-        no-caps
-        color="primary"
-        icon="arrow_back"
-        label="Natrag na zahtjeve"
-        class="q-mb-md"
-        @click="goBack"
-      />
+      <q-btn flat no-caps class="back-btn q-mb-md" icon="arrow_back"
+        label="Natrag na zahtjeve" @click="goBack" />
 
       <div v-if="loading" class="row justify-center q-pa-xl">
-        <q-spinner color="primary" size="40px" />
+        <q-spinner color="primary" size="36px" />
       </div>
 
       <div v-else-if="request">
         <section class="page-hero q-mb-lg">
           <div>
-            <div class="text-overline text-primary text-weight-bold">
-              ZAHTJEV ZA NABAVU
-            </div>
+            <div class="page-eyebrow">ZAHTJEV ZA NABAVU</div>
             <div class="header-row q-mt-sm">
-              <div class="text-h4 text-weight-bold page-title">
-                {{ request.request_number }}
-              </div>
+              <div class="page-title">{{ request.request_number }}</div>
               <q-chip dense class="status-chip" :class="statusClass(request.status_name)">
                 {{ request.status_name }}
               </q-chip>
-              <q-btn
-                v-if="canEdit"
-                flat
-                no-caps
-                color="primary"
-                icon="edit"
-                label="Uredi"
-                @click="editRequest"
-              />
+              <q-btn v-if="canEdit" flat no-caps class="edit-btn"
+                icon="edit" label="Uredi" @click="editRequest" />
             </div>
-            <div class="text-subtitle1 text-grey-7 q-mt-sm">
+            <div class="page-meta">
               Kreirao {{ request.created_by }} · {{ formatDate(request.created_at) }}
             </div>
           </div>
         </section>
 
-        <q-card v-if="canSubmitForReview" flat class="submit-card q-mb-lg">
-          <q-card-section class="row items-center justify-between">
-            <div>
-              <div class="text-subtitle1 text-weight-bold">Novi zahtjev čeka pregled</div>
-              <div class="text-body2 text-grey-7">
-                Pregledajte zahtjev i pošaljite ga na odobrenje ili ga odbijte.
-              </div>
+        <!-- Approve / Reject -->
+        <div v-if="canApproveOrReject" class="action-banner action-banner--amber q-mb-lg">
+          <div class="action-banner__info">
+            <div class="action-banner__title">Potrebna vaša odluka</div>
+            <div class="action-banner__desc">
+              Zahtjev čeka odobrenje. Možete ga odobriti, odbiti ili vratiti na izmjenu.
             </div>
-            <div class="row q-gutter-sm">
-              <q-btn
-                unelevated no-caps
-                color="negative"
-                icon="close"
-                label="Odbij"
-                @click="openActionDialog('reject')"
-              />
-              <q-btn
-                unelevated no-caps
-                color="primary"
-                icon="send"
-                label="Pošalji na odobrenje"
-                :loading="submittingAction"
-                @click="submitForReview"
-              />
+            <div v-if="!canApprove" class="action-banner__warn">
+              Nedostaje —
+              <span v-if="!hasPonuda"> ponuda</span>
+              <span v-if="!hasPonuda && (request?.total_amount == null || Number(request?.total_amount) <= 0)">,</span>
+              <span v-if="request?.total_amount == null || Number(request?.total_amount) <= 0"> procijenjeni iznos</span>
             </div>
-          </q-card-section>
-        </q-card>
-
-        <q-card v-if="canApproveOrReject" flat class="actions-card q-mb-lg">
-          <q-card-section class="row items-center justify-between">
-            <div>
-              <div class="text-subtitle1 text-weight-bold">Potrebna vaša odluka</div>
-              <div class="text-body2 text-grey-7">
-                Zahtjev je na odobrenju. Možete ga odobriti ili vratiti korisniku na dopunu.
-              </div>
-              <div v-if="!canApprove" class="text-body2 text-negative q-mt-sm">
-                Nedostaje -
-                <span v-if="!hasPonuda"> ponuda</span>
-                <span v-if="!hasPonuda && (request?.total_amount == null || Number(request?.total_amount) <= 0)">,</span>
-                <span v-if="request?.total_amount == null || Number(request?.total_amount) <= 0"> procijenjeni iznos</span>
-              </div>
-            </div>
-            <div class="row q-gutter-sm">
-              <q-btn
-                unelevated
-                no-caps
-                color="warning"
-                icon="undo"
-                label="Vrati na dopunu"
-                @click="openActionDialog('return-for-revision')"
-              />
-              <q-btn
-                unelevated
-                no-caps
-                color="positive"
-                icon="check"
-                label="Odobri"
-                :disable="!canApprove"
-                @click="openActionDialog('approve')"
-              />
-            </div>
-          </q-card-section>
-        </q-card>
-
-        <q-card v-if="canUserResubmit" flat class="actions-card q-mb-lg">
-          <q-card-section>
-            <div class="row items-start justify-between q-mb-md">
-              <div>
-                <div class="text-subtitle1 text-weight-bold">Zahtjev je vraćen na dopunu / izmjenu</div>
-                <div class="text-body2 text-grey-7">
-                  Pregledajte komentar administratora, uredite zahtjev i potvrdite izmjene.
-                </div>
-              </div>
-              <div class="row q-gutter-sm">
-                <q-btn
-                  flat
-                  no-caps
-                  color="primary"
-                  icon="edit"
-                  label="Uredi zahtjev"
-                  @click="editRequest"
-                />
-                <q-btn
-                  unelevated
-                  no-caps
-                  color="primary"
-                  icon="send"
-                  label="Potvrdi izmjene"
-                  :loading="submittingAction"
-                  @click="resubmitRequest"
-                />
-              </div>
-            </div>
-
-            <div v-if="lastReturnComment" class="return-comment">
-              <div class="return-comment__label">Komentar administratora</div>
-              <div class="return-comment__text">{{ lastReturnComment }}</div>
-            </div>
-          </q-card-section>
-        </q-card>
-
-        <q-card v-if="canComplete" flat class="complete-card q-mb-lg">
-          <q-card-section class="row items-center justify-between">
-            <div>
-              <div class="text-body2 text-grey-7">
-                <span v-if="!canCloseRequest" class="text-negative">
-                  Nedostaje - otpremnica
-                </span>
-                <span v-else>Svi dokumenti su priloženi. Zahtjev možete označiti kao završen.</span>
-              </div>
-            </div>
-            <q-btn
-              unelevated
-              no-caps
-              color="primary"
-              icon="task_alt"
-              label="Označi završeno"
-              :disable="!canCloseRequest"
-              :loading="submittingComplete"
-              @click="completeRequest"
-            />
-          </q-card-section>
-        </q-card>
-
-        <div class="row q-col-gutter-lg q-mb-lg">
-          <div class="col-12 col-md-6">
-            <q-card flat class="info-card">
-              <q-card-section>
-                <div class="card-title">Osnovni podaci</div>
-                <div class="info-row"><span>Fiskalna godina</span><strong>{{ request.fiscal_year }}</strong></div>
-                <div class="info-row"><span>Odjel / Služba / Projekt</span><strong>{{ request.department_name }}</strong></div>
-                <div class="info-row">
-                  <span>Status</span>
-                  <q-chip dense class="status-chip" :class="statusClass(request.status_name)">
-                    {{ request.status_name }}
-                  </q-chip>
-                </div>
-                <div class="info-row"><span>Zahtjev podnio</span><strong>{{ request.created_by }}</strong></div>
-                <div class="info-row"><span>Procijenjeni iznos</span><strong>{{ formatCurrency(request.total_amount) }}</strong></div>
-                <div class="info-row"><span>Datum kreiranja</span><strong>{{ formatDate(request.created_at) }}</strong></div>
-                <div v-if="request.updated_at" class="info-row"><span>Zadnja izmjena</span><strong>{{ formatDate(request.updated_at) }}</strong></div>
-              </q-card-section>
-            </q-card>
           </div>
-
-          <div class="col-12 col-md-6">
-            <q-card flat class="info-card">
-              <q-card-section>
-                <div class="card-title">Svrha nabave</div>
-                <div class="justification-text">{{ request.justification || 'Nema svrhe nabave.' }}</div>
-              </q-card-section>
-            </q-card>
+          <div class="action-banner__btns">
+            <q-btn unelevated no-caps color="warning" icon="undo" label="Vrati na izmjenu"
+              @click="openActionDialog('return-for-revision')" />
+            <q-btn unelevated no-caps color="negative" icon="close" label="Odbij"
+              @click="openActionDialog('reject')" />
+            <q-btn unelevated no-caps color="positive" icon="check" label="Odobri"
+              :disable="!canApprove" @click="openActionDialog('approve')" />
           </div>
         </div>
 
-        <q-card flat class="info-card q-mb-lg">
-          <q-card-section>
-            <div class="card-title-row">
-              <div class="card-title">Stavke zahtjeva</div>
-              <div class="text-body2 text-grey-6">Ukupno: {{ items.length }}</div>
+        <!-- Resubmit -->
+        <div v-if="canUserResubmit" class="action-banner action-banner--blue q-mb-lg">
+          <div class="action-banner__info">
+            <div class="action-banner__title">Zahtjev je vraćen na izmjenu</div>
+            <div class="action-banner__desc">
+              Uredite zahtjev prema komentaru administratora i pošaljite ga ponovno.
             </div>
-            <q-table
-              :rows="items"
-              :columns="itemsColumns"
-              row-key="id_purchase_request_item"
-              flat
-              hide-bottom
-              :pagination="{ rowsPerPage: 0 }"
-              class="items-table"
-            />
-          </q-card-section>
-        </q-card>
+          </div>
+          <div class="action-banner__btns">
+            <q-btn flat no-caps style="color:#16294E" icon="edit" label="Uredi zahtjev" @click="editRequest" />
+            <q-btn unelevated no-caps icon="send" label="Ponovno pošalji"
+              :loading="submittingAction" @click="resubmitRequest"
+              style="background:#16294E!important;border-radius:980px;padding:8px 18px;" />
+          </div>
+        </div>
 
-        <q-card flat class="info-card q-mb-lg">
-          <q-card-section>
-            <div class="card-title-row">
-              <div class="card-title">Dokumenti</div>
-              <div class="row q-gutter-xs">
-                <q-chip
-                  dense
-                  :color="hasPonuda ? 'positive' : 'grey-4'"
-                  :text-color="hasPonuda ? 'white' : 'grey-7'"
-                  icon="description"
-                >
-                  Ponuda
-                </q-chip>
-                <q-chip
-                  dense
-                  :color="hasOtpremnica ? 'positive' : 'grey-4'"
-                  :text-color="hasOtpremnica ? 'white' : 'grey-7'"
-                  icon="local_shipping"
-                >
-                  Otpremnica
-                </q-chip>
-              </div>
+        <!-- Complete -->
+        <div v-if="canComplete" class="action-banner action-banner--green q-mb-lg">
+          <div class="action-banner__info">
+            <div class="action-banner__desc">
+              <span v-if="!canCloseRequest" class="action-banner__warn">Nedostaje — otpremnica</span>
+              <span v-else>Svi dokumenti su priloženi. Zahtjev možete označiti kao završen.</span>
             </div>
+          </div>
+          <q-btn unelevated no-caps icon="task_alt" label="Označi završeno"
+            :disable="!canCloseRequest" :loading="submittingComplete" @click="completeRequest"
+            style="background:#16294E!important;border-radius:980px;padding:8px 18px;" />
+        </div>
 
-            <div v-if="attachments.length === 0" class="text-grey-6 q-py-md">
-              Još nema priloženih dokumenata.
+        <!-- Info cards -->
+        <div class="row q-col-gutter-lg q-mb-lg">
+          <div class="col-12 col-md-6">
+            <div class="glass-card">
+              <div class="card-title">Osnovni podaci</div>
+              <div class="info-row"><span>Fiskalna godina</span><strong>{{ request.fiscal_year }}</strong></div>
+              <div class="info-row"><span>Odjel / Služba / Projekt</span><strong>{{ request.department_name }}</strong></div>
+              <div class="info-row">
+                <span>Status</span>
+                <q-chip dense class="status-chip" :class="statusClass(request.status_name)">{{ request.status_name }}</q-chip>
+              </div>
+              <div class="info-row"><span>Zahtjev podnio</span><strong>{{ request.created_by }}</strong></div>
+              <div class="info-row"><span>Procijenjeni iznos</span><strong>{{ formatCurrency(request.total_amount) }}</strong></div>
+              <div class="info-row"><span>Datum kreiranja</span><strong>{{ formatDate(request.created_at) }}</strong></div>
+              <div v-if="request.updated_at" class="info-row"><span>Zadnja izmjena</span><strong>{{ formatDate(request.updated_at) }}</strong></div>
             </div>
+          </div>
 
-            <q-list v-else separator class="q-mb-md">
-              <q-item v-for="att in attachments" :key="att.id_attachment">
-                <q-item-section avatar>
-                  <q-icon :name="fileIcon(att.file_type)" color="primary" size="28px" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-weight-medium">{{ att.file_name }}</q-item-label>
-                  <q-item-label caption>
-                    <q-badge
-                      :color="att.document_type === 'Ponuda' ? 'blue-2' : 'green-2'"
-                      :text-color="att.document_type === 'Ponuda' ? 'blue-9' : 'green-9'"
-                    >
-                      {{ att.document_type }}
-                    </q-badge>
-                    · {{ att.uploaded_by }} · {{ formatDate(att.uploaded_at) }}
-                  </q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <div class="row q-gutter-xs">
-                    <q-btn flat round dense icon="download" color="primary" @click="downloadAttachment(att)">
-                      <q-tooltip>Preuzmi</q-tooltip>
-                    </q-btn>
-                    <q-btn v-if="isAdmin" flat round dense icon="delete" color="negative" @click="deleteAttachment(att)">
-                      <q-tooltip>Obriši</q-tooltip>
-                    </q-btn>
-                  </div>
-                </q-item-section>
-              </q-item>
-            </q-list>
-
-            <q-separator class="q-mb-md" />
-            <div class="text-subtitle2 text-weight-bold q-mb-sm">Dodaj dokument</div>
-            <div class="row q-col-gutter-md items-end">
-              <div class="col-12 col-md-4">
-                <q-select
-                  v-model="uploadForm.document_type"
-                  :options="['Ponuda', 'Otpremnica']"
-                  label="Tip dokumenta"
-                  outlined
-                  dense
-                />
-              </div>
-              <div class="col-12 col-md-6">
-                <q-file v-model="uploadForm.file" label="Odaberi fajl" outlined dense clearable>
-                  <template #prepend><q-icon name="attach_file" /></template>
-                </q-file>
-              </div>
-              <div class="col-12 col-md-2">
-                <q-btn
-                  unelevated
-                  no-caps
-                  color="primary"
-                  icon="upload"
-                  label="Upload"
-                  class="full-width"
-                  :loading="uploading"
-                  :disable="!uploadForm.file || !uploadForm.document_type"
-                  @click="uploadAttachment"
-                />
-              </div>
+          <div class="col-12 col-md-6">
+            <div class="glass-card">
+              <div class="card-title">Svrha nabave</div>
+              <div class="justification-text">{{ request.justification || 'Nema svrhe nabave.' }}</div>
             </div>
-          </q-card-section>
-        </q-card>
+          </div>
+        </div>
 
-        <q-card flat class="info-card">
-          <q-card-section>
-            <div class="card-title">Povijest aktivnosti</div>
-            <div v-if="history.length === 0" class="text-grey-6 q-py-md">Još nema zapisa povijesti.</div>
-            <q-timeline v-else color="primary" class="q-mt-md">
-              <q-timeline-entry
-                v-for="entry in history"
-                :key="entry.id_request_status_history"
-                :title="timelineTitle(entry)"
-                :subtitle="`${entry.changed_by} · ${formatDate(entry.changed_at)}`"
-                :color="timelineColor(timelineTitle(entry))"
-                :icon="timelineIcon(timelineTitle(entry))"
-              >
-                <div v-if="entry.comment" class="timeline-comment">{{ entry.comment }}</div>
-              </q-timeline-entry>
-            </q-timeline>
-          </q-card-section>
-        </q-card>
+        <!-- Items -->
+        <div class="glass-card q-mb-lg">
+          <div class="card-header-row">
+            <div class="card-title">Stavke zahtjeva</div>
+            <div class="card-count">{{ items.length }}</div>
+          </div>
+          <q-table
+            :rows="items" :columns="itemsColumns"
+            row-key="id_purchase_request_item"
+            flat hide-bottom :pagination="{ rowsPerPage: 0 }"
+            class="items-table"
+          />
+        </div>
+
+        <!-- Documents -->
+        <div class="glass-card q-mb-lg">
+          <div class="card-header-row">
+            <div class="card-title">Dokumenti</div>
+            <div class="row q-gutter-xs">
+              <q-chip dense :color="hasPonuda ? 'positive' : 'grey-4'"
+                :text-color="hasPonuda ? 'white' : 'grey-7'" icon="description">Ponuda</q-chip>
+              <q-chip dense :color="hasOtpremnica ? 'positive' : 'grey-4'"
+                :text-color="hasOtpremnica ? 'white' : 'grey-7'" icon="local_shipping">Otpremnica</q-chip>
+            </div>
+          </div>
+
+          <div v-if="attachments.length === 0" class="empty-note">
+            Još nema priloženih dokumenata.
+          </div>
+
+          <q-list v-else separator class="q-mb-md">
+            <q-item v-for="att in attachments" :key="att.id_attachment">
+              <q-item-section avatar>
+                <q-icon :name="fileIcon(att.file_type)" style="color:#00AFDB" size="22px" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-medium" style="font-size:0.875rem;color:#1D1D1F;">{{ att.file_name }}</q-item-label>
+                <q-item-label caption>
+                  <q-badge :color="att.document_type === 'Ponuda' ? 'blue-2' : 'green-2'"
+                    :text-color="att.document_type === 'Ponuda' ? 'blue-9' : 'green-9'">
+                    {{ att.document_type }}
+                  </q-badge>
+                  · {{ att.uploaded_by }} · {{ formatDate(att.uploaded_at) }}
+                </q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <div class="row q-gutter-xs">
+                  <q-btn flat round dense icon="download" style="color:#00AFDB" @click="downloadAttachment(att)">
+                    <q-tooltip>Preuzmi</q-tooltip>
+                  </q-btn>
+                  <q-btn v-if="isAdmin" flat round dense icon="delete" color="negative" @click="deleteAttachment(att)">
+                    <q-tooltip>Obriši</q-tooltip>
+                  </q-btn>
+                </div>
+              </q-item-section>
+            </q-item>
+          </q-list>
+
+          <div class="upload-divider" />
+          <div class="upload-label">Dodaj dokument</div>
+          <div class="row q-col-gutter-md items-end">
+            <div class="col-12 col-md-4">
+              <q-select v-model="uploadForm.document_type" :options="['Ponuda', 'Otpremnica']"
+                label="Tip dokumenta" outlined dense />
+            </div>
+            <div class="col-12 col-md-6">
+              <q-file v-model="uploadForm.file" label="Odaberi fajl" outlined dense clearable>
+                <template #prepend><q-icon name="attach_file" /></template>
+              </q-file>
+            </div>
+            <div class="col-12 col-md-2">
+              <q-btn unelevated no-caps icon="upload" label="Upload" class="full-width upload-btn"
+                :loading="uploading" :disable="!uploadForm.file || !uploadForm.document_type"
+                @click="uploadAttachment" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="glass-card">
+          <div class="card-title">Povijest aktivnosti</div>
+          <div v-if="history.length === 0" class="empty-note">Još nema zapisa povijesti.</div>
+          <q-timeline v-else color="primary" class="q-mt-md">
+            <q-timeline-entry
+              v-for="entry in history"
+              :key="entry.id_request_status_history"
+              :title="timelineTitle(entry)"
+              :subtitle="`${entry.changed_by} · ${formatDate(entry.changed_at)}`"
+              :color="timelineColor(timelineTitle(entry))"
+              :icon="timelineIcon(timelineTitle(entry))"
+            >
+              <div v-if="entry.comment" class="timeline-comment">{{ entry.comment }}</div>
+            </q-timeline-entry>
+          </q-timeline>
+        </div>
       </div>
 
-      <div v-else class="text-grey-6 text-center q-pa-xl">Zahtjev nije pronađen.</div>
+      <div v-else class="empty-note text-center q-pa-xl">Zahtjev nije pronađen.</div>
     </div>
 
     <q-dialog v-model="actionDialog" persistent>
-      <q-card style="min-width: 450px; max-width: 90vw;">
-        <q-card-section>
-          <div class="text-h6">{{ actionDialogTitle }}</div>
-          <div class="text-body2 text-grey-7 q-mt-sm">
-            {{ actionDialogDescription }}
-          </div>
+      <q-card style="min-width:450px;max-width:90vw;border-radius:18px;overflow:hidden;">
+        <q-card-section style="padding:24px 24px 16px;">
+          <div class="dialog-title">{{ actionDialogTitle }}</div>
+          <div class="dialog-desc q-mt-xs">{{ actionDialogDescription }}</div>
         </q-card-section>
-        <q-card-section class="q-pt-none">
-          <q-input
-            v-model="actionComment"
-            type="textarea"
-            outlined
-            :label="actionDialogInputLabel"
-            rows="4"
-            :disable="submittingAction"
-            autofocus
-          />
+        <q-card-section class="q-pt-none" style="padding:0 24px 16px;">
+          <q-input v-model="actionComment" type="textarea" outlined
+            :label="actionDialogInputLabel" rows="4"
+            :disable="submittingAction" autofocus />
         </q-card-section>
-        <q-card-actions align="right" class="q-pa-md">
-          <q-btn flat no-caps label="Odustani" :disable="submittingAction" @click="closeActionDialog" />
-          <q-btn
-            unelevated
-            no-caps
+        <q-card-actions align="right" style="padding:12px 24px 20px;">
+          <q-btn flat no-caps label="Odustani" style="color:#6E6E73;"
+            :disable="submittingAction" @click="closeActionDialog" />
+          <q-btn unelevated no-caps
             :color="actionDialogButtonColor"
             :icon="actionDialogButtonIcon"
             :label="actionDialogButtonLabel"
             :loading="submittingAction"
-            @click="confirmAction"
-          />
+            style="border-radius:980px;padding:8px 20px;font-weight:600;"
+            @click="confirmAction" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -402,17 +266,7 @@ const hasPonuda = computed(() => attachments.value.some((a) => a.document_type =
 const hasOtpremnica = computed(() => attachments.value.some((a) => a.document_type === 'Otpremnica'));
 const canApprove = computed(() => hasPonuda.value && Number(request.value?.total_amount) > 0);
 const canApproveOrReject = computed(() => isAdmin.value && request.value?.status_name === 'Na odobrenju');
-const canSubmitForReview = computed(() => isAdmin.value && request.value?.status_name === 'Poslano');
-const canUserResubmit = computed(() => !isAdmin.value && request.value?.status_name === 'Vraćeno na dopunu / izmjenu');
-
-const lastReturnComment = computed(() => {
-  const returnEntries = history.value.filter(
-    (h) => h.status_name === 'Vraćeno na dopunu / izmjenu'
-  );
-  if (returnEntries.length === 0) return null;
-  const last = returnEntries[returnEntries.length - 1];
-  return last.comment || null;
-});
+const canUserResubmit = computed(() => !isAdmin.value && request.value?.status_name === 'Vraćeno na izmjenu');
 const canComplete = computed(() => isAdmin.value && request.value?.status_name === 'Odobreno');
 const canCloseRequest = computed(() => hasPonuda.value && hasOtpremnica.value);
 
@@ -422,31 +276,23 @@ const actionDialogTitle = computed(() => {
   if (pendingAction.value === 'return-for-revision') return 'Vraćanje na izmjenu';
   return 'Akcija nad zahtjevom';
 });
-
 const actionDialogDescription = computed(() => {
   if (pendingAction.value === 'approve') return 'Komentar je neobavezan, ali preporučen.';
   if (pendingAction.value === 'reject') return 'Komentar je obavezan pri odbijanju zahtjeva.';
   if (pendingAction.value === 'return-for-revision') return 'Komentar je obavezan kako bi korisnik znao što treba ispraviti.';
   return '';
 });
-
-const actionDialogInputLabel = computed(() => {
-  if (pendingAction.value === 'approve') return 'Komentar (neobavezno)';
-  return 'Komentar *';
-});
-
+const actionDialogInputLabel = computed(() => pendingAction.value === 'approve' ? 'Komentar (neobavezno)' : 'Komentar *');
 const actionDialogButtonColor = computed(() => {
   if (pendingAction.value === 'approve') return 'positive';
   if (pendingAction.value === 'return-for-revision') return 'warning';
   return 'negative';
 });
-
 const actionDialogButtonIcon = computed(() => {
   if (pendingAction.value === 'approve') return 'check';
   if (pendingAction.value === 'return-for-revision') return 'undo';
   return 'close';
 });
-
 const actionDialogButtonLabel = computed(() => {
   if (pendingAction.value === 'approve') return 'Odobri';
   if (pendingAction.value === 'return-for-revision') return 'Vrati na izmjenu';
@@ -461,23 +307,18 @@ const itemsColumns = [
 
 const fetchRequestDetails = async () => {
   loading.value = true;
-
   try {
     const [detailsRes, attachmentsRes] = await Promise.all([
       api.get(`/requests/${route.params.id}`),
       api.get(`/requests/${route.params.id}/attachments`),
     ]);
-
     request.value = detailsRes.data.request;
     items.value = detailsRes.data.items || [];
     history.value = detailsRes.data.history || [];
     attachments.value = Array.isArray(attachmentsRes.data) ? attachmentsRes.data : [];
   } catch (error) {
     console.error('Greška:', error);
-    $q.notify({
-      type: 'negative',
-      message: error.response?.data?.message || 'Greška pri dohvaćanju zahtjeva.',
-    });
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Greška pri dohvaćanju zahtjeva.' });
     request.value = null;
   } finally {
     loading.value = false;
@@ -486,24 +327,17 @@ const fetchRequestDetails = async () => {
 
 const uploadAttachment = async () => {
   if (!uploadForm.value.file || !uploadForm.value.document_type) return;
-
   uploading.value = true;
   const formData = new FormData();
   formData.append('file', uploadForm.value.file);
   formData.append('document_type', uploadForm.value.document_type);
-
   try {
-    await api.post(`/requests/${route.params.id}/attachments`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    await api.post(`/requests/${route.params.id}/attachments`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
     $q.notify({ type: 'positive', message: `${uploadForm.value.document_type} uspješno dodana.` });
     uploadForm.value = { document_type: null, file: null };
     await fetchRequestDetails();
   } catch (error) {
-    $q.notify({
-      type: 'negative',
-      message: error.response?.data?.message || 'Greška pri uploadu fajla.',
-    });
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Greška pri uploadu fajla.' });
   } finally {
     uploading.value = false;
   }
@@ -511,9 +345,7 @@ const uploadAttachment = async () => {
 
 const downloadAttachment = async (att) => {
   try {
-    const response = await api.get(`/attachments/download/${att.id_attachment}`, {
-      responseType: 'blob',
-    });
+    const response = await api.get(`/attachments/download/${att.id_attachment}`, { responseType: 'blob' });
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = url;
@@ -539,86 +371,40 @@ const deleteAttachment = (att) => {
       $q.notify({ type: 'positive', message: 'Fajl uspješno obrisan.' });
       await fetchRequestDetails();
     } catch (error) {
-      $q.notify({
-        type: 'negative',
-        message: error.response?.data?.message || 'Greška pri brisanju fajla.',
-      });
+      $q.notify({ type: 'negative', message: error.response?.data?.message || 'Greška pri brisanju fajla.' });
     }
   });
 };
 
-const submitForReview = async () => {
-  submittingAction.value = true;
-  try {
-    await api.patch(`/requests/${route.params.id}/status`, { action: 'submit-for-review' });
-    $q.notify({ type: 'positive', message: 'Zahtjev poslan na odobrenje.' });
-    await fetchRequestDetails();
-  } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Greška pri slanju na odobrenje.' });
-  } finally {
-    submittingAction.value = false;
-  }
-};
-
 const completeRequest = async () => {
   submittingComplete.value = true;
-
   try {
-    await api.patch(`/requests/${route.params.id}/status`, {
-      action: 'complete',
-      comment: 'Zahtjev označen kao završen.',
-    });
+    await api.patch(`/requests/${route.params.id}/status`, { action: 'complete', comment: 'Zahtjev označen kao završen.' });
     $q.notify({ type: 'positive', message: 'Zahtjev označen kao završen.' });
     await fetchRequestDetails();
   } catch (error) {
-    $q.notify({
-      type: 'negative',
-      message: error.response?.data?.message || 'Greška pri zatvaranju zahtjeva.',
-    });
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Greška pri zatvaranju zahtjeva.' });
   } finally {
     submittingComplete.value = false;
   }
 };
 
-const openActionDialog = (action) => {
-  pendingAction.value = action;
-  actionComment.value = '';
-  actionDialog.value = true;
-};
-
-const closeActionDialog = () => {
-  actionDialog.value = false;
-  pendingAction.value = null;
-  actionComment.value = '';
-};
+const openActionDialog = (action) => { pendingAction.value = action; actionComment.value = ''; actionDialog.value = true; };
+const closeActionDialog = () => { actionDialog.value = false; pendingAction.value = null; actionComment.value = ''; };
 
 const confirmAction = async () => {
-  if (
-    ['reject', 'return-for-revision'].includes(pendingAction.value)
-    && !actionComment.value.trim()
-  ) {
-    $q.notify({
-      type: 'negative',
-      message: 'Komentar je obavezan za ovu akciju.',
-    });
+  if (['reject', 'return-for-revision'].includes(pendingAction.value) && !actionComment.value.trim()) {
+    $q.notify({ type: 'negative', message: 'Komentar je obavezan za ovu akciju.' });
     return;
   }
-
   submittingAction.value = true;
-
   try {
-    await api.patch(`/requests/${route.params.id}/status`, {
-      action: pendingAction.value,
-      comment: actionComment.value.trim() || null,
-    });
+    await api.patch(`/requests/${route.params.id}/status`, { action: pendingAction.value, comment: actionComment.value.trim() || null });
     $q.notify({ type: 'positive', message: 'Status zahtjeva je uspješno ažuriran.' });
     closeActionDialog();
     await fetchRequestDetails();
   } catch (error) {
-    $q.notify({
-      type: 'negative',
-      message: error.response?.data?.message || 'Greška pri promjeni statusa zahtjeva.',
-    });
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Greška pri promjeni statusa zahtjeva.' });
   } finally {
     submittingAction.value = false;
   }
@@ -626,19 +412,12 @@ const confirmAction = async () => {
 
 const resubmitRequest = async () => {
   submittingAction.value = true;
-
   try {
-    await api.patch(`/requests/${route.params.id}/status`, {
-      action: 'resubmit',
-      comment: 'Zahtjev ponovno poslan na odobravanje nakon ispravke.',
-    });
+    await api.patch(`/requests/${route.params.id}/status`, { action: 'resubmit', comment: 'Zahtjev ponovno poslan na odobravanje nakon ispravke.' });
     $q.notify({ type: 'positive', message: 'Zahtjev je ponovno poslan na odobravanje.' });
     await fetchRequestDetails();
   } catch (error) {
-    $q.notify({
-      type: 'negative',
-      message: error.response?.data?.message || 'Greška pri ponovnom slanju zahtjeva.',
-    });
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Greška pri ponovnom slanju zahtjeva.' });
   } finally {
     submittingAction.value = false;
   }
@@ -649,97 +428,56 @@ const goBack = () => router.push('/requests');
 
 const formatCurrency = (value) => {
   if (value == null) return '-';
-  return new Intl.NumberFormat('hr-HR', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(value);
+  return new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(value);
 };
-
 const formatDate = (value) => {
   if (!value) return '-';
-  return new Date(value).toLocaleString('hr-HR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return new Date(value).toLocaleString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
 const statusClass = (status) => {
   switch ((status || '').toLowerCase()) {
-    case 'poslano':
-      return 'status-chip--draft';
-    case 'na odobrenju':
-      return 'status-chip--submitted';
-    case 'vraćeno na izmjenu':
-      return 'status-chip--returned';
-    case 'odobreno':
-      return 'status-chip--approved';
-    case 'odbijeno':
-      return 'status-chip--rejected';
-    case 'naručeno':
-      return 'status-chip--ordered';
-    case 'zatvoreno':
-      return 'status-chip--completed';
-    default:
-      return 'status-chip--default';
+    case 'poslano': return 'status--draft';
+    case 'na odobrenju': return 'status--submitted';
+    case 'vraćeno na izmjenu': return 'status--returned';
+    case 'odobreno': return 'status--approved';
+    case 'odbijeno': return 'status--rejected';
+    case 'naručeno': return 'status--ordered';
+    case 'zatvoreno': return 'status--completed';
+    default: return 'status--default';
   }
 };
 
 const timelineTitle = (entry) => {
-  if (entry.comment && entry.comment.startsWith('Dokument dodan:')) {
-    return 'Dokument dodan';
-  }
+  if (entry.comment && entry.comment.startsWith('Dokument dodan:')) return 'Dokument dodan';
   return entry.status_name;
 };
-
 const timelineColor = (title) => {
   switch ((title || '').toLowerCase()) {
-    case 'poslano':
-      return 'indigo';
-    case 'na odobrenju':
-      return 'blue';
-    case 'vraćeno na izmjenu':
-      return 'orange';
-    case 'odobreno':
-      return 'positive';
-    case 'odbijeno':
-      return 'negative';
-    case 'naručeno':
-      return 'deep-purple';
-    case 'zatvoreno':
-      return 'green';
-    case 'dokument dodan':
-      return 'teal';
-    default:
-      return 'grey';
+    case 'poslano': return 'indigo';
+    case 'na odobrenju': return 'blue';
+    case 'vraćeno na izmjenu': return 'orange';
+    case 'odobreno': return 'positive';
+    case 'odbijeno': return 'negative';
+    case 'naručeno': return 'deep-purple';
+    case 'zatvoreno': return 'green';
+    case 'dokument dodan': return 'teal';
+    default: return 'grey';
   }
 };
-
 const timelineIcon = (title) => {
   switch ((title || '').toLowerCase()) {
-    case 'poslano':
-      return 'outbox';
-    case 'na odobrenju':
-      return 'send';
-    case 'vraćeno na izmjenu':
-      return 'undo';
-    case 'odobreno':
-      return 'check_circle';
-    case 'odbijeno':
-      return 'cancel';
-    case 'naručeno':
-      return 'local_shipping';
-    case 'zatvoreno':
-      return 'task_alt';
-    case 'dokument dodan':
-      return 'attach_file';
-    default:
-      return 'circle';
+    case 'poslano': return 'outbox';
+    case 'na odobrenju': return 'send';
+    case 'vraćeno na izmjenu': return 'undo';
+    case 'odobreno': return 'check_circle';
+    case 'odbijeno': return 'cancel';
+    case 'naručeno': return 'local_shipping';
+    case 'zatvoreno': return 'task_alt';
+    case 'dokument dodan': return 'attach_file';
+    default: return 'circle';
   }
 };
-
 const fileIcon = (mimeType) => {
   if (!mimeType) return 'insert_drive_file';
   if (mimeType.includes('pdf')) return 'picture_as_pdf';
@@ -758,9 +496,7 @@ onMounted(() => {
 
 <style scoped>
 .details-page {
-  background:
-    radial-gradient(circle at top right, rgba(25, 118, 210, 0.06), transparent 24%),
-    linear-gradient(180deg, #f8fafc 0%, #f4f7fb 100%);
+  background: #F5F5F7;
   min-height: 100vh;
 }
 
@@ -769,187 +505,164 @@ onMounted(() => {
   margin: 0 auto;
 }
 
-.page-hero {
-  display: flex;
-  flex-direction: column;
+.back-btn { color: #6E6E73 !important; font-size: 0.875rem; }
+.edit-btn { color: #00AFDB !important; font-size: 0.875rem; }
+
+.page-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: #86868B;
+  text-transform: uppercase;
+  margin-bottom: 8px;
 }
 
 .header-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
 .page-title {
-  letter-spacing: -0.02em;
-}
-
-.info-card {
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
-  height: 100%;
-}
-
-.submit-card {
-  border-radius: 20px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.08);
-}
-
-.actions-card {
-  border-radius: 20px;
-  background: #fefce8;
-  border: 1px solid #fde68a;
-  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.1);
-}
-
-.complete-card {
-  border-radius: 20px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.1);
-}
-
-.card-title {
-  font-size: 1.05rem;
+  font-size: 1.9rem;
   font-weight: 700;
-  color: #0f172a;
-  margin-bottom: 14px;
+  color: #1D1D1F;
+  letter-spacing: -0.03em;
 }
 
-.card-title-row {
+.page-meta {
+  font-size: 0.85rem;
+  color: #86868B;
+  margin-top: 5px;
+}
+
+/* Action banners */
+.action-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  gap: 20px;
+  padding: 16px 20px;
+  border-radius: 14px;
+  border: 0.5px solid;
+  flex-wrap: wrap;
+  backdrop-filter: blur(10px);
 }
+.action-banner--amber { background: rgba(255,196,0,0.08); border-color: rgba(255,196,0,0.3); }
+.action-banner--blue  { background: rgba(0,175,219,0.07); border-color: rgba(0,175,219,0.25); }
+.action-banner--green { background: rgba(52,199,89,0.07); border-color: rgba(52,199,89,0.25); }
+
+.action-banner__info { flex: 1; }
+.action-banner__title { font-size: 0.9rem; font-weight: 700; color: #1D1D1F; margin-bottom: 3px; }
+.action-banner__desc  { font-size: 0.875rem; color: #6E6E73; }
+.action-banner__warn  { font-size: 0.8rem; color: #C2410C; margin-top: 4px; }
+.action-banner__btns  { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Glass cards */
+.glass-card {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 18px;
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03), 0 8px 28px rgba(0,0,0,0.06);
+  padding: 22px 24px;
+  height: 100%;
+}
+
+.card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1D1D1F;
+  letter-spacing: -0.01em;
+  margin-bottom: 14px;
+}
+
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.card-header-row .card-title { margin-bottom: 0; }
+.card-count { font-size: 0.8rem; color: #86868B; }
 
 .info-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
-  color: #475569;
+  padding: 9px 0;
+  border-bottom: 0.5px solid rgba(0,0,0,0.06);
+  font-size: 0.875rem;
+  color: #6E6E73;
 }
-
-.info-row:last-child {
-  border-bottom: none;
-}
-
-.info-row strong {
-  color: #0f172a;
-}
+.info-row:last-child { border-bottom: none; }
+.info-row strong { color: #1D1D1F; font-weight: 600; }
 
 .justification-text {
-  color: #334155;
+  font-size: 0.875rem;
+  color: #424245;
   line-height: 1.6;
   white-space: pre-wrap;
-  margin-top: 8px;
 }
 
+/* Status chips */
 .status-chip {
-  border-radius: 999px;
-  font-weight: 700;
-  padding: 6px 12px;
-  font-size: 0.82rem;
-}
-
-.status-chip--draft {
-  background: #eef2ff;
-  color: #4f46e5;
-}
-
-.status-chip--submitted {
-  background: #eff6ff;
-  color: #2563eb;
-}
-
-.status-chip--returned {
-  background: #fff7ed;
-  color: #c2410c;
-}
-
-.status-chip--approved {
-  background: #ecfdf3;
-  color: #15803d;
-}
-
-.status-chip--rejected {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-.status-chip--ordered {
-  background: #f5f3ff;
-  color: #6d28d9;
-}
-
-.status-chip--completed {
-  background: #f0fdf4;
-  color: #166534;
-}
-
-.status-chip--default {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.return-comment {
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(245, 158, 11, 0.25);
-  border-radius: 12px;
-  padding: 12px 16px;
-}
-
-.return-comment__label {
+  border-radius: 980px;
+  font-weight: 600;
   font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #92400e;
-  margin-bottom: 6px;
+  padding: 3px 10px;
+  height: auto;
 }
+.status--draft     { background: #EEF2FF; color: #4338CA; }
+.status--submitted { background: rgba(0,175,219,0.1); color: #007BA0; }
+.status--returned  { background: #FFF7ED; color: #C2410C; }
+.status--approved  { background: #ECFDF5; color: #065F46; }
+.status--rejected  { background: #FEF2F2; color: #991B1B; }
+.status--ordered   { background: #F5F3FF; color: #5B21B6; }
+.status--completed { background: #F0FDF4; color: #14532D; }
+.status--default   { background: rgba(0,0,0,0.05); color: #6E6E73; }
 
-.return-comment__text {
-  color: #0f172a;
-  font-size: 0.92rem;
-  line-height: 1.5;
-  white-space: pre-wrap;
-}
-
-.items-table :deep(.q-table thead tr) {
-  background: #f8fafc;
-}
-
+/* Items table */
+.items-table :deep(.q-table thead tr) { background: rgba(245,245,247,0.7); }
 .items-table :deep(.q-table thead th) {
-  color: #64748b;
-  font-weight: 700;
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  color: #86868B; font-weight: 600; font-size: 0.72rem;
+  text-transform: uppercase; letter-spacing: 0.07em;
+}
+.items-table :deep(.q-table tbody td) {
+  font-size: 0.875rem; color: #1D1D1F;
+  border-bottom: 0.5px solid rgba(0,0,0,0.04);
+}
+
+.empty-note { font-size: 0.875rem; color: #86868B; padding: 8px 0; }
+
+.upload-divider { height: 0.5px; background: rgba(0,0,0,0.07); margin: 16px 0; }
+.upload-label { font-size: 0.8rem; font-weight: 600; color: #424245; margin-bottom: 12px; }
+.upload-btn {
+  border-radius: 980px;
+  background: #16294E !important;
+  font-weight: 600;
+  font-size: 0.85rem;
 }
 
 .timeline-comment {
-  background: #f8fafc;
-  border-left: 3px solid #cbd5e1;
-  padding: 10px 14px;
-  border-radius: 8px;
-  color: #334155;
-  margin-top: 8px;
-  font-size: 0.92rem;
+  background: rgba(245,245,247,0.8);
+  border-left: 2px solid rgba(0,175,219,0.4);
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+  color: #424245;
+  font-size: 0.875rem;
   line-height: 1.5;
+  margin-top: 6px;
 }
 
+.dialog-title { font-size: 1.1rem; font-weight: 700; color: #1D1D1F; letter-spacing: -0.02em; }
+.dialog-desc  { font-size: 0.875rem; color: #6E6E73; }
+
 @media (max-width: 768px) {
-  .header-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  .header-row { flex-direction: column; align-items: flex-start; }
+  .action-banner { flex-direction: column; align-items: flex-start; }
 }
 </style>
