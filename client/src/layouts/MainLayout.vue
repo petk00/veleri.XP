@@ -4,9 +4,8 @@
       <q-toolbar class="toolbar-shell">
         <div class="brand-wrap cursor-pointer" @click="$router.push('/dashboard')">
           <div class="brand-badge">
-            <q-icon name="inventory_2" size="20px" />
+            <q-icon name="inventory_2" size="16px" />
           </div>
-
           <div class="brand-text">
             <div class="brand-title">XP</div>
             <div class="brand-subtitle">Sustav nabave</div>
@@ -15,17 +14,13 @@
 
         <div class="nav-links gt-sm">
           <q-btn
-            flat
-            no-caps
-            class="nav-btn"
+            flat no-caps class="nav-btn"
             :class="{ 'nav-btn--active': isActive('/dashboard') }"
             label="Dashboard"
             @click="$router.push('/dashboard')"
           />
           <q-btn
-            flat
-            no-caps
-            class="nav-btn"
+            flat no-caps class="nav-btn"
             :class="{ 'nav-btn--active': isActive('/requests') }"
             label="Zahtjevi"
             @click="$router.push('/requests')"
@@ -35,7 +30,7 @@
         <q-space />
 
         <div v-if="user" class="user-panel">
-          <q-avatar class="user-avatar" size="46px">
+          <q-avatar class="user-avatar" size="34px">
             {{ initials }}
           </q-avatar>
 
@@ -44,14 +39,7 @@
             <div class="user-role">{{ user.role_name }}</div>
           </div>
 
-          <q-btn
-            flat
-            round
-            dense
-            icon="logout"
-            class="logout-btn"
-            @click="logout"
-          >
+          <q-btn flat round dense icon="logout" class="logout-btn" @click="logout">
             <q-tooltip>Odjava</q-tooltip>
           </q-btn>
         </div>
@@ -83,7 +71,6 @@ const fullName = computed(() => {
 
 const initials = computed(() => {
   if (!user.value) return '?';
-
   const first = user.value.first_name?.[0] || '';
   const last = user.value.last_name?.[0] || '';
   return `${first}${last}`.toUpperCase();
@@ -93,7 +80,6 @@ const isActive = (path) => {
   if (path === '/requests') {
     return route.path.startsWith('/requests');
   }
-
   return route.path === path;
 };
 
@@ -104,39 +90,49 @@ const logout = () => {
 };
 </script>
 
+<style>
+*, *::before, *::after {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+    'Helvetica Neue', Arial, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+</style>
+
 <style scoped>
 .app-layout {
-  background: #f6f8fc;
+  background: #F5F5F7;
 }
 
 .app-header {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: saturate(200%) blur(24px);
+  -webkit-backdrop-filter: saturate(200%) blur(24px);
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.1);
+  box-shadow: none;
 }
 
 .toolbar-shell {
-  min-height: 78px;
-  padding: 0 24px;
+  min-height: 64px;
+  padding: 0 32px;
 }
 
 .brand-wrap {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 11px;
 }
 
 .brand-badge {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+  background: #16294E;
   color: white;
-  box-shadow: 0 10px 24px rgba(25, 118, 210, 0.28);
+  flex-shrink: 0;
 }
 
 .brand-text {
@@ -146,87 +142,95 @@ const logout = () => {
 }
 
 .brand-title {
-  font-size: 1rem;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: 0.02em;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #16294E;
+  letter-spacing: 0.06em;
 }
 
 .brand-subtitle {
-  font-size: 0.78rem;
-  color: #64748b;
-  margin-top: 3px;
+  font-size: 0.67rem;
+  color: #86868B;
+  font-weight: 400;
 }
 
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-left: 28px;
+  gap: 2px;
+  margin-left: 36px;
 }
 
 .nav-btn {
-  border-radius: 14px;
-  padding: 8px 14px;
-  color: #475569;
-  font-weight: 600;
+  border-radius: 8px;
+  padding: 5px 14px;
+  color: #424245;
+  font-weight: 500;
+  font-size: 0.875rem;
+  letter-spacing: -0.01em;
+  transition: all 0.15s ease;
+}
+
+.nav-btn:hover {
+  color: #16294E;
+  background: rgba(22, 41, 78, 0.05);
 }
 
 .nav-btn--active {
-  background: rgba(25, 118, 210, 0.1);
-  color: #1976d2;
+  color: #00AFDB;
+  background: rgba(0, 175, 219, 0.09);
+  font-weight: 600;
 }
 
 .user-panel {
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: rgba(248, 250, 252, 0.95);
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 18px;
-  padding: 8px 10px 8px 8px;
+  gap: 10px;
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+  background: #16294E;
   color: white;
-  font-weight: 700;
+  font-weight: 600;
+  font-size: 0.7rem !important;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
 }
 
 .user-meta {
   display: flex;
   flex-direction: column;
-  min-width: 140px;
+  gap: 1px;
 }
 
 .user-name {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #0f172a;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #16294E;
   line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
 .user-role {
-  font-size: 0.78rem;
-  color: #64748b;
-  margin-top: 2px;
+  font-size: 0.7rem;
+  color: #86868B;
 }
 
 .logout-btn {
-  color: #64748b;
+  color: #86868B;
+  transition: color 0.15s;
+}
+
+.logout-btn:hover {
+  color: #16294E;
 }
 
 .page-container {
-  min-height: calc(100vh - 78px);
+  min-height: calc(100vh - 64px);
 }
 
 @media (max-width: 600px) {
-  .toolbar-shell {
-    padding: 0 14px;
-  }
-
-  .brand-subtitle {
-    display: none;
-  }
+  .toolbar-shell { padding: 0 18px; }
+  .brand-subtitle { display: none; }
 }
 </style>

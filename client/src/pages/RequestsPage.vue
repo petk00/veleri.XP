@@ -1,15 +1,11 @@
 <template>
   <q-page class="requests-page q-pa-lg">
     <div class="page-shell">
-      <section class="page-hero q-mb-lg">
+      <section class="page-hero">
         <div>
-          <div class="text-overline text-primary text-weight-bold">
-            ZAHTJEVI ZA NABAVU
-          </div>
-          <div class="text-h4 text-weight-bold q-mt-sm page-title">
-            Pregled zahtjeva
-          </div>
-          <div class="text-subtitle1 text-grey-7 q-mt-sm page-subtitle">
+          <div class="page-eyebrow">ZAHTJEVI ZA NABAVU</div>
+          <div class="page-title">Pregled zahtjeva</div>
+          <div class="page-subtitle">
             Pregledajte postojeće zahtjeve, njihov status i otvorite detalje za nastavak rada.
           </div>
         </div>
@@ -17,7 +13,6 @@
         <q-btn
           unelevated
           no-caps
-          color="primary"
           icon="add"
           label="Novi zahtjev"
           class="new-request-btn"
@@ -25,95 +20,87 @@
         />
       </section>
 
-      <q-card flat class="table-card">
-        <q-card-section class="table-toolbar">
-          <div class="text-h6 text-weight-bold">Svi zahtjevi</div>
-          <div class="text-body2 text-grey-6">
-            Ukupno: {{ rows.length }}
-          </div>
-        </q-card-section>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div class="table-toolbar__title">Svi zahtjevi</div>
+          <div class="table-toolbar__count">{{ rows.length }} zapisa</div>
+        </div>
 
-        <q-separator />
+        <div class="table-divider" />
 
-        <q-banner
-          v-if="errorMessage"
-          inline-actions
-          rounded
-          class="bg-red-1 text-negative q-ma-md"
+        <div v-if="errorMessage" class="error-banner q-ma-md">
+          <q-icon name="error_outline" size="15px" style="flex-shrink:0;" />
+          <span>{{ errorMessage }}</span>
+        </div>
+
+        <q-table
+          :rows="rows"
+          :columns="columns"
+          row-key="id_purchase_request"
+          :loading="loading"
+          flat
+          :pagination="{ rowsPerPage: 10 }"
+          class="requests-table"
         >
-          {{ errorMessage }}
-        </q-banner>
+          <template #body-cell-request_number="props">
+            <q-td :props="props">
+              <q-btn
+                flat
+                no-caps
+                class="request-link"
+                :label="props.row.request_number"
+                @click="openRequest(props.row.id_purchase_request)"
+              />
+            </q-td>
+          </template>
 
-        <q-card-section class="q-pa-none">
-          <q-table
-            :rows="rows"
-            :columns="columns"
-            row-key="id_purchase_request"
-            :loading="loading"
-            flat
-            :pagination="{ rowsPerPage: 10 }"
-            class="requests-table"
-          >
-            <template #body-cell-request_number="props">
-              <q-td :props="props">
-                <q-btn
-                  flat
-                  no-caps
-                  class="request-link"
-                  :label="props.row.request_number"
-                  @click="openRequest(props.row.id_purchase_request)"
-                />
-              </q-td>
-            </template>
+          <template #body-cell-status_name="props">
+            <q-td :props="props">
+              <q-chip
+                dense
+                class="status-chip"
+                :class="statusClass(props.row.status_name)"
+              >
+                {{ props.row.status_name }}
+              </q-chip>
+            </q-td>
+          </template>
 
-            <template #body-cell-status_name="props">
-              <q-td :props="props">
-                <q-chip
-                  dense
-                  class="status-chip"
-                  :class="statusClass(props.row.status_name)"
-                >
-                  {{ props.row.status_name }}
-                </q-chip>
-              </q-td>
-            </template>
+          <template #body-cell-total_amount="props">
+            <q-td :props="props" class="text-right">
+              {{ formatCurrency(props.row.total_amount) }}
+            </q-td>
+          </template>
 
-            <template #body-cell-total_amount="props">
-              <q-td :props="props" class="text-right">
-                {{ formatCurrency(props.row.total_amount) }}
-              </q-td>
-            </template>
+          <template #body-cell-created_at="props">
+            <q-td :props="props">
+              {{ formatDate(props.row.created_at) }}
+            </q-td>
+          </template>
 
-            <template #body-cell-created_at="props">
-              <q-td :props="props">
-                {{ formatDate(props.row.created_at) }}
-              </q-td>
-            </template>
+          <template #body-cell-actions="props">
+            <q-td :props="props" class="text-right">
+              <q-btn
+                flat
+                round
+                dense
+                icon="chevron_right"
+                class="row-arrow"
+                @click="openRequest(props.row.id_purchase_request)"
+              >
+                <q-tooltip>Otvori detalje</q-tooltip>
+              </q-btn>
+            </q-td>
+          </template>
 
-            <template #body-cell-actions="props">
-              <q-td :props="props" class="text-right">
-                <q-btn
-                  flat
-                  round
-                  dense
-                  icon="arrow_forward"
-                  color="primary"
-                  @click="openRequest(props.row.id_purchase_request)"
-                >
-                  <q-tooltip>Otvori detalje</q-tooltip>
-                </q-btn>
-              </q-td>
-            </template>
-
-            <template #no-data>
-              <div class="full-width row flex-center q-gutter-sm q-pa-xl text-grey-6">
-                <q-icon name="inbox" size="28px" />
-                <span>Nema zahtjeva za prikaz.</span>
-              </div>
-            </template>
-          </q-table>
-        </q-card-section>
-      </q-card>
+          <template #no-data>
+            <div class="full-width row flex-center q-gutter-sm q-pa-xl no-data">
+              <q-icon name="inbox" size="22px" />
+              <span>Nema zahtjeva za prikaz.</span>
+            </div>
+          </template>
+        </q-table>
+      </div>
     </div>
   </q-page>
 </template>
@@ -129,83 +116,36 @@ const rows = ref([]);
 const errorMessage = ref('');
 
 const columns = [
-  {
-    name: 'request_number',
-    label: 'Broj zahtjeva',
-    field: 'request_number',
-    align: 'left',
-  },
-  {
-    name: 'fiscal_year',
-    label: 'Godina',
-    field: 'fiscal_year',
-    align: 'left',
-  },
-  {
-    name: 'department_name',
-    label: 'Odjel',
-    field: 'department_name',
-    align: 'left',
-  },
-  {
-    name: 'status_name',
-    label: 'Status',
-    field: 'status_name',
-    align: 'left',
-  },
-  {
-    name: 'created_by',
-    label: 'Kreirao',
-    field: 'created_by',
-    align: 'left',
-  },
-  {
-    name: 'total_amount',
-    label: 'Ukupan iznos',
-    field: 'total_amount',
-    align: 'right',
-  },
-  {
-    name: 'created_at',
-    label: 'Datum',
-    field: 'created_at',
-    align: 'left',
-  },
-  {
-    name: 'actions',
-    label: '',
-    field: 'actions',
-    align: 'right',
-  },
+  { name: 'request_number', label: 'Broj zahtjeva', field: 'request_number', align: 'left' },
+  { name: 'fiscal_year', label: 'Godina', field: 'fiscal_year', align: 'left' },
+  { name: 'department_name', label: 'Odjel', field: 'department_name', align: 'left' },
+  { name: 'status_name', label: 'Status', field: 'status_name', align: 'left' },
+  { name: 'created_by', label: 'Kreirao', field: 'created_by', align: 'left' },
+  { name: 'total_amount', label: 'Ukupan iznos', field: 'total_amount', align: 'right' },
+  { name: 'created_at', label: 'Datum', field: 'created_at', align: 'left' },
+  { name: 'actions', label: '', field: 'actions', align: 'right' },
 ];
 
 const fetchRequests = async () => {
   loading.value = true;
   errorMessage.value = '';
-
   try {
     const response = await api.get('/requests');
     rows.value = Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error('Greška kod dohvaćanja zahtjeva:', error);
-    errorMessage.value =
-      error.response?.data?.message || 'Zahtjevi se trenutno ne mogu dohvatiti.';
+    errorMessage.value = error.response?.data?.message || 'Zahtjevi se trenutno ne mogu dohvatiti.';
     rows.value = [];
   } finally {
     loading.value = false;
   }
 };
 
-const openRequest = (id) => {
-  router.push(`/requests/${id}`);
-};
+const openRequest = (id) => { router.push(`/requests/${id}`); };
 
 const formatCurrency = (value) => {
   if (value == null) return '-';
-  return new Intl.NumberFormat('hr-HR', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(value);
+  return new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(value);
 };
 
 const formatDate = (value) => {
@@ -215,35 +155,23 @@ const formatDate = (value) => {
 
 const statusClass = (status) => {
   switch ((status || '').toLowerCase()) {
-    case 'poslano':
-      return 'status-chip--sent';
-    case 'na odobrenju':
-      return 'status-chip--pending';
-    case 'vraćeno na dopunu / izmjenu':
-      return 'status-chip--returned';
-    case 'odobreno':
-      return 'status-chip--approved';
-    case 'odbijeno':
-      return 'status-chip--rejected';
-    case 'naručeno':
-      return 'status-chip--ordered';
-    case 'zatvoreno':
-      return 'status-chip--closed';
-    default:
-      return 'status-chip--default';
+    case 'poslano': return 'status--sent';
+    case 'na odobrenju': return 'status--pending';
+    case 'vraćeno na dopunu / izmjenu': return 'status--returned';
+    case 'odobreno': return 'status--approved';
+    case 'odbijeno': return 'status--rejected';
+    case 'naručeno': return 'status--ordered';
+    case 'zatvoreno': return 'status--closed';
+    default: return 'status--default';
   }
 };
 
-onMounted(() => {
-  fetchRequests();
-});
+onMounted(() => { fetchRequests(); });
 </script>
 
 <style scoped>
 .requests-page {
-  background:
-    radial-gradient(circle at top right, rgba(25, 118, 210, 0.06), transparent 24%),
-    linear-gradient(180deg, #f8fafc 0%, #f4f7fb 100%);
+  background: #F5F5F7;
   min-height: 100vh;
 }
 
@@ -258,28 +186,57 @@ onMounted(() => {
   justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
+  padding-top: 20px;
+  margin-bottom: 24px;
+}
+
+.page-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: #86868B;
+  text-transform: uppercase;
+  margin-bottom: 8px;
 }
 
 .page-title {
-  letter-spacing: -0.02em;
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: #1D1D1F;
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
 }
 
 .page-subtitle {
-  max-width: 760px;
-  line-height: 1.6;
+  font-size: 0.875rem;
+  color: #6E6E73;
+  max-width: 560px;
+  line-height: 1.5;
 }
 
 .new-request-btn {
-  border-radius: 16px;
-  padding: 10px 16px;
-  box-shadow: 0 12px 24px rgba(25, 118, 210, 0.22);
+  border-radius: 980px;
+  padding: 10px 22px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  background: #16294E !important;
+  color: white !important;
+  letter-spacing: -0.01em;
+  box-shadow: 0 2px 8px rgba(22, 41, 78, 0.22);
+  transition: opacity 0.2s;
 }
 
+.new-request-btn:hover { opacity: 0.85; }
+
 .table-card {
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 18px;
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.03),
+    0 8px 32px rgba(0, 0, 0, 0.06);
   overflow: hidden;
 }
 
@@ -287,81 +244,102 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 20px 24px;
+  padding: 18px 24px 16px;
+}
+
+.table-toolbar__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1D1D1F;
+  letter-spacing: -0.01em;
+}
+
+.table-toolbar__count {
+  font-size: 0.8rem;
+  color: #86868B;
+}
+
+.table-divider {
+  height: 0.5px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(255, 59, 48, 0.07);
+  border-radius: 10px;
+  color: #C00;
+  font-size: 0.83rem;
+  border: 0.5px solid rgba(255,59,48,0.2);
 }
 
 .requests-table :deep(.q-table thead tr) {
-  background: #f8fafc;
+  background: rgba(245, 245, 247, 0.7);
 }
 
 .requests-table :deep(.q-table thead th) {
-  color: #64748b;
-  font-weight: 700;
-  font-size: 0.82rem;
+  color: #86868B;
+  font-weight: 600;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.07em;
+  border-bottom: 0.5px solid rgba(0,0,0,0.07) !important;
+}
+
+.requests-table :deep(.q-table tbody tr) {
+  transition: background 0.12s;
+}
+
+.requests-table :deep(.q-table tbody tr:hover td) {
+  background: rgba(0, 175, 219, 0.04);
 }
 
 .requests-table :deep(.q-table tbody td) {
-  height: 68px;
+  height: 54px;
+  border-bottom: 0.5px solid rgba(0,0,0,0.05);
+  color: #1D1D1F;
+  font-size: 0.875rem;
 }
 
 .request-link {
-  color: #1976d2;
-  font-weight: 700;
+  color: #00AFDB;
+  font-weight: 600;
+  font-size: 0.875rem;
   padding-left: 0;
+  letter-spacing: -0.01em;
+}
+
+.row-arrow {
+  color: #AEAEB2;
 }
 
 .status-chip {
-  border-radius: 999px;
-  font-weight: 700;
-  padding: 6px 10px;
+  border-radius: 980px;
+  font-weight: 600;
+  font-size: 0.72rem;
+  padding: 3px 10px;
+  height: auto;
+  letter-spacing: 0;
 }
 
-.status-chip--sent {
-  background: #eef2ff;
-  color: #4f46e5;
-}
+.status--sent     { background: #EEF2FF; color: #4338CA; }
+.status--pending  { background: rgba(0,175,219,0.1); color: #007BA0; }
+.status--returned { background: #FFF7ED; color: #C2410C; }
+.status--approved { background: #ECFDF5; color: #065F46; }
+.status--rejected { background: #FEF2F2; color: #991B1B; }
+.status--ordered  { background: #F5F3FF; color: #5B21B6; }
+.status--closed   { background: #F0FDF4; color: #14532D; }
+.status--default  { background: rgba(0,0,0,0.05); color: #6E6E73; }
 
-.status-chip--pending {
-  background: #eff6ff;
-  color: #2563eb;
-}
-
-.status-chip--returned {
-  background: #fdf2f8;
-  color: #be185d;
-}
-
-.status-chip--approved {
-  background: #ecfdf3;
-  color: #15803d;
-}
-
-.status-chip--rejected {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-.status-chip--ordered {
-  background: #f3e8ff;
-  color: #7e22ce;
-}
-
-.status-chip--closed {
-  background: #f0fdf4;
-  color: #166534;
-}
-
-.status-chip--default {
-  background: #f1f5f9;
-  color: #475569;
+.no-data {
+  color: #86868B;
+  font-size: 0.875rem;
 }
 
 @media (max-width: 768px) {
-  .table-toolbar {
-    padding: 18px;
-  }
+  .table-toolbar { padding: 14px 18px; }
 }
 </style>
