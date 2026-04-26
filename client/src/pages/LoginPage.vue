@@ -19,7 +19,7 @@
         <!-- Headline -->
         <div class="brand-headline">
           <h1>Sustav<br>nabave</h1>
-          <p>Digitalna platforma za upravljanje zahtjevima za nabavu na Veleučilištu u Rijeci.</p>
+          <p>Digitalna platforma za upravljanje i prikupljanje zahtjeva za nabavu</p>
         </div>
 
         <!-- Footer -->
@@ -51,7 +51,7 @@
               v-model="email"
               type="email"
               class="input"
-              placeholder="ime.prezime@veleri.hr"
+              placeholder="username@veleri.hr"
               autocomplete="username"
               :disabled="loading"
             />

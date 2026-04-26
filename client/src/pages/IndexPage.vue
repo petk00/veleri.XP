@@ -1,97 +1,141 @@
 <template>
-  <q-page class="dashboard-page">
+  <q-page class="page">
     <div class="page-shell">
 
-      <!-- HERO -->
-      <section class="hero">
-        <div class="hero__left">
-          <div class="hero__eyebrow">
-            <span class="hero__eyebrow-dot"></span>
-            {{ todayFormatted }}
-          </div>
-          <h1 class="hero__title">
-            Dobrodošao,<br>
-            <span class="hero__name">{{ user?.first_name || 'korisnik' }}</span>
+      <!-- ─────────────────────────────────
+           Page header
+           ───────────────────────────────── -->
+      <header class="page-header">
+        <div class="page-header__main">
+          <div class="page-header__eyebrow">{{ todayFormatted }}</div>
+          <h1 class="page-header__title">
+            Dobrodošli, <span class="page-header__name">{{ user?.first_name || 'korisniče' }}</span>
           </h1>
-          <p class="hero__subtitle">
-            {{ isAdmin ? 'Imate pregled nad svim zahtjevima sustava.' : 'Pratite status vaših zahtjeva za nabavu.' }}
+          <p class="page-header__subtitle">
+            {{ isAdmin
+              ? 'Pregled svih zahtjeva u sustavu i akcija koje čekaju vašu odluku.'
+              : 'Pregled vaših zahtjeva za nabavu i statusa obrade.'
+            }}
           </p>
         </div>
+        <div class="page-header__actions">
+          <button class="btn btn--primary" @click="$router.push('/requests/new')">
+            <q-icon name="add" size="16px" />
+            <span>Novi zahtjev</span>
+          </button>
+        </div>
+      </header>
 
-        <q-btn
-          unelevated no-caps
-          class="hero__cta"
-          icon="add"
-          label="Novi zahtjev"
-          @click="$router.push('/requests/new')"
-        />
-      </section>
-
-      <!-- STATISTIKE -->
+      <!-- ─────────────────────────────────
+           Statistics
+           ───────────────────────────────── -->
       <section class="stats">
         <div
           v-for="stat in stats"
           :key="stat.key"
-          class="stat-card"
-          :class="`stat-card--${stat.color}`"
+          class="stat"
+          :class="`stat--${stat.color}`"
         >
-          <div class="stat-card__icon">
-            <q-icon :name="stat.icon" size="22px" />
+          <div class="stat__icon">
+            <q-icon :name="stat.icon" size="18px" />
           </div>
-          <div class="stat-card__body">
-            <div class="stat-card__value">
-              <span v-if="loadingStats" class="stat-card__skeleton"></span>
+          <div class="stat__body">
+            <div class="stat__value">
+              <span v-if="loadingStats" class="stat__skeleton" />
               <span v-else>{{ stat.value }}</span>
             </div>
-            <div class="stat-card__label">{{ stat.label }}</div>
+            <div class="stat__label">{{ stat.label }}</div>
           </div>
         </div>
       </section>
 
-      <!-- AKCIJE -->
-      <section class="actions">
-        <div class="action-card action-card--primary" @click="$router.push('/requests/new')">
-          <div class="action-card__header">
-            <div class="action-card__icon">
-              <q-icon name="add_shopping_cart" size="24px" />
-            </div>
-            <q-icon name="arrow_forward" size="18px" class="action-card__arrow" />
-          </div>
-          <div class="action-card__title">Novi zahtjev</div>
-          <div class="action-card__desc">Pokrenite novi zahtjev za nabavu kroz jednostavan wizard.</div>
-        </div>
+      <!-- ─────────────────────────────────
+           Quick actions
+           ───────────────────────────────── -->
+      <section class="actions-section">
+        <h2 class="section-title">Brze akcije</h2>
 
-        <div class="action-card" @click="$router.push('/requests')">
-          <div class="action-card__header">
-            <div class="action-card__icon action-card__icon--light">
-              <q-icon name="list_alt" size="24px" />
+        <div class="actions">
+          <!-- New request -->
+          <button class="action" @click="$router.push('/requests/new')">
+            <div class="action__icon action__icon--primary">
+              <q-icon name="add_shopping_cart" size="20px" />
             </div>
-            <q-icon name="arrow_forward" size="18px" class="action-card__arrow" />
-          </div>
-          <div class="action-card__title">Svi zahtjevi</div>
-          <div class="action-card__desc">Pregledajte postojeće zahtjeve i pratite njihov status.</div>
-        </div>
+            <div class="action__body">
+              <div class="action__title">Novi zahtjev</div>
+              <div class="action__desc">Pokrenite novi zahtjev za nabavu kroz wizard.</div>
+            </div>
+            <q-icon name="chevron_right" size="18px" class="action__chevron" />
+          </button>
 
-        <div v-if="pendingCount > 0 && isAdmin" class="action-card action-card--alert" @click="$router.push('/requests')">
-          <div class="action-card__header">
-            <div class="action-card__icon action-card__icon--alert">
-              <q-icon name="pending_actions" size="24px" />
+          <!-- All requests -->
+          <button class="action" @click="$router.push('/requests')">
+            <div class="action__icon">
+              <q-icon name="list_alt" size="20px" />
             </div>
-            <q-badge class="action-card__badge">{{ pendingCount }}</q-badge>
-          </div>
-          <div class="action-card__title">Čeka odobrenje</div>
-          <div class="action-card__desc">Zahtjevi koji su poslani i čekaju vaš pregled.</div>
-        </div>
+            <div class="action__body">
+              <div class="action__title">Svi zahtjevi</div>
+              <div class="action__desc">Pregled postojećih zahtjeva i njihovih statusa.</div>
+            </div>
+            <q-icon name="chevron_right" size="18px" class="action__chevron" />
+          </button>
 
-        <div v-if="returnedCount > 0 && !isAdmin" class="action-card action-card--alert" @click="$router.push('/requests')">
-          <div class="action-card__header">
-            <div class="action-card__icon action-card__icon--alert">
-              <q-icon name="assignment_return" size="24px" />
+          <!-- Admin: pending review -->
+          <button
+            v-if="pendingCount > 0 && isAdmin"
+            class="action action--alert"
+            @click="$router.push('/requests')"
+          >
+            <div class="action__icon action__icon--alert">
+              <q-icon name="pending_actions" size="20px" />
             </div>
-            <q-badge class="action-card__badge">{{ returnedCount }}</q-badge>
-          </div>
-          <div class="action-card__title">Vraćeno na dopunu</div>
-          <div class="action-card__desc">Vaši zahtjevi koji čekaju ispravku i ponovni slanje.</div>
+            <div class="action__body">
+              <div class="action__title">
+                Čeka pregled
+                <span class="action__count">{{ pendingCount }}</span>
+              </div>
+              <div class="action__desc">Zahtjevi su poslani i čekaju vašu obradu.</div>
+            </div>
+            <q-icon name="chevron_right" size="18px" class="action__chevron" />
+          </button>
+
+          <!-- Employee: returned for revision -->
+          <button
+            v-if="returnedCount > 0 && !isAdmin"
+            class="action action--alert"
+            @click="$router.push('/requests')"
+          >
+            <div class="action__icon action__icon--alert">
+              <q-icon name="undo" size="20px" />
+            </div>
+            <div class="action__body">
+              <div class="action__title">
+                Vraćeno na dopunu
+                <span class="action__count">{{ returnedCount }}</span>
+              </div>
+              <div class="action__desc">Vaši zahtjevi koji čekaju ispravku i ponovno slanje.</div>
+            </div>
+            <q-icon name="chevron_right" size="18px" class="action__chevron" />
+          </button>
+
+          <!-- Admin: in progress (Na odobrenju) -->
+          <button
+            v-if="inReviewCount > 0 && isAdmin"
+            class="action"
+            @click="$router.push('/requests')"
+          >
+            <div class="action__icon">
+              <q-icon name="rate_review" size="20px" />
+            </div>
+            <div class="action__body">
+              <div class="action__title">
+                U obradi
+                <span class="action__count">{{ inReviewCount }}</span>
+              </div>
+              <div class="action__desc">Zahtjevi koje ste preuzeli i čekaju vašu odluku.</div>
+            </div>
+            <q-icon name="chevron_right" size="18px" class="action__chevron" />
+          </button>
         </div>
       </section>
 
@@ -111,21 +155,26 @@ const loadingStats = ref(true);
 const allRequests = ref([]);
 
 const todayFormatted = computed(() => {
-  return new Date().toLocaleDateString('hr-HR', {
+  const formatted = new Date().toLocaleDateString('hr-HR', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
     year: 'numeric',
   });
+  // Capitalize first letter
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 });
 
-const pendingCount = computed(() =>
-  allRequests.value.filter(r => r.status_name === 'Poslano').length
-);
+/* ─────── Helper counters by status ─────── */
 
-const returnedCount = computed(() =>
-  allRequests.value.filter(r => r.status_name === 'Vraćeno na dopunu / izmjenu').length
-);
+const countByStatus = (...names) =>
+  allRequests.value.filter(r => names.includes(r.status_name)).length;
+
+const pendingCount = computed(() => countByStatus('Poslano'));
+const inReviewCount = computed(() => countByStatus('Na odobrenju'));
+const returnedCount = computed(() => countByStatus('Vraćeno na dopunu / izmjenu'));
+
+/* ─────── Stat cards ─────── */
 
 const stats = computed(() => {
   if (isAdmin) {
@@ -140,23 +189,23 @@ const stats = computed(() => {
       {
         key: 'pending',
         label: 'Čeka pregled',
-        value: allRequests.value.filter(r => r.status_name === 'Poslano').length,
+        value: pendingCount.value,
         icon: 'schedule',
         color: 'amber',
       },
       {
-        key: 'approved',
-        label: 'Odobreno',
-        value: allRequests.value.filter(r => r.status_name === 'Odobreno').length,
+        key: 'ordered',
+        label: 'Naručeno',
+        value: countByStatus('Naručeno'),
         icon: 'check_circle',
-        color: 'green',
+        color: 'cyan',
       },
       {
         key: 'closed',
-        label: 'Zatvoreno',
-        value: allRequests.value.filter(r => r.status_name === 'Zatvoreno').length,
+        label: 'Završeno',
+        value: countByStatus('Zatvoreno'),
         icon: 'task_alt',
-        color: 'grey',
+        color: 'green',
       },
     ];
   }
@@ -170,27 +219,26 @@ const stats = computed(() => {
       color: 'navy',
     },
     {
-      key: 'pending',
-      label: 'Na obradi',
-      value: allRequests.value.filter(r =>
-        ['Poslano', 'Na odobrenju'].includes(r.status_name)
-      ).length,
+      key: 'in-progress',
+      label: 'U obradi',
+      // Naručeno = odobren ali još nije završen, i dalje "u procesu" za podnositelja
+      value: countByStatus('Poslano', 'Na odobrenju', 'Naručeno'),
       icon: 'schedule',
       color: 'amber',
-    },
-    {
-      key: 'approved',
-      label: 'Odobreno',
-      value: allRequests.value.filter(r => r.status_name === 'Odobreno').length,
-      icon: 'check_circle',
-      color: 'green',
     },
     {
       key: 'returned',
       label: 'Vraćeno na dopunu',
       value: returnedCount.value,
       icon: 'undo',
-      color: 'red',
+      color: 'orange',
+    },
+    {
+      key: 'closed',
+      label: 'Završeno',
+      value: countByStatus('Zatvoreno'),
+      icon: 'task_alt',
+      color: 'green',
     },
   ];
 });
@@ -198,9 +246,10 @@ const stats = computed(() => {
 const fetchStats = async () => {
   try {
     const { data } = await api.get('/requests');
-    allRequests.value = data;
+    allRequests.value = Array.isArray(data) ? data : [];
   } catch (e) {
     console.error(e);
+    allRequests.value = [];
   } finally {
     loadingStats.value = false;
   }
@@ -212,159 +261,172 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.dashboard-page {
-  --navy:       #16294e;
-  --navy-dark:  #0a1628;
-  --navy-light: #2a4f96;
-  --accent:     #4a7fd4;
-  --surface:    #f0f4fa;
-  --border:     rgba(22, 41, 78, 0.08);
-  --text:       #0a1628;
-  --muted:      #5a6a85;
-
-  background: var(--surface);
+/* ─────────────────────────────────
+   Page
+   ───────────────────────────────── */
+.page {
+  background: #F5F5F5;
   min-height: 100vh;
-  padding: 40px 24px 80px;
+  padding: 24px 24px 64px;
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #201F1E;
 }
 
 .page-shell {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
 }
 
-/* ── Hero ────────────────────────────────────────────── */
-.hero {
+/* ─────────────────────────────────
+   Page header
+   ───────────────────────────────── */
+.page-header {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
+  gap: 16px;
   flex-wrap: wrap;
-  padding-bottom: 32px;
-  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
 }
 
-.hero__eyebrow {
+.page-header__main { flex: 1; min-width: 240px; }
+
+.page-header__eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #00AFDB;
+  margin-bottom: 4px;
+}
+
+.page-header__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #201F1E;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.page-header__name { color: #16294E; font-weight: 600; }
+
+.page-header__subtitle {
+  font-size: 0.8125rem;
+  color: #605E5C;
+  margin: 6px 0 0;
+  line-height: 1.5;
+  max-width: 580px;
+}
+
+.page-header__actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────
+   Buttons
+   ───────────────────────────────── */
+.btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  margin-bottom: 16px;
-}
-
-.hero__eyebrow-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
-.hero__title {
-  font-size: 2.8rem;
-  font-weight: 800;
-  color: var(--text);
-  letter-spacing: -0.035em;
-  line-height: 1.1;
-  margin: 0 0 12px;
-}
-
-.hero__name {
-  color: var(--navy);
-}
-
-.hero__subtitle {
-  font-size: 0.95rem;
-  color: var(--muted);
-  margin: 0;
-  line-height: 1.5;
-  max-width: 420px;
-}
-
-.hero__cta {
-  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%) !important;
-  color: white !important;
-  border-radius: 12px !important;
-  padding: 12px 24px !important;
-  font-weight: 700 !important;
-  font-size: 0.9rem !important;
-  box-shadow: 0 8px 24px rgba(22, 41, 78, 0.28) !important;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
   white-space: nowrap;
-  transition: all 0.2s !important;
+  color: #201F1E;
+  background: white;
 }
 
-.hero__cta:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 32px rgba(22, 41, 78, 0.36) !important;
+.btn--primary {
+  background: #16294E;
+  color: white;
+  border-color: #16294E;
 }
+.btn--primary:hover { background: #0F1F3D; border-color: #0F1F3D; }
 
-/* ── Stats ───────────────────────────────────────────── */
+/* ─────────────────────────────────
+   Stats grid
+   ───────────────────────────────── */
 .stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 12px;
+  margin-bottom: 28px;
 }
 
-.stat-card {
+.stat {
   background: white;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 24px;
+  border: 1px solid #E1DFDD;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  padding: 16px;
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  transition: transform 0.2s, box-shadow 0.2s;
+  gap: 12px;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(22, 41, 78, 0.08);
+.stat:hover {
+  border-color: #C8C6C4;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
-.stat-card__icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+.stat__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.stat-card--navy .stat-card__icon  { background: rgba(22, 41, 78, 0.08); color: var(--navy); }
-.stat-card--amber .stat-card__icon { background: rgba(245, 158, 11, 0.1); color: #d97706; }
-.stat-card--green .stat-card__icon { background: rgba(16, 185, 129, 0.1); color: #059669; }
-.stat-card--grey  .stat-card__icon { background: rgba(100, 116, 139, 0.1); color: #475569; }
-.stat-card--red   .stat-card__icon { background: rgba(239, 68, 68, 0.1); color: #dc2626; }
+/* Icon color variants */
+.stat--navy   .stat__icon { background: #E8EBF1; color: #16294E; }
+.stat--cyan   .stat__icon { background: #E1F5FA; color: #00708A; }
+.stat--amber  .stat__icon { background: #FFF4CE; color: #B7791F; }
+.stat--orange .stat__icon { background: #FFF4ED; color: #C2410C; }
+.stat--green  .stat__icon { background: #DFF6DD; color: #107C10; }
+.stat--grey   .stat__icon { background: #F8F8F8; color: #605E5C; }
 
-.stat-card__value {
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--text);
-  letter-spacing: -0.04em;
-  line-height: 1;
-  margin-bottom: 4px;
+.stat__body { flex: 1; min-width: 0; }
+
+.stat__value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #201F1E;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 2px;
 }
 
-.stat-card__label {
-  font-size: 0.8rem;
-  color: var(--muted);
+.stat__label {
+  font-size: 0.75rem;
+  color: #605E5C;
   font-weight: 500;
+  letter-spacing: 0.005em;
 }
 
-.stat-card__skeleton {
+.stat__skeleton {
   display: inline-block;
-  width: 40px;
-  height: 32px;
-  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  width: 32px;
+  height: 24px;
+  background: linear-gradient(90deg, #EDEBE9 25%, #F8F8F8 50%, #EDEBE9 75%);
   background-size: 200% 100%;
   animation: shimmer 1.2s infinite;
-  border-radius: 6px;
+  border-radius: 3px;
+  vertical-align: middle;
 }
 
 @keyframes shimmer {
@@ -372,116 +434,143 @@ onMounted(() => {
   100% { background-position: -200% 0; }
 }
 
-/* ── Actions ─────────────────────────────────────────── */
+/* ─────────────────────────────────
+   Section title
+   ───────────────────────────────── */
+.section-title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8A8886;
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #E1DFDD;
+}
+
+/* ─────────────────────────────────
+   Actions grid
+   ───────────────────────────────── */
 .actions {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  gap: 12px;
 }
 
-.action-card {
+.action {
+  all: unset;
   background: white;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 28px;
+  border: 1px solid #E1DFDD;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  padding: 14px 16px;
   cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-  overflow: hidden;
-}
-
-.action-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(22, 41, 78, 0.1);
-  border-color: rgba(22, 41, 78, 0.16);
-}
-
-.action-card--primary {
-  background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 60%, var(--navy-light) 100%);
-  border-color: transparent;
-}
-
-.action-card--primary .action-card__title { color: white; }
-.action-card--primary .action-card__desc  { color: rgba(255,255,255,0.6); }
-.action-card--primary .action-card__arrow { color: rgba(255,255,255,0.6); }
-
-.action-card--alert {
-  border-color: rgba(245, 158, 11, 0.2);
-  background: linear-gradient(135deg, #fffbeb 0%, #fff 100%);
-}
-
-.action-card__header {
+  transition: all 0.15s;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
+  align-items: flex-start;
+  gap: 12px;
+  text-align: left;
 }
 
-.action-card__icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  background: rgba(255,255,255,0.15);
-  color: white;
+.action:hover {
+  border-color: #16294E;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.action:hover .action__chevron {
+  color: #16294E;
+  transform: translateX(2px);
+}
+
+.action--alert {
+  border-color: #F2D17C;
+  background: #FFFCF5;
+}
+.action--alert:hover {
+  border-color: #B7791F;
+}
+
+.action__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: #F8F8F8;
+  color: #605E5C;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
-.action-card__icon--light {
-  background: rgba(22, 41, 78, 0.07);
-  color: var(--navy);
+.action__icon--primary {
+  background: #E8EBF1;
+  color: #16294E;
 }
 
-.action-card__icon--alert {
-  background: rgba(245, 158, 11, 0.12);
-  color: #d97706;
+.action__icon--alert {
+  background: #FFF4CE;
+  color: #B7791F;
 }
 
-.action-card__arrow {
-  color: var(--muted);
-  transition: transform 0.2s;
+.action__body { flex: 1; min-width: 0; }
+
+.action__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #201F1E;
+  letter-spacing: -0.005em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.action-card:hover .action-card__arrow {
-  transform: translateX(4px);
+.action__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: white;
+  background: #B7791F;
+  font-variant-numeric: tabular-nums;
 }
 
-.action-card__badge {
-  background: #f59e0b !important;
-  color: white !important;
-  font-weight: 700 !important;
-  font-size: 0.85rem !important;
-  padding: 4px 10px !important;
-  border-radius: 999px !important;
-}
+.action--alert .action__count { background: #B7791F; }
+.action:not(.action--alert) .action__count { background: #16294E; }
 
-.action-card__title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: -0.02em;
-  margin-bottom: 6px;
-}
-
-.action-card__desc {
-  font-size: 0.85rem;
-  color: var(--muted);
+.action__desc {
+  font-size: 0.75rem;
+  color: #605E5C;
+  margin-top: 3px;
   line-height: 1.5;
 }
 
-/* ── Responsive ──────────────────────────────────────── */
+.action__chevron {
+  color: #A19F9D;
+  flex-shrink: 0;
+  margin-top: 8px;
+  transition: all 0.15s;
+}
+
+/* ─────────────────────────────────
+   Responsive
+   ───────────────────────────────── */
 @media (max-width: 900px) {
-  .stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .stats { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 600px) {
-  .dashboard-page { padding: 24px 16px 60px; }
-  .hero__title { font-size: 2rem; }
-  .stats { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-  .stat-card { padding: 16px; }
-  .stat-card__value { font-size: 1.6rem; }
+  .page { padding: 16px 12px 48px; }
+  .page-header__title { font-size: 1.25rem; }
+  .stats { gap: 8px; }
+  .stat { padding: 12px; }
+  .stat__value { font-size: 1.25rem; }
+  .actions { grid-template-columns: 1fr; }
+  .page-header__actions .btn { width: 100%; }
 }
 </style>
