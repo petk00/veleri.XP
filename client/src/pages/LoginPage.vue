@@ -1,149 +1,124 @@
 <template>
   <q-page class="login-page">
 
-    <!-- Lijeva strana — branding -->
-    <div class="login-brand">
-      <div class="brand-inner">
+    <!-- ─────────────────────────────────
+         LEFT — Brand panel (navy)
+         ───────────────────────────────── -->
+    <aside class="brand-panel">
+      <div class="brand-panel__inner">
 
-        <div class="brand-logo">
-          <div class="brand-logo__icon">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-              <rect x="2" y="2" width="11" height="11" rx="3" fill="white" fill-opacity="0.9"/>
-              <rect x="15" y="2" width="11" height="11" rx="3" fill="white" fill-opacity="0.5"/>
-              <rect x="2" y="15" width="11" height="11" rx="3" fill="white" fill-opacity="0.5"/>
-              <rect x="15" y="15" width="11" height="11" rx="3" fill="white" fill-opacity="0.9"/>
-            </svg>
-          </div>
-          <div class="brand-logo__text">
-            <span class="brand-logo__name">XP</span>
-            <span class="brand-logo__sub">Veleučilište u Rijeci</span>
+        <!-- Brand mark -->
+        <div class="brand-mark">
+          <div class="brand-mark__square">XP</div>
+          <div class="brand-mark__text">
+            <span class="brand-mark__name">veleri.XP</span>
+            <span class="brand-mark__sub">Veleučilište u Rijeci</span>
           </div>
         </div>
 
+        <!-- Headline -->
         <div class="brand-headline">
-          <h1>Sustav za<br>upravljanje<br>nabavom</h1>
+          <h1>Sustav<br>nabave</h1>
+          <p>Digitalna platforma za upravljanje zahtjevima za nabavu na Veleučilištu u Rijeci.</p>
         </div>
 
-        <div class="brand-features">
-          <div class="brand-feature">
-            <div class="brand-feature__dot"></div>
-            <span>Digitalni workflow zahtjeva</span>
-          </div>
-          <div class="brand-feature">
-            <div class="brand-feature__dot"></div>
-            <span>Praćenje statusa u realnom vremenu</span>
-          </div>
-          <div class="brand-feature">
-            <div class="brand-feature__dot"></div>
-            <span>Arhiva dokumenata i ponuda</span>
-          </div>
-        </div>
-
+        <!-- Footer -->
         <div class="brand-footer">
-          © {{ new Date().getFullYear() }} Veleučilište u Rijeci
+          © {{ currentYear }} Veleučilište u Rijeci
         </div>
 
       </div>
+    </aside>
 
-      <!-- Dekorativni geometrijski elementi -->
-      <div class="geo geo--circle-lg" aria-hidden="true"></div>
-      <div class="geo geo--circle-sm" aria-hidden="true"></div>
-      <div class="geo geo--line" aria-hidden="true"></div>
-    </div>
+    <!-- ─────────────────────────────────
+         RIGHT — Form panel
+         ───────────────────────────────── -->
+    <section class="form-panel">
+      <div class="form-panel__inner">
 
-    <!-- Desna strana — forma -->
-    <div class="login-form-side">
-      <div class="login-form-wrap">
+        <header class="form-header">
+          <h2>Prijava u sustav</h2>
+          <p>Prijavite se s vašim Veleri korisničkim podacima.</p>
+        </header>
 
-        <div class="form-header">
-          <h2 class="form-title">Dobrodošao</h2>
-          <p class="form-subtitle">Prijavite se u sustav s vašim korisničkim podacima.</p>
-        </div>
+        <form class="login-form" @submit.prevent="handleLogin">
 
-        <div class="form-fields">
-          <div class="field-group">
-            <label class="field-label">E-mail adresa</label>
-            <div class="field-input-wrap" :class="{ 'field-input-wrap--focus': emailFocused }">
-              <svg class="field-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                <polyline points="22,6 12,13 2,6"/>
-              </svg>
-              <input
-                v-model="email"
-                type="email"
-                class="field-input"
-                placeholder="ime.prezime@veleri.hr"
-                autocomplete="username"
-                @focus="emailFocused = true"
-                @blur="emailFocused = false"
-                @keyup.enter="handleLogin"
-              />
-            </div>
+          <!-- Email -->
+          <div class="field">
+            <label for="login-email">E-mail adresa</label>
+            <input
+              id="login-email"
+              v-model="email"
+              type="email"
+              class="input"
+              placeholder="ime.prezime@veleri.hr"
+              autocomplete="username"
+              :disabled="loading"
+            />
           </div>
 
-          <div class="field-group">
-            <label class="field-label">Lozinka</label>
-            <div class="field-input-wrap" :class="{ 'field-input-wrap--focus': passwordFocused }">
-              <svg class="field-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
+          <!-- Password with toggle -->
+          <div class="field">
+            <label for="login-password">Lozinka</label>
+            <div class="input-with-action">
               <input
+                id="login-password"
                 v-model="password"
                 :type="showPassword ? 'text' : 'password'"
-                class="field-input"
+                class="input"
                 placeholder="••••••••"
                 autocomplete="current-password"
-                @focus="passwordFocused = true"
-                @blur="passwordFocused = false"
-                @keyup.enter="handleLogin"
+                :disabled="loading"
               />
               <button
                 type="button"
-                class="field-toggle"
-                @click="showPassword = !showPassword"
+                class="input-toggle"
                 tabindex="-1"
+                :title="showPassword ? 'Sakrij lozinku' : 'Prikaži lozinku'"
+                @click="showPassword = !showPassword"
               >
-                <svg v-if="!showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
-                </svg>
+                <q-icon
+                  :name="showPassword ? 'visibility_off' : 'visibility'"
+                  size="18px"
+                />
               </button>
             </div>
           </div>
 
-          <div v-if="errorMessage" class="form-error">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="12"/>
-              <line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            {{ errorMessage }}
+          <!-- Error -->
+          <div v-if="errorMessage" class="form-error" role="alert">
+            <q-icon name="error_outline" size="16px" />
+            <span>{{ errorMessage }}</span>
           </div>
 
+          <!-- Submit -->
           <button
-            class="form-submit"
-            :class="{ 'form-submit--loading': loading }"
+            type="submit"
+            class="submit-btn"
             :disabled="loading"
-            @click="handleLogin"
           >
-            <span v-if="!loading">Prijavi se</span>
-            <span v-else class="form-submit__spinner"></span>
+            <q-spinner v-if="loading" size="18px" color="white" />
+            <span v-else>Prijavi se</span>
           </button>
+
+        </form>
+
+        <div class="form-help">
+          Nemate pristup?
+          <span class="form-help__highlight">
+            Obratite se administratoru sustava
+          </span>
+          radi pozivnice za registraciju.
         </div>
 
       </div>
-    </div>
+    </section>
 
   </q-page>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from 'boot/axios';
 
@@ -154,8 +129,8 @@ const password = ref('');
 const showPassword = ref(false);
 const loading = ref(false);
 const errorMessage = ref('');
-const emailFocused = ref(false);
-const passwordFocused = ref(false);
+
+const currentYear = computed(() => new Date().getFullYear());
 
 const handleLogin = async () => {
   errorMessage.value = '';
@@ -187,356 +162,371 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-/* ── Page layout ─────────────────────────────────────── */
+/* ─────────────────────────────────────
+   PAGE — split layout
+   ───────────────────────────────────── */
 .login-page {
   display: flex;
   min-height: 100vh;
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* ── Brand (left) ────────────────────────────────────── */
-.login-brand {
-  position: relative;
-  width: 44%;
+/* ─────────────────────────────────────
+   LEFT — Brand panel
+   ───────────────────────────────────── */
+.brand-panel {
+  width: 45%;
   flex-shrink: 0;
-  display: flex;
-  align-items: stretch;
+  background: #16294E;
+  position: relative;
   overflow: hidden;
 }
 
-.brand-inner {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  padding: 52px 48px;
-  width: 100%;
-}
-
-.brand-logo {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: auto;
-}
-
-.brand-logo__icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(8px);
-}
-
-.brand-logo__text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
-}
-
-.brand-logo__name {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: white;
-  letter-spacing: 0.04em;
-}
-
-.brand-logo__sub {
-  font-size: 0.72rem;
-  color: rgba(255,255,255,0.55);
-  margin-top: 2px;
-  letter-spacing: 0.02em;
-}
-
-.brand-headline {
-  margin: 48px 0 40px;
-}
-
-.brand-headline h1 {
-  font-size: 2.6rem;
-  font-weight: 800;
-  color: white;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
-  margin: 0;
-}
-
-.brand-features {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 48px;
-}
-
-.brand-feature {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: rgba(255,255,255,0.7);
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.brand-feature__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(74, 127, 212, 1);
-  flex-shrink: 0;
-  box-shadow: 0 0 0 3px rgba(74, 127, 212, 0.25);
-}
-
-.brand-footer {
-  font-size: 0.72rem;
-  color: rgba(255,255,255,0.3);
-  letter-spacing: 0.04em;
-  margin-top: auto;
-}
-
-/* Geo dekoracije */
-.geo {
+/* Subtilna cyan akcent linija na desnom rubu */
+.brand-panel::after {
+  content: '';
   position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.geo--circle-lg {
-  width: 360px;
-  height: 360px;
-  border: 1px solid rgba(255,255,255,0.06);
-  bottom: -120px;
-  right: -100px;
-}
-
-.geo--circle-sm {
-  width: 180px;
-  height: 180px;
-  border: 1px solid rgba(255,255,255,0.08);
-  bottom: -20px;
-  right: 20px;
-}
-
-.geo--line {
-  width: 1px;
-  height: 100%;
   top: 0;
   right: 0;
+  bottom: 0;
+  width: 2px;
   background: linear-gradient(
     to bottom,
     transparent,
-    rgba(255,255,255,0.1) 30%,
-    rgba(255,255,255,0.1) 70%,
+    #00AFDB 30%,
+    #00AFDB 70%,
     transparent
   );
-  border-radius: 0;
 }
 
-/* ── Form (right) ────────────────────────────────────── */
-.login-form-side {
+.brand-panel__inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  padding: 56px 56px 40px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Brand mark */
+.brand-mark {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark__square {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: #00AFDB;
+  color: #16294E;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.brand-mark__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.brand-mark__name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  letter-spacing: -0.005em;
+}
+
+.brand-mark__sub {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.65);
+  margin-top: 2px;
+}
+
+/* Headline */
+.brand-headline {
+  margin: 56px 0;
+}
+
+.brand-headline h1 {
+  font-size: 2.75rem;
+  font-weight: 600;
+  color: white;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin: 0 0 20px;
+}
+
+.brand-headline p {
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 420px;
+}
+
+/* Footer */
+.brand-footer {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.02em;
+}
+
+/* ─────────────────────────────────────
+   RIGHT — Form panel
+   ───────────────────────────────────── */
+.form-panel {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8fafc;
-  padding: 48px 24px;
+  background: #F5F5F5;
+  padding: 48px 32px;
 }
 
-.login-form-wrap {
+.form-panel__inner {
   width: 100%;
-  max-width: 400px;
+  max-width: 380px;
 }
 
+/* Header */
 .form-header {
-  margin-bottom: 40px;
+  margin-bottom: 32px;
 }
 
-.form-title {
-  font-size: 2rem;
-  font-weight: 800;
-  color: #0a1628;
-  letter-spacing: -0.03em;
-  margin: 0 0 8px;
-  line-height: 1.1;
+.form-header h2 {
+  font-size: 1.625rem;
+  font-weight: 600;
+  color: #16294E;
+  letter-spacing: -0.015em;
+  margin: 0 0 6px;
+  line-height: 1.2;
 }
 
-.form-subtitle {
-  font-size: 0.9rem;
-  color: #5a6a85;
-  margin: 0;
+.form-header p {
+  font-size: 0.875rem;
+  color: #605E5C;
   line-height: 1.5;
+  margin: 0;
 }
 
-/* Fields */
-.form-fields {
+/* Form */
+.login-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
-.field-group {
+.field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
-.field-label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #16294e;
+.field label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #424242;
+  letter-spacing: 0.01em;
 }
 
-.field-input-wrap {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 16px;
-  height: 52px;
-  background: white;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 12px;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.field-input-wrap--focus {
-  border-color: #16294e;
-  box-shadow: 0 0 0 3px rgba(22, 41, 78, 0.08);
-}
-
-.field-input-icon {
-  color: #94a3b8;
-  flex-shrink: 0;
-  transition: color 0.2s;
-}
-
-.field-input-wrap--focus .field-input-icon {
-  color: #16294e;
-}
-
-.field-input {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 0.95rem;
-  color: #0a1628;
+.input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
   font-family: inherit;
+  font-size: 0.875rem;
+  color: #201F1E;
+  background: white;
+  border: 1px solid #C8C6C4;
+  border-radius: 4px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
 }
 
-.field-input::placeholder {
-  color: #cbd5e1;
+.input::placeholder {
+  color: #A19F9D;
 }
 
-.field-toggle {
-  background: none;
-  border: none;
-  padding: 4px;
-  cursor: pointer;
-  color: #94a3b8;
+.input:hover:not(:disabled) {
+  border-color: #605E5C;
+}
+
+.input:focus {
+  border-color: #16294E;
+  box-shadow: 0 0 0 1px #16294E;
+}
+
+.input:disabled {
+  background: #FAFAFA;
+  color: #A19F9D;
+  cursor: not-allowed;
+}
+
+/* Input with action button (password visibility) */
+.input-with-action {
+  position: relative;
+}
+
+.input-with-action .input {
+  padding-right: 38px;
+}
+
+.input-toggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
-  transition: color 0.2s;
-  flex-shrink: 0;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #605E5C;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
 }
 
-.field-toggle:hover {
-  color: #16294e;
+.input-toggle:hover {
+  background: #F3F2F1;
+  color: #201F1E;
 }
 
 /* Error */
 .form-error {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
-  padding: 12px 16px;
-  background: #fff1f2;
-  border: 1px solid #fecdd3;
-  border-radius: 10px;
-  color: #be123c;
-  font-size: 0.875rem;
+  padding: 10px 12px;
+  background: #FDE7E9;
+  border: 1px solid #F1B0B7;
+  border-radius: 4px;
+  color: #A4262C;
+  font-size: 0.8125rem;
   font-weight: 500;
+  line-height: 1.4;
+}
+
+.form-error .q-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 /* Submit */
-.form-submit {
+.submit-btn {
   width: 100%;
-  height: 52px;
-  border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #16294e 0%, #2a4f96 100%);
+  height: 38px;
+  margin-top: 4px;
+  border: 1px solid #16294E;
+  border-radius: 4px;
+  background: #16294E;
   color: white;
-  font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.15s, border-color 0.15s;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 8px;
-  box-shadow: 0 8px 24px rgba(22, 41, 78, 0.28);
 }
 
-.form-submit:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 32px rgba(22, 41, 78, 0.36);
+.submit-btn:hover:not(:disabled) {
+  background: #0F1F3D;
+  border-color: #0F1F3D;
 }
 
-.form-submit:active:not(:disabled) {
-  transform: translateY(0);
+.submit-btn:active:not(:disabled) {
+  background: #091538;
 }
 
-.form-submit--loading {
-  opacity: 0.8;
+.submit-btn:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
-.form-submit__spinner {
-  width: 20px;
-  height: 20px;
-  border: 2.5px solid rgba(255,255,255,0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+/* Help text */
+.form-help {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid #E1DFDD;
+  font-size: 0.75rem;
+  color: #605E5C;
+  line-height: 1.6;
+  text-align: center;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.form-help__highlight {
+  color: #16294E;
+  font-weight: 500;
 }
 
-/* ── Responsive ──────────────────────────────────────── */
+/* ─────────────────────────────────────
+   Responsive
+   ───────────────────────────────────── */
+@media (max-width: 900px) {
+  .brand-panel__inner {
+    padding: 40px 36px 32px;
+  }
+  .brand-headline {
+    margin: 40px 0;
+  }
+  .brand-headline h1 {
+    font-size: 2.25rem;
+  }
+}
+
 @media (max-width: 768px) {
   .login-page {
     flex-direction: column;
   }
-
-  .login-brand {
+  .brand-panel {
     width: 100%;
-    min-height: 220px;
+    min-height: 200px;
   }
-
-  .brand-inner {
-    padding: 32px 24px;
+  .brand-panel::after {
+    top: auto;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    width: auto;
+    height: 2px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      #00AFDB 30%,
+      #00AFDB 70%,
+      transparent
+    );
   }
-
+  .brand-panel__inner {
+    padding: 32px 24px 24px;
+  }
+  .brand-headline {
+    margin: 24px 0 16px;
+  }
   .brand-headline h1 {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
   }
-
-  .brand-features {
-    display: none;
+  .brand-headline p {
+    font-size: 0.875rem;
   }
-
   .brand-footer {
     display: none;
   }
-
-  .login-form-side {
-    padding: 40px 24px;
+  .form-panel {
+    padding: 32px 24px 48px;
   }
 }
 </style>
