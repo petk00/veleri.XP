@@ -16,9 +16,7 @@
       <!-- Content -->
       <div v-else-if="request">
 
-        <!-- ─────────────────────────────
-             Page header
-             ───────────────────────────── -->
+        <!-- Page header -->
         <header class="page-header">
           <div class="page-header__main">
             <div class="page-header__eyebrow">Zahtjev za nabavu</div>
@@ -40,11 +38,7 @@
           </div>
         </header>
 
-        <!-- ─────────────────────────────
-             ACTION BANNERS
-             ───────────────────────────── -->
-
-        <!-- Banner: Preuzmi (status 1 → 2) -->
+        <!-- Banner: Preuzmi -->
         <div v-if="canTakeOver" class="action-banner action-banner--neutral">
           <div class="action-banner__icon">
             <q-icon name="assignment_turned_in" size="18px" />
@@ -64,7 +58,7 @@
           </div>
         </div>
 
-        <!-- Banner: Odobri / Vrati / Odbij (status 2) -->
+        <!-- Banner: Odluka -->
         <div v-if="canDecide" class="action-banner action-banner--warning">
           <div class="action-banner__icon">
             <q-icon name="how_to_reg" size="18px" />
@@ -95,7 +89,7 @@
           </div>
         </div>
 
-        <!-- Banner: Resubmit (status 3, creator) -->
+        <!-- Banner: Resubmit -->
         <div v-if="canResubmit" class="action-banner action-banner--info">
           <div class="action-banner__icon">
             <q-icon name="edit_note" size="18px" />
@@ -123,7 +117,7 @@
           </div>
         </div>
 
-        <!-- Banner: Završi (status 6) -->
+        <!-- Banner: Završi -->
         <div v-if="canFinish" class="action-banner action-banner--success">
           <div class="action-banner__icon">
             <q-icon name="verified" size="18px" />
@@ -131,27 +125,22 @@
           <div class="action-banner__body">
             <div class="action-banner__title">Zahtjev je odobren</div>
             <div class="action-banner__desc">
-              <span v-if="canCloseRequest">
-                Svi dokumenti su priloženi. Zahtjev možete označiti kao završen.
+              <span v-if="canFinishNow">
+                Svi uvjeti su zadovoljeni. Zahtjev možete označiti kao završen.
               </span>
               <span v-else>
-                Za završetak je potrebna i ponuda i otpremnica.
+                Za završetak su potrebni: ponuda, otpremnica i upisan procijenjeni iznos.
               </span>
             </div>
-            <div v-if="!canCloseRequest" class="action-banner__hint">
+            <div v-if="!canFinishNow" class="action-banner__hint">
               <q-icon name="info" size="14px" />
-              <span>
-                Nedostaje:
-                <span v-if="!hasPonuda">ponuda</span>
-                <span v-if="!hasPonuda && !hasOtpremnica">, </span>
-                <span v-if="!hasOtpremnica">otpremnica</span>
-              </span>
+              <span>Nedostaje: {{ missingForFinish.join(', ') }}</span>
             </div>
           </div>
           <div class="action-banner__actions">
             <button
               class="btn btn--primary"
-              :disabled="!canCloseRequest || submittingAction"
+              :disabled="!canFinishNow || submittingAction"
               @click="quickAction('zavrsi')"
             >
               <q-spinner v-if="submittingAction" size="14px" color="white" />
@@ -161,9 +150,7 @@
           </div>
         </div>
 
-        <!-- ─────────────────────────────
-             INFO CARDS
-             ───────────────────────────── -->
+        <!-- Info cards -->
         <div class="info-grid">
           <div class="card">
             <div class="card__header">
@@ -223,9 +210,7 @@
           </div>
         </div>
 
-        <!-- ─────────────────────────────
-             ITEMS
-             ───────────────────────────── -->
+        <!-- Items -->
         <div class="card">
           <div class="card__header">
             <h2 class="card__title">
@@ -255,9 +240,7 @@
           </div>
         </div>
 
-        <!-- ─────────────────────────────
-             DOCUMENTS
-             ───────────────────────────── -->
+        <!-- Documents -->
         <div class="card">
           <div class="card__header">
             <h2 class="card__title">
@@ -349,9 +332,7 @@
           </div>
         </div>
 
-        <!-- ─────────────────────────────
-             TIMELINE
-             ───────────────────────────── -->
+        <!-- Timeline -->
         <div class="card">
           <div class="card__header">
             <h2 class="card__title">
@@ -437,7 +418,6 @@ import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 import { getStoredUser } from 'src/utils/authStorage';
 
-/* Status ID-evi (moraju odgovarati backendu) */
 const STATUS = {
   POSLANO: 1,
   NA_ODOBRENJU: 2,
@@ -448,7 +428,6 @@ const STATUS = {
 };
 const LOCKED_STATUSES = [STATUS.ODBIJENO, STATUS.ZATVORENO];
 
-/* Pravila uploada po statusu — moraju odgovarati attachmentRoutes.js */
 const UPLOAD_RULES = {
   Ponuda: [STATUS.POSLANO, STATUS.NA_ODOBRENJU, STATUS.VRACENO],
   Otpremnica: [STATUS.NARUCENO],
@@ -481,7 +460,21 @@ const status = computed(() => request.value?.fk_request_status);
 
 const hasPonuda = computed(() => attachments.value.some((a) => a.document_type === 'Ponuda'));
 const hasOtpremnica = computed(() => attachments.value.some((a) => a.document_type === 'Otpremnica'));
-const canCloseRequest = computed(() => hasPonuda.value && hasOtpremnica.value);
+
+/* Provjere za Završi */
+const hasAmount = computed(() => {
+  const v = Number(request.value?.total_amount);
+  return Number.isFinite(v) && v > 0;
+});
+const canFinishNow = computed(() => hasPonuda.value && hasOtpremnica.value && hasAmount.value);
+
+const missingForFinish = computed(() => {
+  const missing = [];
+  if (!hasPonuda.value) missing.push('ponuda');
+  if (!hasOtpremnica.value) missing.push('otpremnica');
+  if (!hasAmount.value) missing.push('procijenjeni iznos');
+  return missing;
+});
 
 const canEdit = computed(() => {
   if (!status.value) return false;
@@ -661,7 +654,6 @@ const deleteAttachment = (att) => {
   });
 };
 
-/* Generička jednoklik akcija (preuzmi, resubmit, zavrsi) */
 const quickAction = async (action) => {
   submittingAction.value = true;
   try {
@@ -683,7 +675,6 @@ const quickAction = async (action) => {
   }
 };
 
-/* Dijaloška akcija (odobri, odbij, vrati-na-izmjenu) */
 const openActionDialog = (action) => {
   pendingAction.value = action;
   actionComment.value = '';
