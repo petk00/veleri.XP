@@ -39,6 +39,7 @@ const MAX_JUSTIFICATION_LEN = 1000;
  *   requiresComment   — komentar je obavezan
  *   requiresOffer     — mora postojati Ponuda u Attachment
  *   requiresDelivery  — mora postojati Otpremnica u Attachment
+ *   requiresAmount    — total_amount mora biti > 0
  *   defaultComment    — fallback tekst u history ako komentar nije zadan
  */
 const ACTIONS = {
@@ -79,6 +80,7 @@ const ACTIONS = {
     adminOnly: true,
     requiresOffer: true,
     requiresDelivery: true,
+    requiresAmount: true,
     defaultComment: 'Zahtjev označen kao završen.',
   },
 };
@@ -245,7 +247,6 @@ router.post('/', authenticateToken, async (req, res) => {
     items,
   } = req.body;
 
-  // Validacija osnovnih polja
   if (!fk_fiscal_year || !fk_department) {
     return res.status(400).json({
       message: 'Fiskalna godina i odjel su obavezni.',
@@ -264,7 +265,6 @@ router.post('/', authenticateToken, async (req, res) => {
     });
   }
 
-  // estimated_amount je neobavezan, ali ako je zadan mora biti >= 0
   if (estimated_amount !== null && estimated_amount !== undefined && estimated_amount !== '') {
     const num = Number(estimated_amount);
     if (!Number.isFinite(num) || num < 0) {
@@ -300,7 +300,6 @@ router.post('/', authenticateToken, async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    // Provjera da fiskalna godina postoji + dohvat year za prefix
     const [fyRows] = await connection.query(
       'SELECT year FROM FiscalYear WHERE id_fiscal_year = ? LIMIT 1',
       [fk_fiscal_year]
@@ -314,7 +313,6 @@ router.post('/', authenticateToken, async (req, res) => {
     const year = fyRows[0].year;
     const prefix = `PR-${year}-`;
 
-    // Atomic generiranje request_number — FOR UPDATE lock
     const [maxRows] = await connection.query(
       `
       SELECT request_number
@@ -424,14 +422,12 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     });
   }
 
-  // Provjera role
   if (definition.adminOnly && !isAdmin(req.user)) {
     return res.status(403).json({
       message: 'Samo administrator može izvršiti ovu akciju.',
     });
   }
 
-  // Provjera komentara
   if (definition.requiresComment && (!comment || !comment.trim())) {
     return res.status(400).json({
       message: 'Komentar je obavezan za ovu akciju.',
@@ -446,7 +442,7 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
 
     const [requestRows] = await connection.query(
       `
-      SELECT fk_request_status, fk_created_by_user
+      SELECT fk_request_status, fk_created_by_user, total_amount
       FROM PurchaseRequest
       WHERE id_purchase_request = ?
       FOR UPDATE
@@ -462,7 +458,6 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     const currentStatus = requestRows[0].fk_request_status;
     const isCreator = requestRows[0].fk_created_by_user === userId;
 
-    // Provjera da kreator izvršava creator-only akciju
     if (definition.creatorOnly && !isCreator && !isAdmin(req.user)) {
       await connection.rollback();
       return res.status(403).json({
@@ -470,7 +465,6 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       });
     }
 
-    // Globalno zaključani statusi
     if (LOCKED_STATUSES.includes(currentStatus)) {
       await connection.rollback();
       return res.status(400).json({
@@ -478,7 +472,6 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       });
     }
 
-    // State machine — provjera dozvoljenog from
     if (currentStatus !== definition.from) {
       await connection.rollback();
       return res.status(400).json({
@@ -486,7 +479,7 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       });
     }
 
-    // Provjera dokumenata gdje treba
+    // Provjera dokumenata
     if (definition.requiresOffer || definition.requiresDelivery) {
       const [docRows] = await connection.query(
         `
@@ -509,6 +502,17 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
         await connection.rollback();
         return res.status(400).json({
           message: 'Zahtjev mora imati uploadanu Otpremnicu.',
+        });
+      }
+    }
+
+    // Provjera iznosa
+    if (definition.requiresAmount) {
+      const amount = Number(requestRows[0].total_amount);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        await connection.rollback();
+        return res.status(400).json({
+          message: 'Procijenjeni iznos mora biti unesen prije završetka zahtjeva.',
         });
       }
     }
@@ -564,7 +568,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
   const userId = req.user.id_user;
   const userIsAdmin = isAdmin(req.user);
 
-  // Validacija inputa
   if (!fk_department) {
     return res.status(400).json({ message: 'Odjel je obavezan.' });
   }
@@ -623,7 +626,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const currentStatus = requestRows[0].fk_request_status;
     const isCreator = requestRows[0].fk_created_by_user === userId;
 
-    // Locked statusi — apsolutno
     if (LOCKED_STATUSES.includes(currentStatus)) {
       await connection.rollback();
       return res.status(400).json({
@@ -631,7 +633,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    // Pravila za zaposlenika
     if (!userIsAdmin) {
       if (currentStatus !== STATUS.VRACENO) {
         await connection.rollback();
@@ -664,7 +665,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
       ]
     );
 
-    // Stare stavke se brišu i upisuju nove (isti pristup kao prije)
     await connection.query(
       'DELETE FROM PurchaseRequestItem WHERE fk_purchase_request = ?',
       [id]
@@ -686,7 +686,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
       [itemValues]
     );
 
-    // Audit trail za izmjenu
     await connection.query(
       `
       INSERT INTO RequestStatusHistory
