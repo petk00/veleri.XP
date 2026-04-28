@@ -38,7 +38,7 @@
           </div>
         </header>
 
-        <!-- Banner: Preuzmi -->
+        <!-- Banner: Preuzmi / Odbij (status 1 → 2 ili 5) -->
         <div v-if="canTakeOver" class="action-banner action-banner--neutral">
           <div class="action-banner__icon">
             <q-icon name="assignment_turned_in" size="18px" />
@@ -46,10 +46,14 @@
           <div class="action-banner__body">
             <div class="action-banner__title">Novi zahtjev čeka pregled</div>
             <div class="action-banner__desc">
-              Preuzmite zahtjev na obradu kako biste ga mogli odobriti, vratiti na dopunu ili odbiti.
+              Preuzmite zahtjev na obradu ili ga odmah odbijte ako je očito nevaljan.
             </div>
           </div>
           <div class="action-banner__actions">
+            <button class="btn btn--danger" @click="openActionDialog('odbij')">
+              <q-icon name="close" size="16px" />
+              <span>Odbij</span>
+            </button>
             <button class="btn btn--primary" :disabled="submittingAction" @click="quickAction('preuzmi')">
               <q-spinner v-if="submittingAction" size="14px" color="white" />
               <q-icon v-else name="assignment_turned_in" size="16px" />
@@ -58,7 +62,7 @@
           </div>
         </div>
 
-        <!-- Banner: Odluka -->
+        <!-- Banner: Odluka (status 2) -->
         <div v-if="canDecide" class="action-banner action-banner--warning">
           <div class="action-banner__icon">
             <q-icon name="how_to_reg" size="18px" />
@@ -66,7 +70,7 @@
           <div class="action-banner__body">
             <div class="action-banner__title">Potrebna vaša odluka</div>
             <div class="action-banner__desc">
-              Pregledajte zahtjev i odlučite hoćete li ga odobriti, vratiti na dopunu ili odbiti.
+              Pregledajte zahtjev i odlučite hoćete li ga odobriti ili vratiti podnositelju na dopunu.
             </div>
             <div v-if="!hasPonuda" class="action-banner__hint">
               <q-icon name="info" size="14px" />
@@ -78,10 +82,6 @@
               <q-icon name="undo" size="16px" />
               <span>Vrati na dopunu</span>
             </button>
-            <button class="btn btn--danger" @click="openActionDialog('odbij')">
-              <q-icon name="close" size="16px" />
-              <span>Odbij</span>
-            </button>
             <button class="btn btn--primary" :disabled="!hasPonuda" @click="openActionDialog('odobri')">
               <q-icon name="check" size="16px" />
               <span>Odobri</span>
@@ -89,7 +89,7 @@
           </div>
         </div>
 
-        <!-- Banner: Resubmit -->
+        <!-- Banner: Resubmit (status 3) -->
         <div v-if="canResubmit" class="action-banner action-banner--info">
           <div class="action-banner__icon">
             <q-icon name="edit_note" size="18px" />
@@ -117,7 +117,7 @@
           </div>
         </div>
 
-        <!-- Banner: Završi -->
+        <!-- Banner: Završi (status 6) -->
         <div v-if="canFinish" class="action-banner action-banner--success">
           <div class="action-banner__icon">
             <q-icon name="verified" size="18px" />
@@ -461,7 +461,6 @@ const status = computed(() => request.value?.fk_request_status);
 const hasPonuda = computed(() => attachments.value.some((a) => a.document_type === 'Ponuda'));
 const hasOtpremnica = computed(() => attachments.value.some((a) => a.document_type === 'Otpremnica'));
 
-/* Provjere za Završi */
 const hasAmount = computed(() => {
   const v = Number(request.value?.total_amount);
   return Number.isFinite(v) && v > 0;
