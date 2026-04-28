@@ -2,9 +2,7 @@
   <q-page class="page">
     <div class="page-shell">
 
-      <!-- ─────────────────────────────
-           Page header
-           ───────────────────────────── -->
+      <!-- Page header -->
       <header class="page-header">
         <div class="page-header__main">
           <div class="page-header__eyebrow">{{ todayFormatted }}</div>
@@ -20,99 +18,161 @@
         </div>
       </header>
 
-      <!-- ─────────────────────────────
-           Loading
-           ───────────────────────────── -->
+      <!-- Loading -->
       <div v-if="loading" class="loading-block">
         <q-spinner color="primary" size="32px" />
       </div>
 
-      <!-- ─────────────────────────────
-           Main + sidebar split
-           ───────────────────────────── -->
+      <!-- Main + sidebar split -->
       <div v-else class="split">
 
         <!-- ═════════════ MAIN ═════════════ -->
         <main class="main">
 
-          <!-- Card: Focus list -->
-          <div class="card">
-            <div class="card__header">
-              <div class="card__header-left">
-                <q-icon :name="focusIcon" size="16px" :class="focusIconClass" />
-                <h2 class="card__title">{{ focusTitle }}</h2>
+          <!-- ───── ADMIN: focus lista ───── -->
+          <template v-if="isAdmin">
+            <div class="card">
+              <div class="card__header">
+                <div class="card__header-left">
+                  <q-icon :name="focusIcon" size="16px" :class="focusIconClass" />
+                  <h2 class="card__title">{{ focusTitle }}</h2>
+                </div>
+                <span v-if="focusItems.length > 0" class="card__count">{{ focusItems.length }}</span>
               </div>
-              <span v-if="focusItems.length > 0" class="card__count">{{ focusItems.length }}</span>
-            </div>
 
-            <!-- Items -->
-            <ul v-if="focusItems.length > 0" class="focus-list">
-              <li
-                v-for="r in focusItems"
-                :key="r.id_purchase_request"
-                class="focus-item"
-                @click="$router.push(`/requests/${r.id_purchase_request}`)"
-              >
-                <div class="focus-item__main">
-                  <div class="focus-item__title">
-                    <span class="focus-item__number">{{ r.request_number }}</span>
-                    <span class="focus-item__separator">·</span>
-                    <span class="focus-item__person">{{ r.created_by }}</span>
+              <ul v-if="focusItems.length > 0" class="focus-list">
+                <li
+                  v-for="r in focusItems"
+                  :key="r.id_purchase_request"
+                  class="focus-item"
+                  @click="$router.push(`/requests/${r.id_purchase_request}`)"
+                >
+                  <div class="focus-item__main">
+                    <div class="focus-item__title">
+                      <span class="focus-item__number">{{ r.request_number }}</span>
+                      <span class="focus-item__separator">·</span>
+                      <span class="focus-item__person">{{ r.created_by }}</span>
+                    </div>
+                    <div class="focus-item__meta">
+                      {{ r.department_name }}
+                      <template v-if="r.total_amount"> · {{ formatCurrency(r.total_amount) }}</template>
+                      · {{ relativeTime(r.created_at) }}
+                    </div>
                   </div>
-                  <div class="focus-item__meta">
-                    {{ r.department_name }}
-                    <template v-if="r.total_amount"> · {{ formatCurrency(r.total_amount) }}</template>
-                    · {{ relativeTime(r.created_at) }}
+                  <span class="tag" :class="`tag--${focusTagFor(r).key}`">
+                    {{ focusTagFor(r).label }}
+                  </span>
+                  <q-icon name="chevron_right" size="16px" class="focus-item__chevron" />
+                </li>
+              </ul>
+
+              <div v-else class="empty">
+                <q-icon name="check_circle" size="32px" class="empty__icon" />
+                <div class="empty__title">{{ emptyTitle }}</div>
+                <div class="empty__desc">{{ emptyDesc }}</div>
+              </div>
+            </div>
+          </template>
+
+          <!-- ───── ZAPOSLENIK ───── -->
+          <template v-else>
+
+            <!-- Alert: vraćen zahtjev -->
+            <div
+              v-if="returnedAlertItem"
+              class="alert-card"
+              @click="$router.push(`/requests/${returnedAlertItem.id_purchase_request}`)"
+            >
+              <div class="alert-card__head">
+                <div class="alert-card__icon">
+                  <q-icon name="undo" size="20px" />
+                </div>
+                <div class="alert-card__head-text">
+                  <div class="alert-card__eyebrow">Vraćeno na dopunu / izmjenu</div>
+                  <div class="alert-card__title">{{ returnedAlertItem.request_number }}</div>
+                  <div class="alert-card__meta">
+                    {{ returnedAlertItem.department_name }} · {{ relativeTime(returnedAlertItem.created_at) }}
                   </div>
                 </div>
-                <span class="tag" :class="`tag--${focusTagFor(r).key}`">
-                  {{ focusTagFor(r).label }}
+                <q-icon name="chevron_right" size="20px" class="alert-card__chevron" />
+              </div>
+              <div class="alert-card__body">
+                Pregledajte komentar administratora, ispravite zahtjev i pošaljite ga ponovno.
+              </div>
+            </div>
+
+            <!-- Status zadnjeg zahtjeva (kad nema vraćenog) -->
+            <div
+              v-else-if="latestRequest"
+              class="status-card"
+              @click="$router.push(`/requests/${latestRequest.id_purchase_request}`)"
+            >
+              <div class="status-card__top">
+                <div class="status-card__eyebrow">Zadnji zahtjev</div>
+                <span class="status-pill" :class="statusClass(latestRequest.status_name)">
+                  {{ latestRequest.status_name }}
                 </span>
-                <q-icon name="chevron_right" size="16px" class="focus-item__chevron" />
-              </li>
-            </ul>
-
-            <!-- Empty state -->
-            <div v-else class="empty">
-              <q-icon name="check_circle" size="32px" class="empty__icon" />
-              <div class="empty__title">{{ emptyTitle }}</div>
-              <div class="empty__desc">{{ emptyDesc }}</div>
-            </div>
-          </div>
-
-          <!-- Secondary: in-progress (employee only, prikazuje se kad ima vraćenih + ostalih) -->
-          <div v-if="!isAdmin && returnedRequests.length > 0 && otherInProgress.length > 0" class="card">
-            <div class="card__header">
-              <div class="card__header-left">
-                <q-icon name="schedule" size="16px" class="ink-muted" />
-                <h2 class="card__title">U tijeku</h2>
               </div>
-              <span class="card__count">{{ otherInProgress.length }}</span>
+              <div class="status-card__number">{{ latestRequest.request_number }}</div>
+              <div class="status-card__meta">
+                {{ latestRequest.department_name }}
+                <template v-if="latestRequest.total_amount"> · {{ formatCurrency(latestRequest.total_amount) }}</template>
+                · {{ relativeTime(latestRequest.created_at) }}
+              </div>
+              <div class="status-card__action">
+                Otvori detalje
+                <q-icon name="arrow_forward" size="14px" />
+              </div>
             </div>
-            <ul class="focus-list">
-              <li
-                v-for="r in otherInProgress.slice(0, 5)"
-                :key="r.id_purchase_request"
-                class="focus-item"
-                @click="$router.push(`/requests/${r.id_purchase_request}`)"
-              >
-                <div class="focus-item__main">
-                  <div class="focus-item__title">
-                    <span class="focus-item__number">{{ r.request_number }}</span>
-                    <span class="focus-item__separator">·</span>
-                    <span class="focus-item__person">{{ r.department_name }}</span>
-                  </div>
-                  <div class="focus-item__meta">{{ relativeTime(r.created_at) }}</div>
+
+            <!-- Empty (zaposlenik nema nijedan zahtjev) -->
+            <div v-else class="card">
+              <div class="empty">
+                <q-icon name="check_circle" size="32px" class="empty__icon" />
+                <div class="empty__title">Nemate aktivnih zahtjeva</div>
+                <div class="empty__desc">Pokrenite novi zahtjev za nabavu kad bude potrebno.</div>
+              </div>
+            </div>
+
+            <!-- Lista ostalih aktivnih zahtjeva -->
+            <div v-if="latestRequest && otherActiveBesidesLatest.length > 0" class="card">
+              <div class="card__header">
+                <div class="card__header-left">
+                  <q-icon name="schedule" size="16px" class="ink-muted" />
+                  <h2 class="card__title">Ostali aktivni</h2>
                 </div>
-                <span class="status-pill" :class="statusClass(r.status_name)">{{ r.status_name }}</span>
-                <q-icon name="chevron_right" size="16px" class="focus-item__chevron" />
-              </li>
-            </ul>
-            <button v-if="otherInProgress.length > 5" class="card-link" @click="$router.push('/requests')">
-              Pogledaj sve
-              <q-icon name="arrow_forward" size="14px" />
-            </button>
-          </div>
+                <span class="card__count">{{ otherActiveBesidesLatest.length }}</span>
+              </div>
+              <ul class="focus-list">
+                <li
+                  v-for="r in otherActiveBesidesLatest.slice(0, 5)"
+                  :key="r.id_purchase_request"
+                  class="focus-item"
+                  @click="$router.push(`/requests/${r.id_purchase_request}`)"
+                >
+                  <div class="focus-item__main">
+                    <div class="focus-item__title">
+                      <span class="focus-item__number">{{ r.request_number }}</span>
+                      <span class="focus-item__separator">·</span>
+                      <span class="focus-item__person">{{ r.department_name }}</span>
+                    </div>
+                    <div class="focus-item__meta">{{ relativeTime(r.created_at) }}</div>
+                  </div>
+                  <span class="status-pill" :class="statusClass(r.status_name)">{{ r.status_name }}</span>
+                  <q-icon name="chevron_right" size="16px" class="focus-item__chevron" />
+                </li>
+              </ul>
+              <button
+                v-if="otherActiveBesidesLatest.length > 5"
+                class="card-link"
+                @click="$router.push('/requests')"
+              >
+                Pogledaj sve
+                <q-icon name="arrow_forward" size="14px" />
+              </button>
+            </div>
+
+          </template>
 
         </main>
 
@@ -217,9 +277,8 @@ const formatCurrency = (value) => {
   return new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(value);
 };
 
-/* ───────── Focus list (admin vs zaposlenik) ───────── */
+/* ───────── Admin focus list ───────── */
 
-// Admin — što čeka njegovu akciju, sortirano po prioritetu
 const adminActionItems = computed(() => {
   const priority = {
     'Poslano': 1,
@@ -235,58 +294,18 @@ const adminActionItems = computed(() => {
     });
 });
 
-// Zaposlenik — vraćeni zahtjevi (najvažnije)
-const returnedRequests = computed(() =>
-  allRequests.value.filter(r => r.status_name === 'Vraćeno na dopunu / izmjenu')
+const focusItems = computed(() => (isAdmin ? adminActionItems.value : []));
+const focusTitle = computed(() => (isAdmin ? 'Čeka vašu akciju' : ''));
+const focusIcon = computed(() => (isAdmin ? 'priority_high' : 'schedule'));
+const focusIconClass = computed(() => 'ink-cyan');
+
+const emptyTitle = computed(() => (isAdmin ? 'Sve je obrađeno' : 'Nemate aktivnih zahtjeva'));
+const emptyDesc = computed(() => isAdmin
+  ? 'Trenutno nema zahtjeva koji čekaju vašu akciju.'
+  : 'Pokrenite novi zahtjev za nabavu kad bude potrebno.'
 );
-
-// Zaposlenik — ostali u tijeku (da ne miješa s vraćenim)
-const otherInProgress = computed(() =>
-  allRequests.value
-    .filter(r => ['Poslano', 'Na odobrenju', 'Naručeno'].includes(r.status_name))
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-);
-
-// Glavna lista koja se prikazuje
-const focusItems = computed(() => {
-  if (isAdmin) return adminActionItems.value;
-  // Zaposlenik: ako ima vraćenih → to. Inače sve u tijeku.
-  if (returnedRequests.value.length > 0) return returnedRequests.value;
-  return otherInProgress.value;
-});
-
-const focusTitle = computed(() => {
-  if (isAdmin) return 'Čeka vašu akciju';
-  if (returnedRequests.value.length > 0) return 'Vraćeno na dopunu';
-  if (otherInProgress.value.length > 0) return 'U tijeku';
-  return 'Vaši zahtjevi';
-});
-
-const focusIcon = computed(() => {
-  if (isAdmin) return 'priority_high';
-  if (returnedRequests.value.length > 0) return 'undo';
-  return 'schedule';
-});
-
-const focusIconClass = computed(() => {
-  if (!isAdmin && returnedRequests.value.length > 0) return 'ink-warning';
-  return 'ink-cyan';
-});
-
-const emptyTitle = computed(() => {
-  if (isAdmin) return 'Sve je obrađeno';
-  return 'Nema aktivnih zahtjeva';
-});
-
-const emptyDesc = computed(() => {
-  if (isAdmin) return 'Trenutno nema zahtjeva koji čekaju vašu akciju.';
-  return 'Pokrenite novi zahtjev za nabavu kad bude potrebno.';
-});
-
-/* ───────── Tags za focus listu (admin) ───────── */
 
 const focusTagFor = (r) => {
-  // Admin tagovi
   if (isAdmin) {
     switch (r.status_name) {
       case 'Poslano':       return { key: 'take', label: 'Preuzmi' };
@@ -295,21 +314,48 @@ const focusTagFor = (r) => {
       default:              return { key: 'view', label: 'Otvori' };
     }
   }
-  // Zaposlenik — fokus su vraćeni zahtjevi
-  if (r.status_name === 'Vraćeno na dopunu / izmjenu') {
-    return { key: 'fix', label: 'Ispravi' };
-  }
   return { key: 'view', label: 'Otvori' };
 };
 
-/* ───────── Status pill class (za secondary list) ───────── */
+/* ───────── Zaposlenik ───────── */
+
+// Vraćeni zahtjevi
+const returnedRequests = computed(() =>
+  allRequests.value.filter(r => r.status_name === 'Vraćeno na dopunu / izmjenu')
+);
+// Najnoviji vraćen za alert
+const returnedAlertItem = computed(() => returnedRequests.value[0] || null);
+
+// Najnoviji zahtjev (bilo kojeg statusa)
+const latestRequest = computed(() => {
+  if (allRequests.value.length === 0) return null;
+  return [...allRequests.value]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+});
+
+// Aktivni (Poslano, Na odobrenju, Naručeno, Vraćeno) bez "zadnjeg"
+const otherActiveBesidesLatest = computed(() => {
+  if (!latestRequest.value) return [];
+  const activeStatuses = ['Poslano', 'Na odobrenju', 'Naručeno', 'Vraćeno na dopunu / izmjenu'];
+  return allRequests.value
+    .filter(r =>
+      activeStatuses.includes(r.status_name)
+      && r.id_purchase_request !== latestRequest.value.id_purchase_request
+    )
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+});
+
+/* ───────── Status pill class ───────── */
 
 const statusClass = (statusName) => {
   switch ((statusName || '').toLowerCase()) {
-    case 'poslano':      return 'status-pill--sent';
-    case 'na odobrenju': return 'status-pill--review';
-    case 'naručeno':     return 'status-pill--ordered';
-    default:             return 'status-pill--default';
+    case 'poslano':                       return 'status-pill--sent';
+    case 'na odobrenju':                  return 'status-pill--review';
+    case 'vraćeno na dopunu / izmjenu':   return 'status-pill--returned';
+    case 'naručeno':                      return 'status-pill--ordered';
+    case 'zatvoreno':                     return 'status-pill--closed';
+    case 'odbijeno':                      return 'status-pill--rejected';
+    default:                              return 'status-pill--default';
   }
 };
 
@@ -501,7 +547,145 @@ onMounted(() => fetchData());
 .ink-warning { color: #C2410C; }
 
 /* ─────────────────────────────
-   Focus list (todo style)
+   Alert card (vraćen zahtjev za zaposlenika)
+   ───────────────────────────── */
+.alert-card {
+  background: #FFFBF5;
+  border: 1px solid #F2D17C;
+  border-left: 3px solid #C2410C;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.alert-card:hover {
+  background: #FFF7E8;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.alert-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px 12px;
+}
+
+.alert-card__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: #FFF4ED;
+  color: #C2410C;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.alert-card__head-text { flex: 1; min-width: 0; }
+
+.alert-card__eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #C2410C;
+  margin-bottom: 2px;
+}
+
+.alert-card__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #16294E;
+  letter-spacing: -0.005em;
+}
+
+.alert-card__meta {
+  font-size: 0.75rem;
+  color: #605E5C;
+  margin-top: 2px;
+}
+
+.alert-card__chevron {
+  color: #C2410C;
+  flex-shrink: 0;
+  margin-top: 8px;
+  transition: transform 0.15s;
+}
+.alert-card:hover .alert-card__chevron { transform: translateX(2px); }
+
+.alert-card__body {
+  padding: 0 20px 16px 72px;
+  font-size: 0.8125rem;
+  color: #424242;
+  line-height: 1.5;
+}
+
+/* ─────────────────────────────
+   Status card (zadnji zahtjev za zaposlenika)
+   ───────────────────────────── */
+.status-card {
+  background: white;
+  border: 1px solid #E1DFDD;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  padding: 18px 20px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.status-card:hover {
+  border-color: #16294E;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.status-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.status-card__eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #00AFDB;
+}
+
+.status-card__number {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #16294E;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.status-card__meta {
+  font-size: 0.8125rem;
+  color: #605E5C;
+}
+
+.status-card__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #E1DFDD;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #16294E;
+}
+.status-card:hover .status-card__action .q-icon {
+  transform: translateX(2px);
+  transition: transform 0.15s;
+}
+
+/* ─────────────────────────────
+   Focus list (admin)
    ───────────────────────────── */
 .focus-list {
   list-style: none;
@@ -563,7 +747,7 @@ onMounted(() => fetchData());
 }
 
 /* ─────────────────────────────
-   Tags (Preuzmi/Odluči/Završi/Ispravi)
+   Tags (admin focus list)
    ───────────────────────────── */
 .tag {
   display: inline-flex;
@@ -581,11 +765,10 @@ onMounted(() => fetchData());
 .tag--take   { background: #EEF2FF; color: #3730A3; border-color: #C7D2FE; }
 .tag--decide { background: #FFF4CE; color: #B7791F; border-color: #F2D17C; }
 .tag--finish { background: #DFF6DD; color: #107C10; border-color: #92DDA8; }
-.tag--fix    { background: #FFF4ED; color: #C2410C; border-color: #FBBF77; }
 .tag--view   { background: #F8F8F8; color: #605E5C; border-color: #E1DFDD; }
 
 /* ─────────────────────────────
-   Status pills (secondary list)
+   Status pills
    ───────────────────────────── */
 .status-pill {
   display: inline-flex;
@@ -610,7 +793,10 @@ onMounted(() => fetchData());
 }
 .status-pill--sent     { background: #EEF2FF; color: #3730A3; border-color: #C7D2FE; }
 .status-pill--review   { background: #FFF4CE; color: #B7791F; border-color: #F2D17C; }
+.status-pill--returned { background: #FFF4ED; color: #C2410C; border-color: #FBBF77; }
 .status-pill--ordered  { background: #E1F5FA; color: #00708A; border-color: #94DCEF; }
+.status-pill--closed   { background: #DFF6DD; color: #107C10; border-color: #92DDA8; }
+.status-pill--rejected { background: #FDE7E9; color: #A4262C; border-color: #F1B0B7; }
 .status-pill--default  { background: #F8F8F8; color: #605E5C; border-color: #E1DFDD; }
 
 /* ─────────────────────────────
@@ -635,7 +821,7 @@ onMounted(() => fetchData());
 .card-link:hover { background: #FAFAFA; }
 
 /* ─────────────────────────────
-   Empty state (in card)
+   Empty state
    ───────────────────────────── */
 .empty {
   text-align: center;
@@ -730,5 +916,6 @@ onMounted(() => fetchData());
   .page-header__actions .btn { width: 100%; }
   .focus-item { padding: 10px 14px; }
   .focus-item__meta { font-size: 0.6875rem; }
+  .alert-card__body { padding-left: 20px; }
 }
 </style>
