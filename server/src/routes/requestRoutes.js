@@ -31,16 +31,22 @@ const LOCKED_STATUSES = [STATUS.ODBIJENO, STATUS.ZATVORENO];
 const MAX_JUSTIFICATION_LEN = 1000;
 
 /**
- * Deklarativni state machine. Svaka akcija definira:
- *   from              — dozvoljeni početni status
- *   to                — ciljani status
- *   adminOnly         — samo admin smije izvršiti
- *   creatorOnly       — samo kreator zahtjeva smije izvršiti
- *   requiresComment   — komentar je obavezan
- *   requiresOffer     — mora postojati Ponuda u Attachment
- *   requiresDelivery  — mora postojati Otpremnica u Attachment
- *   requiresAmount    — total_amount mora biti > 0
- *   defaultComment    — fallback tekst u history ako komentar nije zadan
+ * State machine.
+ *
+ * Workflow:
+ *   Poslano (1)
+ *     → preuzmi → Na odobrenju (2)
+ *     → odbij   → Odbijeno (5)        ← admin odbija odmah
+ *
+ *   Na odobrenju (2)
+ *     → odobri           → Naručeno (6)   ← traži Ponudu
+ *     → vrati-na-izmjenu → Vraćeno (3)
+ *
+ *   Vraćeno (3)
+ *     → resubmit → Poslano (1)        ← kreator ponovno šalje
+ *
+ *   Naručeno (6)
+ *     → zavrsi → Zatvoreno (7)        ← traži Ponudu, Otpremnicu, iznos
  */
 const ACTIONS = {
   preuzmi: {
@@ -48,6 +54,12 @@ const ACTIONS = {
     to: STATUS.NA_ODOBRENJU,
     adminOnly: true,
     defaultComment: 'Zahtjev preuzet na obradu.',
+  },
+  odbij: {
+    from: STATUS.POSLANO,
+    to: STATUS.ODBIJENO,
+    adminOnly: true,
+    requiresComment: true,
   },
   odobri: {
     from: STATUS.NA_ODOBRENJU,
@@ -59,12 +71,6 @@ const ACTIONS = {
   'vrati-na-izmjenu': {
     from: STATUS.NA_ODOBRENJU,
     to: STATUS.VRACENO,
-    adminOnly: true,
-    requiresComment: true,
-  },
-  odbij: {
-    from: STATUS.NA_ODOBRENJU,
-    to: STATUS.ODBIJENO,
     adminOnly: true,
     requiresComment: true,
   },
@@ -144,7 +150,6 @@ router.get('/', authenticateToken, async (req, res) => {
 
 /**
  * GET /api/requests/:id
- * Detalji zahtjeva, stavke, povijest.
  */
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
@@ -236,7 +241,6 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
 /**
  * POST /api/requests
- * Kreira novi zahtjev → status 1 (Poslano), prvi unos u history.
  */
 router.post('/', authenticateToken, async (req, res) => {
   const {
@@ -407,9 +411,6 @@ router.post('/', authenticateToken, async (req, res) => {
 
 /**
  * PATCH /api/requests/:id/status
- * Akcije: preuzmi, odobri, vrati-na-izmjenu, odbij, resubmit, zavrsi
- *
- * State machine je definiran u ACTIONS — sve provjere idu kroz jedan tok.
  */
 router.patch('/:id/status', authenticateToken, async (req, res) => {
   const { id } = req.params;
@@ -558,9 +559,6 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
 
 /**
  * PUT /api/requests/:id
- * Editiranje zahtjeva.
- *  - Admin: u bilo kojem nezaključanom statusu (1, 2, 3, 6).
- *  - Zaposlenik: samo kad je status "Vraćeno na izmjenu" (3) i samo svoj zahtjev.
  */
 router.put('/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
