@@ -30,7 +30,53 @@
             <q-icon name="list_alt" size="16px" />
             <span>Svi zahtjevi</span>
           </h2>
-          <span class="card__count" v-if="!loading">{{ rows.length }}</span>
+          <span class="card__count" v-if="!loading">{{ filteredRows.length }}</span>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <q-input
+            v-model="searchQuery"
+            outlined dense clearable
+            placeholder="Pretraži po broju, podnositelju ili odjelu..."
+            class="filter-bar__search"
+          >
+            <template #prepend><q-icon name="search" size="16px" /></template>
+          </q-input>
+
+          <q-select
+            v-model="statusFilter"
+            :options="statusOptions"
+            outlined dense
+            emit-value map-options
+            class="filter-bar__select"
+          >
+            <template #prepend><q-icon name="filter_list" size="16px" /></template>
+          </q-select>
+
+          <q-select
+            v-if="isAdmin && departmentOptions.length > 1"
+            v-model="departmentFilter"
+            :options="departmentOptions"
+            outlined dense
+            emit-value map-options
+            class="filter-bar__select"
+          >
+            <template #prepend><q-icon name="business" size="16px" /></template>
+          </q-select>
+
+          <button
+            v-if="hasActiveFilters"
+            class="btn btn--ghost"
+            @click="resetFilters"
+          >
+            <q-icon name="close" size="14px" />
+            <span>Poništi</span>
+          </button>
+
+          <span class="filter-bar__count">
+            {{ filteredRows.length }} / {{ rows.length }}
+          </span>
         </div>
 
         <!-- Error banner -->
@@ -41,7 +87,7 @@
 
         <!-- Table -->
         <q-table
-          :rows="rows"
+          :rows="filteredRows"
           :columns="columns"
           row-key="id_purchase_request"
           :loading="loading"
@@ -125,7 +171,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
@@ -137,6 +183,68 @@ const $q = useQuasar();
 const loading = ref(false);
 const rows = ref([]);
 const errorMessage = ref('');
+
+// Filteri
+const searchQuery = ref('');
+const statusFilter = ref('all');
+const departmentFilter = ref('all');
+
+const statusOptions = [
+  { label: 'Svi statusi', value: 'all' },
+  { label: 'Poslano', value: 'Poslano' },
+  { label: 'Na odobrenju', value: 'Na odobrenju' },
+  { label: 'Vraćeno na dopunu', value: 'Vraćeno na dopunu / izmjenu' },
+  { label: 'Naručeno', value: 'Naručeno' },
+  { label: 'Zatvoreno', value: 'Zatvoreno' },
+  { label: 'Odbijeno', value: 'Odbijeno' },
+];
+
+// Lista jedinstvenih odjela iz podataka
+const departmentOptions = computed(() => {
+  const set = new Set(rows.value.map(r => r.department_name).filter(Boolean));
+  return [
+    { label: 'Svi odjeli', value: 'all' },
+    ...[...set].sort().map(name => ({ label: name, value: name })),
+  ];
+});
+
+const hasActiveFilters = computed(() =>
+  searchQuery.value
+  || statusFilter.value !== 'all'
+  || departmentFilter.value !== 'all'
+);
+
+const filteredRows = computed(() => {
+  let result = rows.value;
+
+  // Status
+  if (statusFilter.value !== 'all') {
+    result = result.filter(r => r.status_name === statusFilter.value);
+  }
+
+  // Odjel
+  if (departmentFilter.value !== 'all') {
+    result = result.filter(r => r.department_name === departmentFilter.value);
+  }
+
+  // Search (case-insensitive, više polja)
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase().trim();
+    result = result.filter(r =>
+      (r.request_number || '').toLowerCase().includes(q)
+      || (r.created_by || '').toLowerCase().includes(q)
+      || (r.department_name || '').toLowerCase().includes(q)
+    );
+  }
+
+  return result;
+});
+
+const resetFilters = () => {
+  searchQuery.value = '';
+  statusFilter.value = 'all';
+  departmentFilter.value = 'all';
+};
 
 const currentUser = ref(null);
 const isAdmin = ref(false);
@@ -257,6 +365,8 @@ const statusClass = (status) => {
 onMounted(() => {
   currentUser.value = getStoredUser();
   isAdmin.value = currentUser.value?.role_name === 'Administrator';
+  // Default: prvi item u listi je 'all', ostavi tako
+  statusFilter.value = 'all';
   fetchRequests();
 });
 </script>
@@ -551,6 +661,66 @@ onMounted(() => {
 }
 
 /* ─────────────────────────────────
+   Filter bar
+   ───────────────────────────────── */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #FAFAFA;
+  border-bottom: 1px solid #E1DFDD;
+  flex-wrap: wrap;
+}
+
+.filter-bar__search {
+  flex: 1;
+  min-width: 240px;
+  max-width: 360px;
+}
+
+.filter-bar__select {
+  flex: 0 0 200px;
+  min-width: 160px;
+}
+
+.filter-bar :deep(.q-field__control) {
+  height: 32px;
+  border-radius: 4px;
+  background: white;
+}
+.filter-bar :deep(.q-field__native),
+.filter-bar :deep(.q-field__input) {
+  font-size: 0.8125rem;
+  min-height: 32px;
+  padding: 0 4px;
+}
+.filter-bar :deep(.q-field__prepend) {
+  padding-left: 4px;
+  height: 32px;
+  color: #8A8886;
+}
+.filter-bar :deep(.q-field__append) {
+  height: 32px;
+}
+
+.filter-bar__count {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #605E5C;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.btn--ghost {
+  background: white;
+  color: #424242;
+  border-color: #C8C6C4;
+}
+.btn--ghost:hover { background: #F8F8F8; border-color: #605E5C; }
+
+/* ─────────────────────────────────
    Responsive
    ───────────────────────────────── */
 @media (max-width: 600px) {
@@ -559,6 +729,20 @@ onMounted(() => {
   .data-table :deep(thead th),
   .data-table :deep(tbody td) {
     padding: 8px 12px;
+  }
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-bar__search,
+  .filter-bar__select {
+    width: 100%;
+    max-width: none;
+    flex: none;
+  }
+  .filter-bar__count {
+    margin-left: 0;
+    text-align: center;
   }
 }
 </style>
