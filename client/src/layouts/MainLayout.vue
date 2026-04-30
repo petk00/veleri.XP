@@ -6,7 +6,7 @@
 
         <!-- Brand -->
         <button class="brand" @click="$router.push('/dashboard')">
-          <div class="brand__mark">XP</div>
+          <img src="/logo.png" alt="Veleučilište u Rijeci" class="brand__mark" />
           <div class="brand__text">
             <span class="brand__name">veleri.XP</span>
             <span class="brand__sub">Sustav nabave</span>
@@ -182,18 +182,14 @@ onMounted(() => {
 .brand:hover { background: rgba(255, 255, 255, 0.06); }
 
 .brand__mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 4px;
-  background: #00AFDB;
-  color: #16294E;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
   flex-shrink: 0;
+  background: white;
+  border-radius: 4px;
+  padding: 3px;
+  box-sizing: border-box;
 }
 
 .brand__text {

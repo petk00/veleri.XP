@@ -9,7 +9,7 @@
 
         <!-- Brand mark -->
         <div class="brand-mark">
-          <div class="brand-mark__square">XP</div>
+          <img src="/logo.png" alt="Veleučilište u Rijeci" class="brand-mark__square" />
           <div class="brand-mark__text">
             <span class="brand-mark__name">veleri.XP</span>
             <span class="brand-mark__sub">Veleučilište u Rijeci</span>
@@ -217,18 +217,14 @@ const handleLogin = async () => {
 }
 
 .brand-mark__square {
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
-  background: #00AFDB;
-  color: #16294E;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
   flex-shrink: 0;
+  background: white;
+  border-radius: 6px;
+  padding: 4px;
+  box-sizing: border-box;
 }
 
 .brand-mark__text {
@@ -512,6 +508,10 @@ const handleLogin = async () => {
   }
   .brand-panel__inner {
     padding: 32px 24px 24px;
+  }
+  .brand-mark__square {
+    width: 40px;
+    height: 40px;
   }
   .brand-headline {
     margin: 24px 0 16px;
