@@ -9,22 +9,20 @@
 
         <!-- Brand mark -->
         <div class="brand-mark">
-          <img src="/logo.png" alt="Veleučilište u Rijeci" class="brand-mark__square" />
-          <div class="brand-mark__text">
-            <span class="brand-mark__name">veleri.XP</span>
-            <span class="brand-mark__sub">Veleučilište u Rijeci</span>
-          </div>
+          <img src="/logo.svg" alt="Veleučilište u Rijeci" />
+
         </div>
 
         <!-- Headline -->
         <div class="brand-headline">
-          <h1>Sustav<br>nabave</h1>
-          <p>Digitalna platforma za upravljanje i prikupljanje zahtjeva za nabavu</p>
+          <h1>Dobrodošli u<br>veleri.XP</h1>
+          
+          <p>sustav za podnošenje i upravljanje zahtjevima</p>
         </div>
 
         <!-- Footer -->
         <div class="brand-footer">
-          © {{ currentYear }} Veleučilište u Rijeci
+          © {{ currentYear }} Veleučilište u Rijeci. Sva prava pridržana.
         </div>
 
       </div>
@@ -36,16 +34,11 @@
     <section class="form-panel">
       <div class="form-panel__inner">
 
-        <header class="form-header">
-          <h2>Prijava u sustav</h2>
-          <p>Prijavite se s vašim Veleri korisničkim podacima.</p>
-        </header>
-
         <form class="login-form" @submit.prevent="handleLogin">
 
           <!-- Email -->
           <div class="field">
-            <label for="login-email">E-mail adresa</label>
+            <label for="login-email">Korisničko ime</label>
             <input
               id="login-email"
               v-model="email"
@@ -106,7 +99,7 @@
         <div class="form-help">
           Nemate pristup?
           <span class="form-help__highlight">
-            Obratite se administratoru sustava
+            Obratite se djelatniku računovodstva ili referadi
           </span>
           radi pozivnice za registraciju.
         </div>
@@ -175,29 +168,13 @@ const handleLogin = async () => {
    LEFT — Brand panel
    ───────────────────────────────────── */
 .brand-panel {
-  width: 45%;
+  width: 33%;
   flex-shrink: 0;
-  background: #16294E;
+  background: #3053a5;
   position: relative;
   overflow: hidden;
 }
 
-/* Subtilna cyan akcent linija na desnom rubu */
-.brand-panel::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 2px;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    #00AFDB 30%,
-    #00AFDB 70%,
-    transparent
-  );
-}
 
 .brand-panel__inner {
   display: flex;
@@ -213,18 +190,7 @@ const handleLogin = async () => {
 .brand-mark {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.brand-mark__square {
-  width: 44px;
-  height: 44px;
-  object-fit: contain;
-  flex-shrink: 0;
-  background: white;
-  border-radius: 6px;
-  padding: 4px;
-  box-sizing: border-box;
+  gap: 4px;
 }
 
 .brand-mark__text {
@@ -234,16 +200,10 @@ const handleLogin = async () => {
 }
 
 .brand-mark__name {
-  font-size: 1rem;
+  font-size: 4rem;
   font-weight: 600;
-  color: white;
+  color: rgb(143, 191, 247);
   letter-spacing: -0.005em;
-}
-
-.brand-mark__sub {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.65);
-  margin-top: 2px;
 }
 
 /* Headline */
