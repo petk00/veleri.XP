@@ -3,21 +3,21 @@
     <div class="page-shell">
 
       <!-- Back link -->
-      <button class="back-link" @click="goBack">
+      <button class="back-link no-print" @click="goBack">
         <q-icon name="arrow_back" size="14px" />
         <span>Natrag na zahtjeve</span>
       </button>
 
       <!-- Loading -->
-      <div v-if="loading" class="loading-block">
+      <div v-if="loading" class="loading-block no-print">
         <q-spinner color="primary" size="32px" />
       </div>
 
       <!-- Content -->
       <div v-else-if="request">
 
-        <!-- Page header -->
-        <header class="page-header">
+        <!-- ──────────────── PAGE HEADER ──────────────── -->
+        <header class="page-header no-print">
           <div class="page-header__main">
             <div class="page-header__eyebrow">Zahtjev za nabavu</div>
             <div class="page-header__title-row">
@@ -31,6 +31,10 @@
             </div>
           </div>
           <div class="page-header__actions">
+            <button v-if="isAdmin" class="btn btn--ghost" @click="printRequest">
+              <q-icon name="print" size="16px" />
+              <span>Ispiši</span>
+            </button>
             <button v-if="canEdit" class="btn btn--ghost" @click="editRequest">
               <q-icon name="edit" size="16px" />
               <span>Uredi</span>
@@ -38,8 +42,8 @@
           </div>
         </header>
 
-        <!-- Banner: Preuzmi / Odbij (status 1 → 2 ili 5) -->
-        <div v-if="canTakeOver" class="action-banner action-banner--neutral">
+        <!-- ──────────────── ACTION BANNERS ──────────────── -->
+        <div v-if="canTakeOver" class="action-banner action-banner--neutral no-print">
           <div class="action-banner__icon">
             <q-icon name="assignment_turned_in" size="18px" />
           </div>
@@ -62,8 +66,7 @@
           </div>
         </div>
 
-        <!-- Banner: Odluka (status 2) -->
-        <div v-if="canDecide" class="action-banner action-banner--warning">
+        <div v-if="canDecide" class="action-banner action-banner--warning no-print">
           <div class="action-banner__icon">
             <q-icon name="how_to_reg" size="18px" />
           </div>
@@ -89,8 +92,7 @@
           </div>
         </div>
 
-        <!-- Banner: Resubmit (status 3) -->
-        <div v-if="canResubmit" class="action-banner action-banner--info">
+        <div v-if="canResubmit" class="action-banner action-banner--info no-print">
           <div class="action-banner__icon">
             <q-icon name="edit_note" size="18px" />
           </div>
@@ -117,8 +119,7 @@
           </div>
         </div>
 
-        <!-- Banner: Završi (status 6) -->
-        <div v-if="canFinish" class="action-banner action-banner--success">
+        <div v-if="canFinish" class="action-banner action-banner--success no-print">
           <div class="action-banner__icon">
             <q-icon name="verified" size="18px" />
           </div>
@@ -150,8 +151,8 @@
           </div>
         </div>
 
-        <!-- Info cards -->
-        <div class="info-grid">
+        <!-- ──────────────── INFO CARDS ──────────────── -->
+        <div class="info-grid no-print">
           <div class="card">
             <div class="card__header">
               <h2 class="card__title">
@@ -211,7 +212,7 @@
         </div>
 
         <!-- Items -->
-        <div class="card">
+        <div class="card no-print">
           <div class="card__header">
             <h2 class="card__title">
               <q-icon name="inventory_2" size="16px" />
@@ -241,7 +242,7 @@
         </div>
 
         <!-- Documents -->
-        <div class="card">
+        <div class="card no-print">
           <div class="card__header">
             <h2 class="card__title">
               <q-icon name="folder" size="16px" />
@@ -293,7 +294,6 @@
             </ul>
           </div>
 
-          <!-- Upload area -->
           <div v-if="canUploadAny" class="upload-section">
             <div class="upload-section__label">Dodaj dokument</div>
             <div class="upload-row">
@@ -333,7 +333,7 @@
         </div>
 
         <!-- Timeline -->
-        <div class="card">
+        <div class="card no-print">
           <div class="card__header">
             <h2 class="card__title">
               <q-icon name="history" size="16px" />
@@ -364,10 +364,107 @@
           </div>
         </div>
 
+        <!-- ════════════════════════════════════════════
+             PRINT VIEW — Veleri obrazac
+             Skriven na ekranu, vidljiv samo pri ispisu
+             ════════════════════════════════════════════ -->
+        <article class="print-view">
+
+          <!-- Zaglavlje institucije -->
+          <header class="print-header">
+            <div class="print-header__left">
+              <img :src="ORG.logoPath" alt="Logo" class="print-header__logo" />
+              <div class="print-header__inst">{{ ORG.name }}</div>
+            </div>
+            <div class="print-header__right">
+              <div>{{ ORG.nameLatin }}</div>
+              <div class="print-header__right-en">{{ ORG.nameEnglish }}</div>
+            </div>
+          </header>
+
+          <div class="print-header__contact">
+            {{ ORG.address }} · Telefon {{ ORG.phone }} · E-mail: {{ ORG.email }} · {{ ORG.web }}<br>
+            OIB: {{ ORG.oib }} · MB: {{ ORG.mb }} · RKP: {{ ORG.rkp }} · IBAN: {{ ORG.iban }}
+          </div>
+
+          <div class="print-header__line"></div>
+
+          <!-- Naslov u okviru -->
+          <div class="print-title-box">
+            <h1>ZAHTJEV ZA NABAVU</h1>
+          </div>
+
+          <!-- Polja obrasca -->
+          <div class="print-fields">
+            <div class="print-fields__label">Broj zahtjeva:</div>
+            <div class="print-fields__value">{{ request.request_number }}</div>
+
+            <div class="print-fields__label">Datum:</div>
+            <div class="print-fields__value">{{ formatDateOnly(request.created_at) }}</div>
+
+            <div class="print-fields__label">
+              Zahtjev podnio:
+              <span class="print-fields__label-sub">(ime i prezime djelatnika)</span>
+            </div>
+            <div class="print-fields__value">{{ request.created_by }}</div>
+
+            <div class="print-fields__label">Odjel / Služba:</div>
+            <div class="print-fields__value">{{ request.department_name }}</div>
+
+            <div class="print-fields__label">
+              Predmet nabave:
+              <span class="print-fields__label-sub">(kategorija)</span>
+            </div>
+            <div class="print-fields__value">{{ predmetNabave }}</div>
+          </div>
+
+          <!-- Svrha nabave u okviru -->
+          <div class="print-purpose">
+            <div class="print-purpose__box">
+              <div class="print-purpose__label">Svrha nabave (obrazloženje):</div>
+              <div class="print-purpose__text">{{ request.justification || '—' }}</div>
+            </div>
+          </div>
+
+          <!-- Specifikacija stavki (samo ako postoje) -->
+          <div v-if="items.length > 0" class="print-items">
+            <div class="print-items__title">Specifikacija stavki:</div>
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 55%;">Naziv artikla</th>
+                  <th style="width: 30%;">Kategorija</th>
+                  <th class="num" style="width: 15%;">Količina</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in items" :key="item.id_purchase_request_item">
+                  <td>{{ item.item_name }}</td>
+                  <td>{{ item.category_name }}</td>
+                  <td class="num">{{ item.quantity }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Ukupni iznos -->
+          <div class="print-total">
+            Ukupna nabava se procjenjuje na iznos od
+            <strong>{{ formatCurrency(request.total_amount) }}</strong>.
+          </div>
+
+          <!-- Status + datum ispisa -->
+          <div class="print-stamp">
+            <span>Status: <strong>{{ request.status_name }}</strong></span>
+            <span>Ispisano: {{ todayDate }}</span>
+          </div>
+
+        </article>
+
       </div>
 
       <!-- 404 -->
-      <div v-else class="empty-block--page">
+      <div v-else class="empty-block--page no-print">
         <q-icon name="error_outline" size="32px" class="empty-block__icon" />
         <div class="empty-block__text">Zahtjev nije pronađen.</div>
       </div>
@@ -417,6 +514,24 @@ import { useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 import { getStoredUser } from 'src/utils/authStorage';
+
+/* ───────────────────────────────────
+   Konfiguracija institucije za PRINT
+   ─────────────────────────────────── */
+const ORG = {
+  name: 'VELEUČILIŠTE U RIJECI',
+  nameLatin: 'COLLEGIUM FLUMINENSE',
+  nameEnglish: 'POLYTECHNIC OF RIJEKA',
+  address: '51000 RIJEKA - HR - Trpimirova 2/V',
+  phone: '(051) 321-300',
+  email: 'ured@veleri.hr',
+  web: 'https://www.veleri.hr',
+  oib: '29573709870',
+  mb: '01387332',
+  rkp: '22494',
+  iban: 'HR6824020061100451485',
+  logoPath: '/logo33.svg', // Veleri službeni logo za ispis
+};
 
 const STATUS = {
   POSLANO: 1,
@@ -511,6 +626,19 @@ const uploadHint = computed(() => {
     return 'U ovoj fazi može se učitati ponuda.';
   }
   return '';
+});
+
+/* "Predmet nabave" — kategorije iz stavki, unique, sortirano */
+const predmetNabave = computed(() => {
+  if (!items.value.length) return '—';
+  const set = new Set(items.value.map(i => i.category_name).filter(Boolean));
+  return [...set].sort().join(', ');
+});
+
+const todayDate = computed(() => {
+  return new Date().toLocaleDateString('hr-HR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+  });
 });
 
 const canDeleteFile = (att) => {
@@ -712,6 +840,10 @@ const confirmAction = async () => {
 const editRequest = () => router.push(`/requests/${route.params.id}/edit`);
 const goBack = () => router.push('/requests');
 
+const printRequest = () => {
+  window.print();
+};
+
 /* ───────── Formatters ───────── */
 
 const formatCurrency = (value) => {
@@ -723,6 +855,12 @@ const formatDate = (value) => {
   return new Date(value).toLocaleString('hr-HR', {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
+  });
+};
+const formatDateOnly = (value) => {
+  if (!value) return '—';
+  return new Date(value).toLocaleDateString('hr-HR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
   });
 };
 
@@ -1409,5 +1547,210 @@ onMounted(() => {
   .action-banner__actions { width: 100%; }
   .action-banner__actions .btn { flex: 1; }
   .dialog-card { min-width: 0; width: 100%; }
+}
+
+/* ════════════════════════════════════════════════════
+   PRINT VIEW — skriven na ekranu, vidljiv pri ispisu
+   ════════════════════════════════════════════════════ */
+.print-view {
+  display: none;
+}
+
+@media print {
+  /* Reset stranice */
+  @page {
+    size: A4;
+    margin: 18mm;
+  }
+
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Sve s klasom no-print sakrij */
+  .no-print { display: none !important; }
+
+  /* Sakrij Quasar header/footer ako postoji */
+  .q-layout, .q-page-container, .q-page {
+    background: white !important;
+  }
+
+  .page {
+    background: white !important;
+    padding: 0 !important;
+    min-height: auto !important;
+  }
+
+  .page-shell {
+    max-width: 100% !important;
+    gap: 0 !important;
+  }
+
+  /* PRINT VIEW — vidljiv */
+  .print-view {
+    display: block !important;
+    color: black;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 11pt;
+    line-height: 1.4;
+  }
+
+  /* ─────── Zaglavlje institucije ─────── */
+  .print-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 4px;
+  }
+
+  .print-header__left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .print-header__logo {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  .print-header__inst {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #1F3864;
+    letter-spacing: 0.04em;
+  }
+
+  .print-header__right {
+    text-align: right;
+    font-size: 8pt;
+    color: #1F3864;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .print-header__right-en {
+    font-style: italic;
+    font-weight: 400;
+    margin-top: 0;
+  }
+
+  .print-header__contact {
+    font-size: 8pt;
+    color: #555;
+    text-align: center;
+    margin-top: 6px;
+  }
+
+  .print-header__line {
+    border-top: 1.5px solid black;
+    margin: 8px 0 22px;
+  }
+
+  /* ─────── Naslov u okviru ─────── */
+  .print-title-box {
+    border: 1px solid black;
+    padding: 4px 0;          /* ← bilo 12px, sad je 6px */
+    text-align: center;
+    margin-bottom: 20px;     /* opcionalno: smanji margin ispod */
+  }
+  .print-title-box h1 {
+    font-size: 12pt;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin: 0;
+  }
+
+  /* ─────── Polja ─────── */
+  .print-fields {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 14px 16px;
+    margin-bottom: 24px;
+  }
+
+  .print-fields__label {
+    font-size: 11pt;
+    color: black;
+  }
+  .print-fields__label-sub {
+    font-style: italic;
+    font-size: 10pt;
+    color: black;
+    display: block;
+  }
+  .print-fields__value {
+    font-size: 11pt;
+    color: black;
+  }
+
+  /* ─────── Svrha ─────── */
+  .print-purpose {
+    margin-bottom: 18px;
+  }
+  .print-purpose__box {
+    border: 1px solid black;
+    padding: 10px 12px;
+    min-height: 130px;
+  }
+  .print-purpose__label {
+    font-size: 11pt;
+    margin-bottom: 6px;
+  }
+  .print-purpose__text {
+    font-size: 11pt;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+
+  /* ─────── Stavke (mala tablica) ─────── */
+  .print-items {
+    margin: 16px 0 22px;
+  }
+  .print-items__title {
+    font-size: 10pt;
+    font-style: italic;
+    color: #555;
+    margin-bottom: 4px;
+  }
+  .print-items table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+  }
+  .print-items th, .print-items td {
+    border: 1px solid black;
+    padding: 4px 8px;
+    text-align: left;
+  }
+  .print-items th {
+    font-weight: 700;
+    background: #F0F0F0;
+  }
+  .print-items .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ─────── Ukupni iznos ─────── */
+  .print-total {
+    font-size: 11pt;
+    margin: 18px 0 8px;
+  }
+
+  /* ─────── Status stamp ─────── */
+  .print-stamp {
+    margin-top: 28px;
+    padding-top: 12px;
+    border-top: 1px solid black;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9pt;
+    color: black;
+  }
 }
 </style>
