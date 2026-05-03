@@ -435,6 +435,14 @@ onMounted(() => {
 
   .q-page-container {
     padding-top: 0 !important;
+    min-height: 0 !important;
+  }
+
+  .q-layout,
+  .q-page-container,
+  .q-page {
+    min-height: 0 !important;
+    height: auto !important;
   }
 
   body, .app-layout, .q-layout {

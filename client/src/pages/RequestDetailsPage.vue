@@ -1577,10 +1577,24 @@ onMounted(() => {
     background: white !important;
   }
 
-  .page {
+  .page,
+  .q-page {
     background: white !important;
     padding: 0 !important;
-    min-height: auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  /* Spriječi prazan page break */
+  .page-shell,
+  .print-view {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  .print-stamp {
+    page-break-after: avoid;
+    break-after: avoid;
   }
 
   .page-shell {
