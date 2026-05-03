@@ -421,4 +421,25 @@ onMounted(() => {
   font-size: 0.75rem;
   line-height: 1.4;
 }
+
+/* ─────────────────────────────────────
+   PRINT — sakrij sve UI elemente Layout-a
+   ───────────────────────────────────── */
+@media print {
+  .app-header,
+  .q-header,
+  .toolbar,
+  .mobile-nav {
+    display: none !important;
+  }
+
+  .q-page-container {
+    padding-top: 0 !important;
+  }
+
+  body, .app-layout, .q-layout {
+    background: white !important;
+  }
+}
+
 </style>
