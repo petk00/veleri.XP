@@ -6,10 +6,12 @@
 
         <!-- Brand -->
         <button class="brand" @click="$router.push('/dashboard')">
-          <img src="/logo.png" alt="Veleučilište u Rijeci" class="brand__mark" />
+          <div class="brand__mark">
+            <img src="/logo.png" alt="Veleučilište u Rijeci" />
+          </div>
           <div class="brand__text">
             <span class="brand__name">veleri.XP</span>
-            <span class="brand__sub">Sustav nabave</span>
+            <span class="brand__sub">SUSTAV NABAVE</span>
           </div>
         </button>
 
@@ -154,14 +156,14 @@ onMounted(() => {
 }
 
 .app-header {
-  background: #16294E !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  background: #16284E !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-bottom: 2px solid #00B2DD;
 }
 
 .toolbar {
-  min-height: 56px;
-  padding: 0 16px;
+  min-height: 60px;
+  padding: 0 20px;
   gap: 0;
 }
 
@@ -172,7 +174,7 @@ onMounted(() => {
   all: unset;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   cursor: pointer;
   padding: 6px 8px;
   border-radius: 4px;
@@ -182,71 +184,91 @@ onMounted(() => {
 .brand:hover { background: rgba(255, 255, 255, 0.06); }
 
 .brand__mark {
-  width: 32px;
-  height: 32px;
-  object-fit: contain;
+  width: 34px;
+  height: 34px;
+  background: rgba(0, 178, 221, 0.15);
+  border: 1px solid rgba(0, 178, 221, 0.3);
+  border-radius: 6px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  background: white;
-  border-radius: 4px;
-  padding: 3px;
   box-sizing: border-box;
+}
+
+.brand__mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .brand__text {
   display: flex;
   flex-direction: column;
-  line-height: 1.15;
+  line-height: 1;
 }
+
 .brand__name {
-  font-size: 0.875rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: white;
   letter-spacing: -0.005em;
 }
+
 .brand__sub {
-  font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.65);
-  margin-top: 1px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #00B2DD;
+  letter-spacing: 0.06em;
+  margin-top: 4px;
 }
 
 .brand-divider {
   width: 1px;
-  height: 24px;
+  height: 28px;
   background: rgba(255, 255, 255, 0.18);
-  margin: 0 12px 0 8px;
+  margin: 0 16px 0 12px;
 }
 
 /* ─────────────────────────────────────
-   Primary nav (desktop) — tab style
+   Primary nav (desktop)
    ───────────────────────────────────── */
 .nav {
   display: flex;
-  align-items: stretch;
-  height: 56px;
+  align-items: center;
+  gap: 4px;
 }
 
 .nav__item {
   all: unset;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 14px;
-  height: 100%;
+  gap: 7px;
+  padding: 8px 16px;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
-  border-bottom: 2px solid transparent;
+  border-radius: 6px;
   transition: all 0.15s;
   white-space: nowrap;
 }
+
 .nav__item:hover {
   color: white;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
 }
+
 .nav__item--active {
-  color: white;
-  border-bottom-color: #00AFDB;
+  background: #00B2DD;
+  color: #16284E;
+  font-weight: 600;
+}
+
+.nav__item--active:hover {
+  background: #00B2DD;
+  color: #16284E;
 }
 
 /* ─────────────────────────────────────
@@ -256,27 +278,28 @@ onMounted(() => {
   all: unset;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   height: 40px;
-  padding: 0 6px 0 6px;
-  border-radius: 4px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 20px;
   cursor: pointer;
   transition: background 0.15s;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   position: relative;
 }
 .user-btn:hover { background: rgba(255, 255, 255, 0.08); }
 
 .avatar {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #00AFDB 0%, #0078A0 100%);
-  color: white;
+  background: #00B2DD;
+  color: #16284E;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   letter-spacing: 0.02em;
   flex-shrink: 0;
 }
@@ -293,9 +316,10 @@ onMounted(() => {
   text-align: left;
   min-width: 0;
 }
+
 .user-name {
-  font-size: 0.78rem;
-  font-weight: 500;
+  font-size: 0.81rem;
+  font-weight: 600;
   color: white;
   letter-spacing: -0.005em;
   overflow: hidden;
@@ -303,10 +327,11 @@ onMounted(() => {
   white-space: nowrap;
   max-width: 160px;
 }
+
 .user-role {
   font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.6);
-  margin-top: 1px;
+  color: rgba(255, 255, 255, 0.65);
+  margin-top: 2px;
 }
 
 .user-chevron {
@@ -323,6 +348,7 @@ onMounted(() => {
   background: rgba(0, 0, 0, 0.18);
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
+
 .mobile-nav__item {
   all: unset;
   flex: 1;
@@ -333,33 +359,35 @@ onMounted(() => {
   padding: 10px 8px;
   font-size: 0.75rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.75);
   cursor: pointer;
-  border-bottom: 2px solid transparent;
   transition: all 0.15s;
 }
-.mobile-nav__item:hover { color: white; }
+
+.mobile-nav__item:hover { color: white; background: rgba(255, 255, 255, 0.06); }
+
 .mobile-nav__item--active {
-  color: white;
-  border-bottom-color: #00AFDB;
+  color: #16284E;
+  background: #00B2DD;
+  font-weight: 600;
 }
 
 /* ─────────────────────────────────────
    Responsive tweaks
    ───────────────────────────────────── */
 @media (max-width: 600px) {
-  .toolbar {
-    padding: 0 10px;
-  }
+  .toolbar { padding: 0 12px; }
   .brand__sub { display: none; }
   .user-name { max-width: 100px; }
+  .user-btn { padding: 4px 6px; }
+  .user-btn .user-meta { display: none; }
 }
 </style>
 
 <style>
 /* ── Globalni stilovi (ne-scoped) ────────────── */
 
-/* Dropdown menu — Fluent UI feel */
+/* Dropdown menu */
 .user-menu {
   background: white;
   border: 1px solid #E1DFDD;
@@ -400,7 +428,7 @@ onMounted(() => {
 .user-menu__item:hover { background: #F3F2F1; }
 .user-menu__item .q-icon { color: #605E5C; }
 
-/* Notify stilovi za actionable requests */
+/* Notify stilovi */
 .actionable-request-notify {
   min-width: 320px;
   max-width: 420px;
@@ -422,9 +450,7 @@ onMounted(() => {
   line-height: 1.4;
 }
 
-/* ─────────────────────────────────────
-   PRINT — sakrij sve UI elemente Layout-a
-   ───────────────────────────────────── */
+/* PRINT — sakrij sve UI elemente Layout-a */
 @media print {
   .app-header,
   .q-header,
@@ -449,5 +475,4 @@ onMounted(() => {
     background: white !important;
   }
 }
-
 </style>
