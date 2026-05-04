@@ -1,122 +1,116 @@
 <template>
   <q-page class="login-page">
+    <div class="background-shape background-shape--one" aria-hidden="true" />
+    <div class="background-shape background-shape--two" aria-hidden="true" />
+    <div class="background-shape background-shape--three" aria-hidden="true" />
 
-    <!-- ─────────────────────────────────
-         LEFT — Brand panel (navy)
-         ───────────────────────────────── -->
-    <aside class="brand-panel">
-      <div class="brand-panel__inner">
+    <main class="login-shell">
+      <section class="signin-card" aria-labelledby="signin-title">
+        <form class="signin-form" @submit.prevent="submitCurrentStep">
+          <div class="brand-row">
+            <img
+              src="/veleri-logo-horizontal.png"
+              alt="Veleučilište u Rijeci"
+              class="brand-logo"
+            />
+          </div>
 
-        <!-- Brand mark -->
-        <div class="brand-mark">
-          <img src="/logo.svg" alt="Veleučilište u Rijeci" />
+          <button
+            v-if="step === 'password'"
+            type="button"
+            class="back-step"
+            :disabled="loading"
+            @click="goBackToEmail"
+          >
+            <q-icon name="arrow_back" size="18px" />
+            <span>{{ email }}</span>
+          </button>
 
-        </div>
+          <h1 id="signin-title" class="signin-title">
+            {{ step === 'email' ? 'Prijava u sustav' : 'Unesite lozinku' }}
+          </h1>
 
-        <!-- Headline -->
-        <div class="brand-headline">
-          <h1>Dobrodošli u<br>veleri.XP</h1>
-          
-          <p>sustav za podnošenje i upravljanje zahtjevima</p>
-        </div>
-
-        <!-- Footer -->
-        <div class="brand-footer">
-          © {{ currentYear }} Veleučilište u Rijeci. Sva prava pridržana.
-        </div>
-
-      </div>
-    </aside>
-
-    <!-- ─────────────────────────────────
-         RIGHT — Form panel
-         ───────────────────────────────── -->
-    <section class="form-panel">
-      <div class="form-panel__inner">
-
-        <form class="login-form" @submit.prevent="handleLogin">
-
-          <!-- Email -->
-          <div class="field">
-            <label for="login-email">Korisničko ime</label>
+          <div v-if="step === 'email'" class="field">
+            <label class="sr-only" for="login-email">E-mail adresa</label>
             <input
               id="login-email"
               v-model="email"
               type="email"
-              class="input"
-              placeholder="username@veleri.hr"
+              class="text-input"
+              placeholder="E-mail adresa"
               autocomplete="username"
               :disabled="loading"
+              autofocus
             />
           </div>
 
-          <!-- Password with toggle -->
-          <div class="field">
-            <label for="login-password">Lozinka</label>
-            <div class="input-with-action">
+          <div v-else class="field">
+            <label class="sr-only" for="login-password">Lozinka</label>
+            <div class="password-field">
               <input
                 id="login-password"
                 v-model="password"
                 :type="showPassword ? 'text' : 'password'"
-                class="input"
-                placeholder="••••••••"
+                class="text-input"
+                placeholder="Lozinka"
                 autocomplete="current-password"
                 :disabled="loading"
+                autofocus
               />
               <button
                 type="button"
-                class="input-toggle"
-                tabindex="-1"
+                class="password-toggle"
                 :title="showPassword ? 'Sakrij lozinku' : 'Prikaži lozinku'"
+                :disabled="loading"
                 @click="showPassword = !showPassword"
               >
-                <q-icon
-                  :name="showPassword ? 'visibility_off' : 'visibility'"
-                  size="18px"
-                />
+                <q-icon :name="showPassword ? 'visibility_off' : 'visibility'" size="18px" />
               </button>
             </div>
           </div>
 
-          <!-- Error -->
-          <div v-if="errorMessage" class="form-error" role="alert">
-            <q-icon name="error_outline" size="16px" />
-            <span>{{ errorMessage }}</span>
+          <div v-if="step === 'email'" class="account-copy">
+            <span>Nemate korisnički račun?</span>
+            <button type="button">Zatražite pristup</button>
           </div>
 
-          <!-- Submit -->
-          <button
-            type="submit"
-            class="submit-btn"
-            :disabled="loading"
-          >
-            <q-spinner v-if="loading" size="18px" color="white" />
-            <span v-else>Prijavi se</span>
+          <button v-if="step === 'email'" type="button" class="support-link">
+            Ne možete pristupiti računu?
           </button>
 
+          <div v-if="errorMessage" class="form-error" role="alert">
+            {{ errorMessage }}
+          </div>
+
+          <div class="actions">
+            <button
+              type="submit"
+              class="primary-btn"
+              :disabled="loading"
+            >
+              <q-spinner v-if="loading" size="18px" color="white" />
+              <span v-else>{{ step === 'email' ? 'Dalje' : 'Prijavi se' }}</span>
+            </button>
+          </div>
         </form>
+      </section>
 
-        <div class="form-help">
-          Nemate pristup?
-          <span class="form-help__highlight">
-            Obratite se djelatniku računovodstva ili referadi
-          </span>
-          radi pozivnice za registraciju.
-        </div>
+    </main>
 
-      </div>
-    </section>
-
+    <footer class="login-footer">
+      <span>© {{ currentYear }} Veleučilište u Rijeci - sva prava pridržana</span>
+    </footer>
   </q-page>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from 'boot/axios';
 
 const router = useRouter();
 
+const step = ref('email');
 const email = ref('');
 const password = ref('');
 const showPassword = ref(false);
@@ -125,10 +119,43 @@ const errorMessage = ref('');
 
 const currentYear = computed(() => new Date().getFullYear());
 
+const focusPassword = async () => {
+  await nextTick();
+  document.getElementById('login-password')?.focus();
+};
+
+const continueToPassword = async () => {
+  errorMessage.value = '';
+
+  if (!email.value.trim()) {
+    errorMessage.value = 'Unesite e-mail adresu.';
+    return;
+  }
+
+  step.value = 'password';
+  await focusPassword();
+};
+
+const goBackToEmail = async () => {
+  errorMessage.value = '';
+  step.value = 'email';
+  await nextTick();
+  document.getElementById('login-email')?.focus();
+};
+
+const submitCurrentStep = () => {
+  if (step.value === 'email') {
+    continueToPassword();
+    return;
+  }
+
+  handleLogin();
+};
+
 const handleLogin = async () => {
   errorMessage.value = '';
 
-  if (!email.value || !password.value) {
+  if (!email.value.trim() || !password.value) {
     errorMessage.value = 'Unesite e-mail adresu i lozinku.';
     return;
   }
@@ -147,7 +174,7 @@ const handleLogin = async () => {
     router.replace('/dashboard');
   } catch (error) {
     errorMessage.value =
-      error?.response?.data?.message || 'Neispravni podaci za prijavu.';
+      error?.response?.data?.message || 'Prijava nije uspjela. Provjerite unesene podatke.';
   } finally {
     loading.value = false;
   }
@@ -155,338 +182,318 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-/* ─────────────────────────────────────
-   PAGE — split layout
-   ───────────────────────────────────── */
 .login-page {
+  position: relative;
   display: flex;
   min-height: 100vh;
-  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-/* ─────────────────────────────────────
-   LEFT — Brand panel
-   ───────────────────────────────────── */
-.brand-panel {
-  width: 33%;
-  flex-shrink: 0;
-  background: #3053a5;
-  position: relative;
-  overflow: hidden;
-}
-
-
-.brand-panel__inner {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
-  padding: 56px 56px 40px;
-  position: relative;
-  z-index: 1;
-}
-
-/* Brand mark */
-.brand-mark {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.brand-mark__text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-}
-
-.brand-mark__name {
-  font-size: 4rem;
-  font-weight: 600;
-  color: rgb(143, 191, 247);
-  letter-spacing: -0.005em;
-}
-
-/* Headline */
-.brand-headline {
-  margin: 56px 0;
-}
-
-.brand-headline h1 {
-  font-size: 2.75rem;
-  font-weight: 600;
-  color: white;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-  margin: 0 0 20px;
-}
-
-.brand-headline p {
-  font-size: 0.9375rem;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.75);
-  line-height: 1.55;
-  margin: 0;
-  max-width: 420px;
-}
-
-/* Footer */
-.brand-footer {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.4);
-  letter-spacing: 0.02em;
-}
-
-/* ─────────────────────────────────────
-   RIGHT — Form panel
-   ───────────────────────────────────── */
-.form-panel {
-  flex: 1;
-  display: flex;
   align-items: center;
   justify-content: center;
-  background: #F5F5F5;
-  padding: 48px 32px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(219, 243, 255, 0.78), transparent 30%),
+    radial-gradient(circle at 70% 62%, rgba(255, 244, 249, 0.85), transparent 34%),
+    linear-gradient(135deg, #f8fbff 0%, #f5f2fb 50%, #fffdfb 100%);
+  color: #1b1b1b;
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  padding: 48px 24px;
 }
 
-.form-panel__inner {
+.login-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(112deg, transparent 13%, rgba(180, 220, 255, 0.22) 13.2%, transparent 13.9%),
+    linear-gradient(24deg, transparent 42%, rgba(255, 220, 215, 0.24) 42.2%, transparent 43%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.9) 0 1px, transparent 1.3px);
+  background-size: auto, auto, 68px 68px;
+  opacity: 0.7;
+}
+
+.background-shape {
+  position: absolute;
+  border: 2px solid rgba(188, 222, 255, 0.5);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 0 80px rgba(217, 239, 255, 0.34);
+  pointer-events: none;
+}
+
+.background-shape--one {
+  width: 680px;
+  height: 620px;
+  left: -160px;
+  bottom: -240px;
+  transform: rotate(-42deg);
+}
+
+.background-shape--two {
+  width: 700px;
+  height: 520px;
+  right: -150px;
+  top: -260px;
+  transform: rotate(-12deg);
+}
+
+.background-shape--three {
+  width: 680px;
+  height: 360px;
+  right: 145px;
+  bottom: -150px;
+  border-color: rgba(238, 220, 214, 0.42);
+  transform: rotate(17deg);
+}
+
+.login-shell {
+  position: relative;
+  z-index: 1;
+  width: min(440px, 100%);
+}
+
+.signin-card {
   width: 100%;
-  max-width: 380px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
-/* Header */
-.form-header {
-  margin-bottom: 32px;
+.signin-card {
+  min-height: 338px;
+  padding: 44px 44px 40px;
 }
 
-.form-header h2 {
-  font-size: 1.625rem;
-  font-weight: 600;
-  color: #16294E;
-  letter-spacing: -0.015em;
-  margin: 0 0 6px;
-  line-height: 1.2;
-}
-
-.form-header p {
-  font-size: 0.875rem;
-  color: #605E5C;
-  line-height: 1.5;
-  margin: 0;
-}
-
-/* Form */
-.login-form {
+.signin-form {
   display: flex;
+  min-height: 254px;
   flex-direction: column;
-  gap: 16px;
+}
+
+.brand-row {
+  display: inline-flex;
+  align-items: center;
+  margin-left: -10px;
+  margin-bottom: 18px;
+}
+
+.brand-logo {
+  display: block;
+  width: 450px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.back-step {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px -4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #1b1b1b;
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.back-step span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signin-title {
+  margin: 0 0 18px;
+  color: #1b1b1b;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.25;
 }
 
 .field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  margin-bottom: 16px;
 }
 
-.field label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #424242;
-  letter-spacing: 0.01em;
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 
-.input {
+.text-input {
   width: 100%;
   height: 36px;
-  padding: 0 12px;
-  font-family: inherit;
-  font-size: 0.875rem;
-  color: #201F1E;
-  background: white;
-  border: 1px solid #C8C6C4;
-  border-radius: 4px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  padding: 5px 0 7px;
+  border: 0;
+  border-bottom: 1px solid #666;
+  border-radius: 0;
   outline: none;
+  background: transparent;
+  color: #1b1b1b;
+  font: inherit;
+  font-size: 15px;
 }
 
-.input::placeholder {
-  color: #A19F9D;
+.text-input::placeholder {
+  color: #616161;
+  opacity: 1;
 }
 
-.input:hover:not(:disabled) {
-  border-color: #605E5C;
+.text-input:focus {
+  border-bottom-color: #0067b8;
+  box-shadow: 0 1px 0 #0067b8;
 }
 
-.input:focus {
-  border-color: #16294E;
-  box-shadow: 0 0 0 1px #16294E;
-}
-
-.input:disabled {
-  background: #FAFAFA;
-  color: #A19F9D;
+.text-input:disabled {
+  color: #767676;
   cursor: not-allowed;
 }
 
-/* Input with action button (password visibility) */
-.input-with-action {
+.password-field {
   position: relative;
 }
 
-.input-with-action .input {
-  padding-right: 38px;
+.password-field .text-input {
+  padding-right: 34px;
 }
 
-.input-toggle {
+.password-toggle {
   position: absolute;
-  top: 50%;
-  right: 4px;
-  transform: translateY(-50%);
-  width: 28px;
-  height: 28px;
-  display: flex;
+  right: 0;
+  top: 3px;
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
   align-items: center;
   justify-content: center;
-  border: none;
-  border-radius: 4px;
+  border: 0;
   background: transparent;
-  color: #605E5C;
+  color: #616161;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
 }
 
-.input-toggle:hover {
-  background: #F3F2F1;
-  color: #201F1E;
-}
-
-/* Error */
-.form-error {
+.account-copy {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 10px 12px;
-  background: #FDE7E9;
-  border: 1px solid #F1B0B7;
-  border-radius: 4px;
-  color: #A4262C;
-  font-size: 0.8125rem;
-  font-weight: 500;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 13px;
+}
+
+.account-copy button,
+.support-link {
+  border: 0;
+  background: transparent;
+  color: #0067b8;
+  font: inherit;
+  cursor: pointer;
+}
+
+.account-copy button {
+  padding: 0;
+}
+
+.support-link {
+  width: fit-content;
+  margin-top: 18px;
+  padding: 0;
+  font-size: 13px;
+  text-align: left;
+}
+
+.account-copy button:hover,
+.support-link:hover {
+  color: #004578;
+  text-decoration: underline;
+}
+
+.form-error {
+  margin-top: 16px;
+  color: #a4262c;
+  font-size: 13px;
   line-height: 1.4;
 }
 
-.form-error .q-icon {
-  flex-shrink: 0;
-  margin-top: 1px;
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 28px;
 }
 
-/* Submit */
-.submit-btn {
-  width: 100%;
-  height: 38px;
-  margin-top: 4px;
-  border: 1px solid #16294E;
-  border-radius: 4px;
-  background: #16294E;
-  color: white;
-  font-family: inherit;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-  display: flex;
+.primary-btn {
+  display: inline-flex;
+  min-width: 108px;
+  height: 32px;
   align-items: center;
   justify-content: center;
+  border: 1px solid #0067b8;
+  background: #0067b8;
+  color: white;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.submit-btn:hover:not(:disabled) {
-  background: #0F1F3D;
-  border-color: #0F1F3D;
+.primary-btn:hover:not(:disabled) {
+  border-color: #005da6;
+  background: #005da6;
 }
 
-.submit-btn:active:not(:disabled) {
-  background: #091538;
-}
-
-.submit-btn:disabled {
-  opacity: 0.6;
+.primary-btn:disabled {
+  opacity: 0.65;
   cursor: not-allowed;
 }
 
-/* Help text */
-.form-help {
-  margin-top: 32px;
-  padding-top: 20px;
-  border-top: 1px solid #E1DFDD;
-  font-size: 0.75rem;
-  color: #605E5C;
-  line-height: 1.6;
-  text-align: center;
+.login-footer {
+  position: absolute;
+  right: 20px;
+  bottom: 14px;
+  z-index: 1;
+  display: flex;
+  gap: 18px;
+  color: rgba(27, 27, 27, 0.72);
+  font-size: 12px;
 }
 
-.form-help__highlight {
-  color: #16294E;
-  font-weight: 500;
-}
-
-/* ─────────────────────────────────────
-   Responsive
-   ───────────────────────────────────── */
-@media (max-width: 900px) {
-  .brand-panel__inner {
-    padding: 40px 36px 32px;
-  }
-  .brand-headline {
-    margin: 40px 0;
-  }
-  .brand-headline h1 {
-    font-size: 2.25rem;
-  }
-}
-
-@media (max-width: 768px) {
+@media (max-width: 560px) {
   .login-page {
-    flex-direction: column;
+    align-items: flex-start;
+    padding: 0;
+    background: #fff;
   }
-  .brand-panel {
-    width: 100%;
-    min-height: 200px;
-  }
-  .brand-panel::after {
-    top: auto;
-    right: 0;
-    left: 0;
-    bottom: 0;
-    width: auto;
-    height: 2px;
-    background: linear-gradient(
-      to right,
-      transparent,
-      #00AFDB 30%,
-      #00AFDB 70%,
-      transparent
-    );
-  }
-  .brand-panel__inner {
-    padding: 32px 24px 24px;
-  }
-  .brand-mark__square {
-    width: 40px;
-    height: 40px;
-  }
-  .brand-headline {
-    margin: 24px 0 16px;
-  }
-  .brand-headline h1 {
-    font-size: 1.5rem;
-  }
-  .brand-headline p {
-    font-size: 0.875rem;
-  }
-  .brand-footer {
+
+  .login-page::before,
+  .background-shape {
     display: none;
   }
-  .form-panel {
-    padding: 32px 24px 48px;
+
+  .login-shell {
+    width: 100%;
+  }
+
+  .signin-card {
+    min-height: auto;
+    padding: 32px 28px 36px;
+    box-shadow: none;
+  }
+
+  .signin-form {
+    min-height: 300px;
+  }
+
+  .login-footer {
+    position: fixed;
+    right: 16px;
+    bottom: 10px;
+    left: 16px;
+    justify-content: space-between;
   }
 }
 </style>
