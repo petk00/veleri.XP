@@ -6,16 +6,18 @@
 
         <!-- Brand -->
         <button class="brand" @click="$router.push('/dashboard')">
-          <div class="brand__mark">
-            <img src="/logo.png" alt="Veleučilište u Rijeci" />
-          </div>
-          <div class="brand__text">
-            <span class="brand__name">veleri.XP</span>
-            <span class="brand__sub">SUSTAV NABAVE</span>
-          </div>
+          <img
+            src="/veleri-logo-horizontal.png"
+            alt="Veleučilište u Rijeci"
+            class="brand__logo"
+          />
         </button>
 
-        <span class="brand-divider gt-xs" aria-hidden="true" />
+        <span class="brand-divider" aria-hidden="true" />
+
+        <button class="product-title" @click="$router.push('/dashboard')">
+          veleri.XP
+        </button>
 
         <!-- Primary nav -->
         <nav class="nav gt-sm">
@@ -24,7 +26,6 @@
             :class="{ 'nav__item--active': isActive('/dashboard') }"
             @click="$router.push('/dashboard')"
           >
-            <q-icon name="space_dashboard" size="18px" />
             <span>Dashboard</span>
           </button>
 
@@ -33,7 +34,6 @@
             :class="{ 'nav__item--active': isActive('/requests') }"
             @click="$router.push('/requests')"
           >
-            <q-icon name="description" size="18px" />
             <span>Zahtjevi</span>
           </button>
         </nav>
@@ -45,9 +45,7 @@
           <div class="avatar">{{ initials }}</div>
           <div class="user-meta gt-xs">
             <span class="user-name">{{ fullName }}</span>
-            <span class="user-role">{{ user.role_name }}</span>
           </div>
-          <q-icon name="expand_more" size="18px" class="user-chevron" />
 
           <q-menu
             anchor="bottom right"
@@ -84,7 +82,6 @@
           :class="{ 'mobile-nav__item--active': isActive('/dashboard') }"
           @click="$router.push('/dashboard')"
         >
-          <q-icon name="space_dashboard" size="18px" />
           Dashboard
         </button>
         <button
@@ -92,7 +89,6 @@
           :class="{ 'mobile-nav__item--active': isActive('/requests') }"
           @click="$router.push('/requests')"
         >
-          <q-icon name="description" size="18px" />
           Zahtjevi
         </button>
       </div>
@@ -152,18 +148,56 @@ onMounted(() => {
    Layout & header
    ───────────────────────────────────── */
 .app-layout {
-  background: #F5F5F5;
+  background:
+    radial-gradient(circle at 10% 12%, rgba(219, 243, 255, 0.58), transparent 28%),
+    radial-gradient(circle at 88% 34%, rgba(255, 244, 249, 0.72), transparent 30%),
+    linear-gradient(135deg, #fbfdff 0%, #f7f5fb 52%, #fffdfb 100%);
+}
+
+.app-layout::before,
+.app-layout::after {
+  content: '';
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  border: 1px solid rgba(188, 222, 255, 0.42);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 0 70px rgba(217, 239, 255, 0.24);
+}
+
+.app-layout::before {
+  width: 560px;
+  height: 470px;
+  left: -190px;
+  bottom: -210px;
+  transform: rotate(-42deg);
+}
+
+.app-layout::after {
+  width: 620px;
+  height: 360px;
+  right: -180px;
+  top: 92px;
+  transform: rotate(-14deg);
 }
 
 .app-header {
-  background: #16284E !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border-bottom: 2px solid #00B2DD;
+  background: #fff !important;
+  color: #1a1a1a;
+  box-shadow: none;
+  border-bottom: 1px solid #edebe9;
+  z-index: 10;
+}
+
+:deep(.q-page-container) {
+  position: relative;
+  z-index: 1;
 }
 
 .toolbar {
-  min-height: 60px;
-  padding: 0 20px;
+  min-height: 52px;
+  padding: 0 32px;
   gap: 0;
 }
 
@@ -174,61 +208,34 @@ onMounted(() => {
   all: unset;
   display: flex;
   align-items: center;
-  gap: 12px;
   cursor: pointer;
-  padding: 6px 8px;
-  border-radius: 4px;
-  margin-right: 4px;
-  transition: background 0.15s;
-}
-.brand:hover { background: rgba(255, 255, 255, 0.06); }
-
-.brand__mark {
-  width: 34px;
-  height: 34px;
-  background: rgba(0, 178, 221, 0.15);
-  border: 1px solid rgba(0, 178, 221, 0.3);
-  border-radius: 6px;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-sizing: border-box;
+  padding: 0;
+  margin-right: 18px;
 }
 
-.brand__mark img {
-  width: 100%;
-  height: 100%;
+.brand__logo {
+  display: block;
+  width: 136px;
+  height: auto;
   object-fit: contain;
-}
-
-.brand__text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1;
-}
-
-.brand__name {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: white;
-  letter-spacing: -0.005em;
-}
-
-.brand__sub {
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: #00B2DD;
-  letter-spacing: 0.06em;
-  margin-top: 4px;
 }
 
 .brand-divider {
   width: 1px;
-  height: 28px;
-  background: rgba(255, 255, 255, 0.18);
-  margin: 0 16px 0 12px;
+  height: 24px;
+  background: #1a1a1a;
+  margin: 0 26px 0 0;
+}
+
+.product-title {
+  all: unset;
+  margin-right: 26px;
+  color: #1a1a1a;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
 /* ─────────────────────────────────────
@@ -237,38 +244,41 @@ onMounted(() => {
 .nav {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 22px;
 }
 
 .nav__item {
   all: unset;
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 8px 16px;
+  min-height: 52px;
+  padding: 0;
   font-size: 0.8125rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.85);
+  font-weight: 400;
+  color: #242424;
   cursor: pointer;
-  border-radius: 6px;
-  transition: all 0.15s;
   white-space: nowrap;
 }
 
 .nav__item:hover {
-  color: white;
-  background: rgba(255, 255, 255, 0.08);
+  color: #000;
+  text-decoration: underline;
 }
 
 .nav__item--active {
-  background: #00B2DD;
-  color: #16284E;
-  font-weight: 600;
+  color: #000;
+  font-weight: 500;
 }
 
-.nav__item--active:hover {
-  background: #00B2DD;
-  color: #16284E;
+.nav__item--active::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: #1a1a1a;
 }
 
 /* ─────────────────────────────────────
@@ -278,29 +288,27 @@ onMounted(() => {
   all: unset;
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: 40px;
-  padding: 4px 10px 4px 6px;
-  border-radius: 20px;
+  gap: 8px;
+  height: 36px;
+  padding: 0 0 0 10px;
   cursor: pointer;
-  transition: background 0.15s;
-  border: 1px solid rgba(255, 255, 255, 0.15);
   position: relative;
+  color: #242424;
 }
-.user-btn:hover { background: rgba(255, 255, 255, 0.08); }
+.user-btn:hover .user-name { text-decoration: underline; }
 
 .avatar {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  background: #00B2DD;
-  color: #16284E;
+  background: #fff;
+  color: #616161;
+  border: 1px solid #8a8886;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: 11px;
+  font-weight: 600;
   flex-shrink: 0;
 }
 .avatar--lg {
@@ -318,25 +326,13 @@ onMounted(() => {
 }
 
 .user-name {
-  font-size: 0.81rem;
-  font-weight: 600;
-  color: white;
-  letter-spacing: -0.005em;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: #242424;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 160px;
-}
-
-.user-role {
-  font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.65);
-  margin-top: 2px;
-}
-
-.user-chevron {
-  color: rgba(255, 255, 255, 0.7);
-  margin-left: 2px;
 }
 
 /* ─────────────────────────────────────
@@ -345,8 +341,8 @@ onMounted(() => {
 .mobile-nav {
   display: flex;
   align-items: stretch;
-  background: rgba(0, 0, 0, 0.18);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: #fff;
+  border-top: 1px solid #edebe9;
 }
 
 .mobile-nav__item {
@@ -355,31 +351,33 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 10px 8px;
+  padding: 11px 8px;
   font-size: 0.75rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.75);
+  font-weight: 400;
+  color: #242424;
   cursor: pointer;
-  transition: all 0.15s;
+  border-bottom: 2px solid transparent;
 }
 
-.mobile-nav__item:hover { color: white; background: rgba(255, 255, 255, 0.06); }
+.mobile-nav__item:hover { color: #000; text-decoration: underline; }
 
 .mobile-nav__item--active {
-  color: #16284E;
-  background: #00B2DD;
-  font-weight: 600;
+  color: #000;
+  border-bottom-color: #1a1a1a;
+  font-weight: 500;
 }
 
 /* ─────────────────────────────────────
    Responsive tweaks
    ───────────────────────────────────── */
 @media (max-width: 600px) {
-  .toolbar { padding: 0 12px; }
-  .brand__sub { display: none; }
+  .toolbar { padding: 0 16px; }
+  .brand { margin-right: 12px; }
+  .brand__logo { width: 112px; }
+  .brand-divider { height: 20px; margin-right: 14px; }
+  .product-title { margin-right: 0; font-size: 0.93rem; }
   .user-name { max-width: 100px; }
-  .user-btn { padding: 4px 6px; }
+  .user-btn { padding-left: 6px; }
   .user-btn .user-meta { display: none; }
 }
 </style>
