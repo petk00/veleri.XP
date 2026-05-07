@@ -171,7 +171,7 @@ const handleLogin = async () => {
     localStorage.setItem('token', response.data.token);
     localStorage.setItem('user', JSON.stringify(response.data.user));
 
-    router.replace('/dashboard');
+    router.replace('/home');
   } catch (error) {
     errorMessage.value =
       error?.response?.data?.message || 'Prijava nije uspjela. Provjerite unesene podatke.';

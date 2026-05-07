@@ -8,6 +8,14 @@ const routes = [
   },
 
   {
+    path: '/home',
+    component: () => import('layouts/AuthLayout.vue'),
+    children: [
+      { path: '', component: () => import('pages/LandingPage.vue') },
+    ],
+  },
+
+  {
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
