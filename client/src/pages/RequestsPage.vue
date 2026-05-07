@@ -39,59 +39,6 @@
 
       <section class="list-surface">
 
-        <div class="surface-header">
-          <h2 class="surface-title">
-            <q-icon name="list_alt" size="16px" />
-            <span>Pregled zahtjeva</span>
-          </h2>
-          <span class="surface-count" v-if="!loading">{{ filteredRows.length }} prikazano</span>
-        </div>
-
-        <div class="filter-bar">
-          <q-input
-            v-model="searchQuery"
-            outlined dense clearable
-            placeholder="Pretraži po broju, podnositelju ili odjelu..."
-            class="filter-bar__search"
-          >
-            <template #prepend><q-icon name="search" size="16px" /></template>
-          </q-input>
-
-          <q-select
-            v-model="statusFilter"
-            :options="statusOptions"
-            outlined dense
-            emit-value map-options
-            class="filter-bar__select"
-          >
-            <template #prepend><q-icon name="filter_list" size="16px" /></template>
-          </q-select>
-
-          <q-select
-            v-if="isAdmin && departmentOptions.length > 1"
-            v-model="departmentFilter"
-            :options="departmentOptions"
-            outlined dense
-            emit-value map-options
-            class="filter-bar__select"
-          >
-            <template #prepend><q-icon name="business" size="16px" /></template>
-          </q-select>
-
-          <button
-            v-if="hasActiveFilters"
-            class="btn btn--ghost"
-            @click="resetFilters"
-          >
-            <q-icon name="close" size="14px" />
-            <span>Poništi</span>
-          </button>
-
-          <span class="filter-bar__count">
-            {{ filteredRows.length }} / {{ rows.length }}
-          </span>
-        </div>
-
         <div v-if="errorMessage" class="error-banner">
           <q-icon name="error_outline" size="16px" />
           <span>{{ errorMessage }}</span>
@@ -103,39 +50,58 @@
           row-key="id_purchase_request"
           :loading="loading"
           flat
-          :pagination="{ rowsPerPage: 15 }"
+          :pagination="{ rowsPerPage: 15, sortBy: 'created_at', descending: true }"
           :rows-per-page-options="[10, 15, 30, 50, 0]"
           rows-per-page-label="Redaka po stranici"
           class="data-table"
           @row-click="(_, row) => openRequest(row.id_purchase_request)"
         >
+          <template #top>
+            <div class="toolbar">
+              <q-icon name="search" size="15px" class="toolbar__search-icon" />
+              <q-input
+                v-model="searchQuery"
+                borderless dense clearable
+                placeholder="Pretraži po broju, podnositelju ili odjelu..."
+                class="toolbar__search"
+              />
+
+              <div class="toolbar__sep" />
+
+              <q-select
+                v-model="statusFilter"
+                :options="statusOptions"
+                borderless dense
+                emit-value map-options
+                class="toolbar__select"
+              />
+
+              <q-select
+                v-if="isAdmin && departmentOptions.length > 1"
+                v-model="departmentFilter"
+                :options="departmentOptions"
+                borderless dense
+                emit-value map-options
+                class="toolbar__select"
+              />
+
+              <button v-if="hasActiveFilters" class="toolbar__reset" @click="resetFilters">
+                <q-icon name="close" size="12px" />
+                <span>Poništi</span>
+              </button>
+            </div>
+          </template>
+
           <!-- Cell: request number -->
           <template #body-cell-request_number="props">
             <q-td :props="props" class="cell-number">
-              <div class="request-cell">
-                <div class="request-cell__number">{{ props.row.request_number }}</div>
-                <div class="request-cell__meta">Zahtjev za nabavu</div>
-              </div>
-            </q-td>
-          </template>
-
-          <!-- Cell: fiscal year -->
-          <template #body-cell-fiscal_year="props">
-            <q-td :props="props">
-              <span class="year-chip">{{ props.row.fiscal_year }}</span>
+              <span class="request-cell__number">{{ props.row.request_number }}</span>
             </q-td>
           </template>
 
           <!-- Cell: department -->
           <template #body-cell-department_name="props">
-            <q-td :props="props">
-              <div class="department-cell">
-                <span class="department-cell__icon">
-                  <q-icon name="business" size="14px" />
-                </span>
-                <span>{{ props.row.department_name }}</span>
-              </div>
-            </q-td>
+            <q-td :props="props">{{ props.row.department_name }}</q-td>
           </template>
 
           <!-- Cell: status -->
@@ -149,7 +115,7 @@
 
           <!-- Cell: amount -->
           <template #body-cell-total_amount="props">
-            <q-td :props="props" class="text-right cell-num">
+            <q-td :props="props" class="cell-num">
               {{ formatCurrency(props.row.total_amount) }}
             </q-td>
           </template>
@@ -163,12 +129,7 @@
 
           <!-- Cell: created_by -->
           <template #body-cell-created_by="props">
-            <q-td :props="props" class="cell-muted">
-              <div class="person-cell">
-                <span class="person-cell__avatar">{{ initialsFor(props.row.created_by) }}</span>
-                <span>{{ props.row.created_by }}</span>
-              </div>
-            </q-td>
+            <q-td :props="props" class="cell-muted">{{ props.row.created_by }}</q-td>
           </template>
 
           <!-- Cell: chevron -->
@@ -299,14 +260,13 @@ const currentUser = ref(null);
 const isAdmin = ref(false);
 
 const columns = [
-  { name: 'request_number', label: 'Broj zahtjeva', field: 'request_number', align: 'left', sortable: true },
-  { name: 'fiscal_year',    label: 'Godina',        field: 'fiscal_year',    align: 'left' },
-  { name: 'department_name',label: 'Odjel',         field: 'department_name',align: 'left', sortable: true },
-  { name: 'status_name',    label: 'Status',        field: 'status_name',    align: 'left', sortable: true },
-  { name: 'created_by',     label: 'Podnositelj',   field: 'created_by',     align: 'left' },
-  { name: 'total_amount',   label: 'Iznos',         field: 'total_amount',   align: 'right', sortable: true },
-  { name: 'created_at',     label: 'Datum',         field: 'created_at',     align: 'left', sortable: true },
-  { name: 'actions',        label: '',              field: 'actions',        align: 'right' },
+  { name: 'request_number', label: 'Broj zahtjeva', field: 'request_number', align: 'left', sortable: true, style: 'min-width: 160px' },
+  { name: 'department_name',label: 'Odjel',         field: 'department_name',align: 'left', sortable: true, style: 'min-width: 160px' },
+  { name: 'status_name',    label: 'Status',        field: 'status_name',    align: 'left', sortable: true, style: 'min-width: 140px' },
+  { name: 'created_by',     label: 'Podnositelj',   field: 'created_by',     align: 'left', style: 'min-width: 140px' },
+  { name: 'total_amount',   label: 'Iznos',         field: 'total_amount',   align: 'left',  sortable: true, style: 'min-width: 100px', sort: (a, b) => (parseFloat(a) || 0) - (parseFloat(b) || 0) },
+  { name: 'created_at',     label: 'Datum',         field: 'created_at',     align: 'left', sortable: true, style: 'min-width: 110px' },
+  { name: 'actions',        label: '',              field: 'actions',        align: 'right', style: 'width: 38px' },
 ];
 
 const fetchRequests = async () => {
@@ -396,16 +356,6 @@ const formatDate = (value) => {
   });
 };
 
-const initialsFor = (value) => {
-  if (!value) return '?';
-  return value
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
-};
 
 /**
  * Mapiranje status name → CSS klasa.
@@ -578,90 +528,75 @@ onMounted(() => {
   background: #fff;
 }
 
-.surface-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 18px;
+.data-table :deep(.q-table__top) {
+  padding: 0 12px;
   border-bottom: 1px solid #e5e7eb;
+  min-height: 46px;
 }
 
-.surface-title {
+.toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0;
-  color: #111827;
-  font-size: 0.9375rem;
-  font-weight: 600;
+  gap: 4px;
+  width: 100%;
+  min-height: 46px;
 }
 
-.surface-title .q-icon {
-  color: #0067b8;
+.toolbar__search-icon {
+  color: #9ca3af;
+  flex-shrink: 0;
 }
 
-.surface-count {
-  color: #6b7280;
+.toolbar__search {
+  flex: 1;
+  min-width: 180px;
+}
+
+.toolbar__sep {
+  width: 1px;
+  height: 18px;
+  background: #e5e7eb;
+  margin: 0 8px;
+  flex-shrink: 0;
+}
+
+.toolbar__select {
+  min-width: 150px;
+}
+
+.toolbar__reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+  padding: 3px 8px;
+  border: none;
+  border-radius: 3px;
+  background: none;
+  color: #9ca3af;
+  font: inherit;
   font-size: 0.75rem;
+  cursor: pointer;
   white-space: nowrap;
 }
 
-.filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
-  border-bottom: 1px solid #e5e7eb;
-  background: #fff;
-  flex-wrap: wrap;
+.toolbar__reset:hover {
+  background: #f3f4f6;
+  color: #374151;
 }
 
-.filter-bar__search {
-  flex: 1;
-  min-width: 260px;
-  max-width: 460px;
+.toolbar :deep(.q-field__control) {
+  background: transparent;
 }
 
-.filter-bar__select {
-  flex: 0 0 210px;
-  min-width: 170px;
-}
-
-.filter-bar :deep(.q-field__control) {
-  height: 34px;
-  border-radius: 0;
-  background: #fff;
-}
-
-.filter-bar :deep(.q-field--outlined .q-field__control::before) {
-  border-color: #d1d5db;
-}
-
-.filter-bar :deep(.q-field--outlined.q-field--focused .q-field__control::after) {
-  border-color: #0067b8;
-  border-width: 1px;
-}
-
-.filter-bar :deep(.q-field__native),
-.filter-bar :deep(.q-field__input) {
-  min-height: 34px;
+.toolbar :deep(.q-field__native),
+.toolbar :deep(.q-field__input) {
   color: #111827;
   font-size: 0.8125rem;
 }
 
-.filter-bar :deep(.q-field__prepend),
-.filter-bar :deep(.q-field__append) {
-  height: 34px;
-  color: #6b7280;
-}
-
-.filter-bar__count {
-  margin-left: auto;
-  color: #6b7280;
-  font-size: 0.75rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+.toolbar :deep(.q-field__append) {
+  color: #9ca3af;
 }
 
 .error-banner {
@@ -719,7 +654,7 @@ onMounted(() => {
 }
 
 .data-table :deep(tbody td) {
-  height: 58px;
+  height: 52px;
   padding: 8px 20px;
   border-bottom: 1px solid #f3f4f6;
   color: #111827;
@@ -740,13 +675,7 @@ onMounted(() => {
 }
 
 .cell-number {
-  min-width: 178px;
-}
-
-.request-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  min-width: 160px;
 }
 
 .request-cell__number {
@@ -756,44 +685,6 @@ onMounted(() => {
   letter-spacing: -0.005em;
 }
 
-.request-cell__meta {
-  color: #6b7280;
-  font-size: 0.6875rem;
-}
-
-.year-chip {
-  display: inline-flex;
-  min-height: 24px;
-  align-items: center;
-  padding: 0 8px;
-  border: 1px solid #e5e7eb;
-  background: #fafafa;
-  color: #374151;
-  font-size: 0.75rem;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-
-.department-cell {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: 8px;
-  color: #111827;
-}
-
-.department-cell__icon {
-  display: inline-flex;
-  width: 24px;
-  height: 24px;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  color: #0067b8;
-}
-
 .cell-num {
   font-variant-numeric: tabular-nums;
   font-weight: 500;
@@ -801,27 +692,6 @@ onMounted(() => {
 
 .cell-muted {
   color: #4b5563 !important;
-}
-
-.person-cell {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: 8px;
-}
-
-.person-cell__avatar {
-  display: inline-flex;
-  width: 24px;
-  height: 24px;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border: 1px solid #d1d5db;
-  border-radius: 50%;
-  color: #4b5563;
-  font-size: 0.625rem;
-  font-weight: 600;
 }
 
 .cell-chevron {
@@ -838,30 +708,25 @@ onMounted(() => {
 .status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 22px;
-  padding: 0;
-  color: #4b5563;
-  font-size: 0.8125rem;
-  font-weight: 500;
+  min-height: 20px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
-.status::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.status--sent     { color: #2563eb; }
-.status--review   { color: #b7791f; }
-.status--returned { color: #c2410c; }
-.status--rejected { color: #c50f1f; }
-.status--ordered  { color: #0078d4; }
-.status--closed   { color: #107c10; }
-.status--default  { color: #6b7280; }
+.status--sent     { color: #1d4ed8; background: #dbeafe; }
+.status--review   { color: #92400e; background: #fef3c7; }
+.status--returned { color: #9a3412; background: #ffedd5; }
+.status--rejected { color: #991b1b; background: #fee2e2; }
+.status--ordered  { color: #065f46; background: #d1fae5; }
+.status--closed   { color: #166534; background: #dcfce7; }
+.status--default  { color: #374151; background: #f3f4f6; }
 
 .empty-state {
   display: flex;
@@ -936,21 +801,25 @@ onMounted(() => {
     padding-left: 22px;
   }
 
-  .filter-bar {
-    flex-direction: column;
-    align-items: stretch;
+  .toolbar {
+    flex-wrap: wrap;
+    padding: 8px 0;
+    min-height: unset;
+    gap: 8px;
   }
 
-  .filter-bar__search,
-  .filter-bar__select {
+  .toolbar__search {
     width: 100%;
-    max-width: none;
     flex: none;
   }
 
-  .filter-bar__count {
-    margin-left: 0;
-    text-align: center;
+  .toolbar__sep {
+    display: none;
+  }
+
+  .toolbar__select {
+    flex: 1;
+    min-width: 130px;
   }
 
   .data-table :deep(thead th),
