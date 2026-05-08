@@ -11,8 +11,8 @@
           </p>
         </div>
         <div class="page-header__actions">
-          <button class="btn btn--primary" @click="$router.push('/requests/new')">
-            <q-icon name="add" size="18px" />
+          <button class="btn btn--cta" @click="$router.push('/requests/new')">
+            <q-icon name="add" size="20px" />
             <span>Novi zahtjev</span>
           </button>
         </div>
@@ -471,6 +471,22 @@ onMounted(() => {
   border-color: #000;
 }
 
+.btn--cta {
+  min-height: 44px;
+  padding: 0 24px;
+  font-size: 0.9375rem;
+  gap: 10px;
+  background: #0067b8;
+  color: #fff;
+  border-color: #0067b8;
+  border-radius: 3px;
+}
+
+.btn--cta:hover {
+  background: #005a9e;
+  border-color: #005a9e;
+}
+
 .btn--ghost {
   background: #fff;
   color: #374151;
@@ -613,6 +629,10 @@ onMounted(() => {
 
 .data-table {
   border-radius: 0;
+}
+
+.data-table :deep(.q-table__middle) {
+  overflow: hidden;
 }
 
 .data-table :deep(.q-table) {
