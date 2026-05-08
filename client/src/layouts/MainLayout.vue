@@ -16,7 +16,7 @@
         <span class="brand-divider" aria-hidden="true" />
 
         <button class="product-title" @click="$router.push('/dashboard')">
-          veleri.XP
+          XP
         </button>
 
         <!-- Primary nav -->
@@ -42,7 +42,7 @@
 
         <!-- User dropdown -->
         <button v-if="user" class="user-btn">
-          <div class="avatar">{{ initials }}</div>
+          <div class="avatar" :style="{ background: avatarColor }">{{ initials }}</div>
           <div class="user-meta gt-xs">
             <span class="user-name">{{ fullName }}</span>
           </div>
@@ -56,7 +56,7 @@
             transition-hide="jump-up"
           >
             <div class="user-menu__header">
-              <div class="avatar avatar--lg">{{ initials }}</div>
+              <div class="avatar avatar--lg" :style="{ background: avatarColor }">{{ initials }}</div>
               <div>
                 <div class="user-menu__name">{{ fullName }}</div>
                 <div class="user-menu__email">{{ user.email || user.role_name }}</div>
@@ -126,6 +126,13 @@ const initials = computed(() => {
   return `${first}${last}`.toUpperCase();
 });
 
+const avatarColor = computed(() => {
+  const palette = ['#0067b8', '#7c3aed', '#059669', '#d97706', '#dc2626', '#0891b2', '#9333ea', '#be185d'];
+  const str = (user.value?.first_name || '') + (user.value?.last_name || '');
+  const idx = [...str].reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % palette.length;
+  return palette[idx];
+});
+
 const isActive = (path) => {
   if (path === '/requests') return route.path.startsWith('/requests');
   return route.path === path;
@@ -183,10 +190,15 @@ onMounted(() => {
 }
 
 .app-header {
-  background: #fff !important;
+  background: linear-gradient(90deg,
+    rgba(180, 218, 255, 0.85) 0%,
+    rgba(235, 247, 255, 0.98) 28%,
+    rgba(245, 245, 252, 0.98) 72%,
+    rgba(255, 210, 232, 0.75) 100%
+  ) !important;
   color: #1a1a1a;
   box-shadow: none;
-  border-bottom: 1px solid #edebe9;
+  border-bottom: 1px solid rgba(155, 200, 240, 0.75);
   z-index: 10;
 }
 
@@ -301,9 +313,9 @@ onMounted(() => {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #fff;
-  color: #616161;
-  border: 1px solid #8a8886;
+  background: #0067b8;
+  color: #fff;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;

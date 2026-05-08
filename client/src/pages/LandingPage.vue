@@ -15,14 +15,18 @@
 
       <div class="modules">
         <button class="module-card" @click="$router.push('/dashboard')">
-          <div class="module-card__icon-wrap">
-            <q-icon name="inventory_2" size="28px" />
-          </div>
-          <div class="module-card__body">
+          <q-icon name="inventory_2" size="110px" class="module-card__watermark" aria-hidden="true" />
+          <div class="module-card__content">
+            <div class="module-card__icon">
+              <q-icon name="inventory_2" size="28px" />
+            </div>
             <div class="module-card__name">Nabava</div>
             <div class="module-card__desc">Upravljanje zahtjevima za nabavu</div>
+            <div class="module-card__action">
+              <span>Otvori</span>
+              <q-icon name="arrow_forward" size="15px" />
+            </div>
           </div>
-          <q-icon name="chevron_right" size="20px" class="module-card__arrow" />
         </button>
       </div>
     </main>
@@ -131,76 +135,85 @@ const logout = () => {
 .modules {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 20px;
   justify-content: center;
 }
 
 .module-card {
   all: unset;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  width: 320px;
-  padding: 20px 20px 20px 20px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
+  position: relative;
+  width: 210px;
+  height: 270px;
+  padding: 24px;
+  background: linear-gradient(150deg, #0078d4 0%, #0067b8 55%, #004e8c 100%);
+  border-radius: 8px;
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  overflow: hidden;
   box-sizing: border-box;
+  box-shadow: 0 4px 18px rgba(0, 103, 184, 0.28);
+  transition: transform 0.18s, box-shadow 0.18s;
 }
 
 .module-card:hover {
-  border-color: #1a1a1a;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px rgba(0, 103, 184, 0.4);
 }
 
-.module-card__icon-wrap {
+.module-card__watermark {
+  position: absolute;
+  right: -18px;
+  bottom: -18px;
+  color: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.module-card__content {
+  position: relative;
+  z-index: 1;
   display: flex;
-  width: 52px;
-  height: 52px;
+  flex-direction: column;
+  height: 100%;
+}
+
+.module-card__icon {
+  display: flex;
+  width: 48px;
+  height: 48px;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  background: #f9fafb;
-  color: #0067b8;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.module-card:hover .module-card__icon-wrap {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-}
-
-.module-card__body {
-  flex: 1;
-  min-width: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  margin-bottom: auto;
 }
 
 .module-card__name {
-  font-size: 0.9375rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
-  margin-bottom: 3px;
+  color: #fff;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
 }
 
 .module-card__desc {
   font-size: 0.8125rem;
-  color: #6b7280;
-  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.45;
+  margin-bottom: 18px;
 }
 
-.module-card__arrow {
-  color: #9ca3af;
-  flex-shrink: 0;
-  transition: color 0.15s, transform 0.15s;
+.module-card__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  transition: gap 0.15s;
 }
 
-.module-card:hover .module-card__arrow {
-  color: #1a1a1a;
-  transform: translateX(2px);
+.module-card:hover .module-card__action {
+  gap: 8px;
 }
 
 /* ── Footer ── */
