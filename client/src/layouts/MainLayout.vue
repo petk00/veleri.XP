@@ -15,28 +15,31 @@
 
         <span class="brand-divider" aria-hidden="true" />
 
-        <button class="product-title" @click="$router.push('/dashboard')">
+        <button class="product-title" @click="$router.push('/home')">
           XP
         </button>
 
-        <!-- Primary nav -->
-        <nav class="nav gt-sm">
-          <button
-            class="nav__item"
-            :class="{ 'nav__item--active': isActive('/dashboard') }"
-            @click="$router.push('/dashboard')"
-          >
-            <span>Dashboard</span>
-          </button>
-
-          <button
-            class="nav__item"
-            :class="{ 'nav__item--active': isActive('/requests') }"
-            @click="$router.push('/requests')"
-          >
-            <span>Zahtjevi</span>
-          </button>
-        </nav>
+        <!-- Center: module + nav -->
+        <div class="center-group gt-sm">
+          <span class="module-chip">Nabava</span>
+          <span class="center-sep" aria-hidden="true" />
+          <nav class="nav">
+            <button
+              class="nav__item"
+              :class="{ 'nav__item--active': isActive('/dashboard') }"
+              @click="$router.push('/dashboard')"
+            >
+              Dashboard
+            </button>
+            <button
+              class="nav__item"
+              :class="{ 'nav__item--active': isActive('/requests') }"
+              @click="$router.push('/requests')"
+            >
+              Zahtjevi
+            </button>
+          </nav>
+        </div>
 
         <q-space />
 
@@ -241,13 +244,46 @@ onMounted(() => {
 
 .product-title {
   all: unset;
-  margin-right: 26px;
   color: #1a1a1a;
   font-size: 1rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.module-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 3px;
+  background: rgba(0, 103, 184, 0.12);
+  color: #0067b8;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────
+   Center group
+   ───────────────────────────────────── */
+.center-group {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.center-sep {
+  width: 1px;
+  height: 16px;
+  background: #d1d5db;
+  margin: 0 16px;
+  flex-shrink: 0;
 }
 
 /* ─────────────────────────────────────
@@ -261,36 +297,33 @@ onMounted(() => {
 
 .nav__item {
   all: unset;
-  position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: 52px;
-  padding: 0;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 3px;
   font-size: 0.8125rem;
   font-weight: 400;
-  color: #242424;
+  color: #424242;
   cursor: pointer;
   white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
 }
 
 .nav__item:hover {
-  color: #000;
-  text-decoration: underline;
+  background: rgba(0, 0, 0, 0.06);
+  color: #111827;
 }
 
 .nav__item--active {
-  color: #000;
+  background: #111827;
+  color: #fff;
   font-weight: 500;
 }
 
-.nav__item--active::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 2px;
-  background: #1a1a1a;
+.nav__item--active:hover {
+  background: #000;
+  color: #fff;
 }
 
 /* ─────────────────────────────────────
@@ -366,16 +399,17 @@ onMounted(() => {
   padding: 11px 8px;
   font-size: 0.75rem;
   font-weight: 400;
-  color: #242424;
+  color: #424242;
   cursor: pointer;
   border-bottom: 2px solid transparent;
+  transition: background 0.12s;
 }
 
-.mobile-nav__item:hover { color: #000; text-decoration: underline; }
+.mobile-nav__item:hover { background: rgba(0,0,0,0.04); color: #111827; }
 
 .mobile-nav__item--active {
-  color: #000;
-  border-bottom-color: #1a1a1a;
+  color: #111827;
+  border-bottom-color: #0067b8;
   font-weight: 500;
 }
 
