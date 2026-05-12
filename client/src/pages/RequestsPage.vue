@@ -85,6 +85,15 @@
                 class="toolbar__select"
               />
 
+              <q-select
+                v-if="isAdmin && userOptions.length > 1"
+                v-model="userFilter"
+                :options="userOptions"
+                borderless dense
+                emit-value map-options
+                class="toolbar__select"
+              />
+
               <button v-if="hasActiveFilters" class="toolbar__reset" @click="resetFilters">
                 <q-icon name="close" size="12px" />
                 <span>Poništi</span>
@@ -183,6 +192,7 @@ const errorMessage = ref('');
 const searchQuery = ref('');
 const statusFilter = ref('all');
 const departmentFilter = ref('all');
+const userFilter = ref('all');
 
 const statusOptions = [
   { label: 'Svi statusi', value: 'all' },
@@ -203,10 +213,20 @@ const departmentOptions = computed(() => {
   ];
 });
 
+// Lista jedinstvenih podnositelja iz podataka (samo admin)
+const userOptions = computed(() => {
+  const set = new Set(rows.value.map(r => r.created_by).filter(Boolean));
+  return [
+    { label: 'Svi podnositelji', value: 'all' },
+    ...[...set].sort().map(name => ({ label: name, value: name })),
+  ];
+});
+
 const hasActiveFilters = computed(() =>
   searchQuery.value
   || statusFilter.value !== 'all'
   || departmentFilter.value !== 'all'
+  || userFilter.value !== 'all'
 );
 
 const filteredRows = computed(() => {
@@ -220,6 +240,11 @@ const filteredRows = computed(() => {
   // Odjel
   if (departmentFilter.value !== 'all') {
     result = result.filter(r => r.department_name === departmentFilter.value);
+  }
+
+  // Podnositelj (samo admin)
+  if (userFilter.value !== 'all') {
+    result = result.filter(r => r.created_by === userFilter.value);
   }
 
   // Search (case-insensitive, više polja)
@@ -254,6 +279,7 @@ const resetFilters = () => {
   searchQuery.value = '';
   statusFilter.value = 'all';
   departmentFilter.value = 'all';
+  userFilter.value = 'all';
 };
 
 const currentUser = ref(null);
