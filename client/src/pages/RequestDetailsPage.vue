@@ -1068,35 +1068,28 @@ onMounted(() => {
 .icon-btn:hover { background: #f3f4f6; color: #111827; }
 .icon-btn--danger:hover { background: #fef2f2; color: #c50f1f; }
 
-/* Status pills */
+/* Status badges */
 .status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 22px;
-  padding: 0;
-  font-size: 0.75rem;
-  font-weight: 500;
+  min-height: 20px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
-.status::before {
-  content: '';
-  display: block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.status--sm {
-  font-size: 0.75rem;
-}
-.status--sent     { color: #2563eb; }
-.status--review   { color: #b7791f; }
-.status--returned { color: #c2410c; }
-.status--rejected { color: #c50f1f; }
-.status--ordered  { color: #0078d4; }
-.status--closed   { color: #107c10; }
-.status--default  { color: #6b7280; }
+.status--sent     { color: #1d4ed8; background: #dbeafe; }
+.status--review   { color: #92400e; background: #fef3c7; }
+.status--returned { color: #9a3412; background: #ffedd5; }
+.status--rejected { color: #991b1b; background: #fee2e2; }
+.status--ordered  { color: #065f46; background: #d1fae5; }
+.status--closed   { color: #166534; background: #dcfce7; }
+.status--default  { color: #374151; background: #f3f4f6; }
 
 /* Action banners */
 .action-banner {
