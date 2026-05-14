@@ -68,14 +68,42 @@ export function useActionableRequestsNotifier() {
   };
 
   /**
-   * SCENARIJ 1 — zahtjev vraćen na izmjenu (samo zaposlenik, session dedup)
+   * SCENARIJ 1 — zahtjevi čekaju pregled (samo admin, session dedup)
+   */
+  const checkPendingReview = async (userId) => {
+    const ids = getIdSet('session', userId);
+
+    const { data } = await api.get('/requests');
+    const list = Array.isArray(data) ? data : [];
+    const pending = list.filter((r) => r.status_name === 'Poslano');
+
+    for (const req of pending) {
+      const key = `pending:${req.id_purchase_request}`;
+      if (ids.has(key)) continue;
+
+      showNotification({
+        requestId: req.id_purchase_request,
+        icon: 'inbox',
+        color: 'dark',
+        message: `Zahtjev ${req.request_number} čeka pregled`,
+        caption: 'Preuzmite zahtjev na obradu.',
+      });
+
+      ids.add(key);
+    }
+
+    persistIdSet(ids, 'session', userId);
+  };
+
+  /**
+   * SCENARIJ 2 — zahtjev vraćen na izmjenu (samo zaposlenik, session dedup)
    */
   const checkReturnedForRevision = async (userId) => {
     const ids = getIdSet('session', userId);
 
     const { data } = await api.get('/requests');
     const list = Array.isArray(data) ? data : [];
-    const returned = list.filter((r) => r.status_name === 'Vraćeno na izmjenu');
+    const returned = list.filter((r) => r.status_name === 'Vraćeno na dopunu/izmjenu');
 
     for (const req of returned) {
       const key = `revision:${req.id_purchase_request}`;
@@ -96,25 +124,21 @@ export function useActionableRequestsNotifier() {
   };
 
   /**
-   * SCENARIJ 2 — zahtjev odobren ali fali otpremnica.
+   * SCENARIJ 3 — naručeni zahtjev bez otpremnice.
    *
    * Za admina: mode='permanent' — jednom ikad po zahtjevu
    * Za usera:  mode='session'   — jednom po sesiji (podsjetnik pri svakom loginu)
-   *
-   * Napomena o N+1: za svaki 'Odobreno' zahtjev šaljemo i GET attachments.
-   * Paralelno ih dohvaćamo; ako ih bude puno razmisli o backend endpointu
-   * koji već vraća flag za attachments.
    */
   const checkMissingDeliveryNotes = async (userId, mode = 'session') => {
     const ids = getIdSet(mode, userId);
 
     const { data } = await api.get('/requests');
     const list = Array.isArray(data) ? data : [];
-    const approved = list.filter((r) => r.status_name === 'Odobreno');
-    if (approved.length === 0) return;
+    const ordered = list.filter((r) => r.status_name === 'Naručeno');
+    if (ordered.length === 0) return;
 
     const results = await Promise.all(
-      approved.map((req) =>
+      ordered.map((req) =>
         api.get(`/requests/${req.id_purchase_request}/attachments`)
           .then((res) => ({ req, attachments: res.data || [] }))
           .catch(() => ({ req, attachments: [] })),
@@ -154,10 +178,11 @@ export function useActionableRequestsNotifier() {
       const userId = user.id_user;
 
       if (isAdmin) {
-        // Admin: samo scenarij otpremnice, i to JEDNOM IKAD po zahtjevu
+        // Admin: čekaju pregled (session) + fali otpremnica (permanent)
+        await checkPendingReview(userId);
         await checkMissingDeliveryNotes(userId, 'permanent');
       } else {
-        // Zaposlenik: oba scenarija po sesiji
+        // Zaposlenik: vraćeno na izmjenu + fali otpremnica (oba session)
         await checkReturnedForRevision(userId);
         await checkMissingDeliveryNotes(userId, 'session');
       }
