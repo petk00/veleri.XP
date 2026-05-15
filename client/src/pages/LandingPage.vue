@@ -15,17 +15,30 @@
 
       <div class="modules">
         <button class="module-card" @click="$router.push('/dashboard')">
-          <q-icon name="inventory_2" size="110px" class="module-card__watermark" aria-hidden="true" />
-          <div class="module-card__content">
+          <div class="module-card__top">
             <div class="module-card__icon">
-              <q-icon name="inventory_2" size="28px" />
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Document body -->
+                <rect x="3" y="1" width="16" height="21" rx="2.5" fill="white" fill-opacity="0.18" stroke="white" stroke-opacity="0.7" stroke-width="1.3"/>
+                <!-- Folded corner -->
+                <path d="M15 1 L19 5 L15 5 Z" fill="white" fill-opacity="0.35"/>
+                <path d="M15 1 L19 5 H15 V1 Z" stroke="white" stroke-opacity="0.5" stroke-width="0.8"/>
+                <!-- Line items -->
+                <line x1="7" y1="10" x2="15" y2="10" stroke="white" stroke-opacity="0.85" stroke-width="1.2" stroke-linecap="round"/>
+                <line x1="7" y1="13.5" x2="16" y2="13.5" stroke="white" stroke-opacity="0.6" stroke-width="1.2" stroke-linecap="round"/>
+                <line x1="7" y1="17" x2="13" y2="17" stroke="white" stroke-opacity="0.4" stroke-width="1.2" stroke-linecap="round"/>
+                <!-- Approval circle badge -->
+                <circle cx="21" cy="21" r="6.5" fill="white" fill-opacity="0.15" stroke="white" stroke-opacity="0.65" stroke-width="1.1"/>
+                <path d="M18.2 21.2 L20.4 23.4 L24.2 18.8" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
             </div>
-            <div class="module-card__name">Nabava</div>
-            <div class="module-card__desc">Upravljanje zahtjevima za nabavu</div>
-            <div class="module-card__action">
-              <span>Otvori</span>
-              <q-icon name="arrow_forward" size="15px" />
-            </div>
+            <span class="module-card__badge">Modul</span>
+          </div>
+          <div class="module-card__name">Nabava</div>
+          <div class="module-card__desc">Upravljanje zahtjevima za nabavu materijala i usluga</div>
+          <div class="module-card__action">
+            <span>Otvori modul</span>
+            <q-icon name="arrow_forward" size="14px" />
           </div>
         </button>
       </div>
@@ -142,64 +155,91 @@ const logout = () => {
 .module-card {
   all: unset;
   position: relative;
-  width: 210px;
-  height: 270px;
-  padding: 24px;
-  background: linear-gradient(150deg, #0078d4 0%, #0067b8 55%, #004e8c 100%);
-  border-radius: 8px;
+  width: 264px;
+  padding: 28px 24px 24px;
+  background: rgba(255, 255, 255, 0.76);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  border-radius: 16px;
   cursor: pointer;
   overflow: hidden;
   box-sizing: border-box;
-  box-shadow: 0 4px 18px rgba(0, 103, 184, 0.28);
-  transition: transform 0.18s, box-shadow 0.18s;
+  box-shadow:
+    0 8px 24px rgba(0, 67, 150, 0.09),
+    0 2px 6px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
 }
 
-.module-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 28px rgba(0, 103, 184, 0.4);
-}
-
-.module-card__watermark {
+.module-card::before {
+  content: '';
   position: absolute;
-  right: -18px;
-  bottom: -18px;
-  color: rgba(255, 255, 255, 0.08);
+  top: -60px;
+  left: -40px;
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle, rgba(0, 103, 184, 0.07), transparent 70%);
   pointer-events: none;
 }
 
-.module-card__content {
-  position: relative;
-  z-index: 1;
+.module-card:hover {
+  transform: translateY(-6px);
+  box-shadow:
+    0 20px 48px rgba(0, 67, 150, 0.14),
+    0 4px 12px rgba(0, 0, 0, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.module-card__top {
   display: flex;
-  flex-direction: column;
-  height: 100%;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
 }
 
 .module-card__icon {
   display: flex;
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0078d4 0%, #0067b8 100%);
   color: #fff;
-  margin-bottom: auto;
+  box-shadow: 0 4px 12px rgba(0, 103, 184, 0.35);
+  flex-shrink: 0;
+}
+
+.module-card__badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0067b8;
+  background: rgba(0, 103, 184, 0.09);
+  padding: 3px 8px;
+  border-radius: 20px;
 }
 
 .module-card__name {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #fff;
-  letter-spacing: -0.01em;
-  margin-bottom: 6px;
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-bottom: 8px;
 }
 
 .module-card__desc {
   font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.75);
-  line-height: 1.45;
-  margin-bottom: 18px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin-bottom: 28px;
+  flex: 1;
 }
 
 .module-card__action {
@@ -207,13 +247,13 @@ const logout = () => {
   align-items: center;
   gap: 5px;
   font-size: 0.8125rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  color: #0067b8;
   transition: gap 0.15s;
 }
 
 .module-card:hover .module-card__action {
-  gap: 8px;
+  gap: 9px;
 }
 
 /* ── Footer ── */
