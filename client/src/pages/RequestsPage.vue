@@ -19,21 +19,33 @@
       </header>
 
       <section class="summary-strip" aria-label="Sažetak zahtjeva">
-        <div class="summary-item">
-          <span class="summary-item__label">Ukupno</span>
+        <div class="summary-item summary-item--total">
+          <div class="summary-item__icon">
+            <q-icon name="folder_open" size="15px" />
+          </div>
           <span class="summary-item__value">{{ rows.length }}</span>
+          <span class="summary-item__label">Ukupno zahtjeva</span>
         </div>
-        <div class="summary-item">
-          <span class="summary-item__label">Aktivni</span>
+        <div class="summary-item summary-item--active">
+          <div class="summary-item__icon">
+            <q-icon name="autorenew" size="15px" />
+          </div>
           <span class="summary-item__value">{{ activeCount }}</span>
+          <span class="summary-item__label">Aktivni</span>
         </div>
-        <div class="summary-item">
-          <span class="summary-item__label">{{ isAdmin ? 'Čeka pregled' : 'Vraćeno' }}</span>
+        <div class="summary-item summary-item--attention">
+          <div class="summary-item__icon">
+            <q-icon :name="isAdmin ? 'inbox' : 'undo'" size="15px" />
+          </div>
           <span class="summary-item__value">{{ attentionCount }}</span>
+          <span class="summary-item__label">{{ isAdmin ? 'Čeka pregled' : 'Vraćeno' }}</span>
         </div>
-        <div class="summary-item">
-          <span class="summary-item__label">Zatvoreno</span>
+        <div class="summary-item summary-item--closed">
+          <div class="summary-item__icon">
+            <q-icon name="task_alt" size="15px" />
+          </div>
           <span class="summary-item__value">{{ closedCount }}</span>
+          <span class="summary-item__label">Zatvoreno</span>
         </div>
       </section>
 
@@ -527,51 +539,77 @@ onMounted(() => {
 .summary-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
+  gap: 12px;
   margin-bottom: 28px;
-  border-top: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
 }
 
 .summary-item {
+  position: relative;
   display: flex;
-  min-height: 76px;
   flex-direction: column;
+  padding: 18px 20px 16px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.summary-item::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+
+.summary-item--total::before    { background: #0067b8; }
+.summary-item--active::before   { background: #059669; }
+.summary-item--attention::before { background: #d97706; }
+.summary-item--closed::before   { background: #9ca3af; }
+
+.summary-item__icon {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
   justify-content: center;
-  padding: 14px 22px;
-  border-right: 1px solid #e5e7eb;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
 }
 
-.summary-item:first-child {
-  padding-left: 0;
+.summary-item--total    .summary-item__icon { background: #eff6ff; color: #0067b8; }
+.summary-item--active   .summary-item__icon { background: #f0fdf4; color: #059669; }
+.summary-item--attention .summary-item__icon { background: #fff7ed; color: #d97706; }
+.summary-item--closed   .summary-item__icon { background: #f9fafb; color: #9ca3af; }
+
+.summary-item__value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+  color: #111827;
 }
 
-.summary-item:last-child {
-  border-right: 0;
-}
+.summary-item--active   .summary-item__value { color: #059669; }
+.summary-item--attention .summary-item__value { color: #d97706; }
+.summary-item--closed   .summary-item__value { color: #9ca3af; }
 
 .summary-item__label {
   color: #6b7280;
   font-size: 0.75rem;
-}
-
-.summary-item__value {
-  margin-top: 2px;
-  color: #111827;
-  font-size: 1.75rem;
-  font-weight: 600;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
+  font-weight: 500;
 }
 
 .list-surface {
   overflow: hidden;
   border: 1px solid #e5e7eb;
+  border-top: 2px solid #0067b8;
   background: #fff;
 }
 
 .data-table :deep(.q-table__top) {
-  padding: 0 12px;
+  padding: 0 20px;
   border-bottom: 1px solid #e5e7eb;
   min-height: 46px;
 }
@@ -829,22 +867,6 @@ onMounted(() => {
 
   .summary-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .summary-item {
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .summary-item:nth-child(2n) {
-    border-right: 0;
-  }
-
-  .summary-item:nth-last-child(-n + 2) {
-    border-bottom: 0;
-  }
-
-  .summary-item:first-child {
-    padding-left: 22px;
   }
 
   .toolbar {
