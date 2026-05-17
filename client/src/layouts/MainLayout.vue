@@ -98,7 +98,11 @@
     </q-header>
 
     <q-page-container>
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <transition name="page" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </q-page-container>
 
   </q-layout>
@@ -471,6 +475,12 @@ onMounted(() => {
 }
 .user-menu__item:hover { background: #F3F2F1; }
 .user-menu__item .q-icon { color: #605E5C; }
+
+/* Page transitions */
+.page-enter-active { transition: opacity 0.18s ease, transform 0.18s ease; }
+.page-leave-active { transition: opacity 0.1s ease, transform 0.1s ease; }
+.page-enter-from   { opacity: 0; transform: translateY(8px); }
+.page-leave-to     { opacity: 0; transform: translateY(-4px); }
 
 /* Notify stilovi */
 .actionable-request-notify {
