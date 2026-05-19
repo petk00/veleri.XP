@@ -75,7 +75,7 @@
           </div>
 
           <button v-if="step === 'email'" type="button" class="support-link">
-            Ne možete pristupiti računu?
+            Problem sa pristupom?
           </button>
 
           <div v-if="errorMessage" class="form-error" role="alert">
