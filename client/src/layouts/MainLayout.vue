@@ -21,7 +21,7 @@
 
         <!-- Center: module + nav -->
         <div class="center-group gt-sm">
-          <span class="module-chip">Nabava</span>
+          <span class="module-chip">**</span>
           <span class="center-sep" aria-hidden="true" />
           <nav class="nav">
             <button
