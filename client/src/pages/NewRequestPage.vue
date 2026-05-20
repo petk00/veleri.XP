@@ -68,15 +68,15 @@
               <div v-if="step === 1" key="1" class="step">
                 <div class="step__head">
                   <div class="step__caption">Korak 1 od {{ currentSteps.length }}</div>
-                  <h2 class="step__title">Odaberite odjel, službu ili projekt</h2>
+                  <h2 class="step__title">Odabir odjela ili projekta</h2>
                   <p class="step__desc">
-                    Za koji se odjel, službu ili projekt otvara zahtjev?
+                    Odaberite odjel, službu ili projekt za koji otvarate zahtjev
                   </p>
                 </div>
 
                 <div class="step__body">
                   <div class="field">
-                    <label class="field__label">Odjel / Služba / Projekt *</label>
+                    <label class="field__label">Odaberite stavku</label>
                     <q-select
                       v-model="form.department"
                       :options="departmentOptions"

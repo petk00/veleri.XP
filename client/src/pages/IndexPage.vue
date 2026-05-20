@@ -6,7 +6,7 @@
         <div class="page-header__main">
           <div class="page-header__eyebrow">{{ todayFormatted }}</div>
           <h1 class="page-header__title">
-            Pozdrav, <span class="page-header__name">{{ user?.first_name || 'korisniče' }}</span>
+            Bok, <span class="page-header__name">{{ user?.first_name || 'korisniče' }}</span>
           </h1>
         </div>
         <div class="page-header__actions">
