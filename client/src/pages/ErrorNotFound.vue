@@ -11,9 +11,9 @@
       <div class="not-found__code">404</div>
       <h1 class="not-found__title">Stranica nije pronađena</h1>
       <p class="not-found__desc">
-        Adresa koju ste upisali ne postoji ili je sadržaj premješten.
+        Provjerite adresu ili se vratite na početnu stranicu sustava.
       </p>
-      <button class="not-found__btn" @click="$router.push('/dashboard')">
+      <button class="not-found__btn" type="button" @click="$router.push('/dashboard')">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
