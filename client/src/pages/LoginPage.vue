@@ -27,7 +27,7 @@
           </button>
 
           <h1 id="signin-title" class="signin-title">
-            {{ step === 'email' ? 'Prijava u sustav' : 'Unesite lozinku' }}
+            {{ step === 'email' ? 'Prijava u sustav' : 'Unos lozinke' }}
           </h1>
 
           <div v-if="step === 'email'" class="field">
@@ -75,7 +75,7 @@
           </div>
 
           <button v-if="step === 'email'" type="button" class="support-link">
-            Problem sa pristupom? Zatražite podršku
+            Problem s pristupom? Zatražite podršku
           </button>
 
           <div v-if="errorMessage" class="form-error" role="alert">
@@ -98,7 +98,7 @@
     </main>
 
     <footer class="login-footer">
-      <span>© {{ currentYear }} Veleučilište u Rijeci - sva prava pridržana</span>
+      <span>© {{ currentYear }} Veleučilište u Rijeci. Sva prava pridržana.</span>
     </footer>
   </q-page>
 </template>
