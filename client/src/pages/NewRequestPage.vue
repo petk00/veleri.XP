@@ -68,7 +68,7 @@
               <div v-if="step === 1" key="1" class="step">
                 <div class="step__head">
                   <div class="step__caption">Korak 1 od {{ currentSteps.length }}</div>
-                  <h2 class="step__title">Odabir odjela ili projekta</h2>
+                  <h2 class="step__title">Odabir odjela, službe ili projekta</h2>
                   <p class="step__desc">
                     Odaberite odjel, službu ili projekt za koji otvarate zahtjev
                   </p>
@@ -76,7 +76,7 @@
 
                 <div class="step__body">
                   <div class="field">
-                    <label class="field__label">Odaberite stavku</label>
+                    <label class="field__label">Odaberite odjel, službu ili projekt</label>
                     <q-select
                       v-model="form.department"
                       :options="departmentOptions"
@@ -116,7 +116,7 @@
                       </div>
                       <div class="choice__body">
                         <div class="choice__title">Da, imam ponudu ili račun</div>
-                        <div class="choice__desc">Mogu priložiti jednu ili više ponuda</div>
+                        <div class="choice__desc">Priložit ću jednu ili više ponuda</div>
                       </div>
                       <div class="choice__radio">
                         <q-icon v-if="form.hasOffer === true" name="check_circle" size="18px" />
@@ -332,7 +332,7 @@
                   <div class="step__caption">Korak {{ currentSteps.length }} od {{ currentSteps.length }}</div>
                   <h2 class="step__title">Pregled prije slanja</h2>
                   <p class="step__desc">
-                    Provjerite unesene podatke. Klikom na "Pošalji" zahtjev odlazi na obradu.
+                    Provjerite unesene podatke. Klikom na "Pošalji na obradu" zahtjev se šalje na obradu.
                   </p>
                 </div>
 
