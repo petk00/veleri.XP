@@ -10,7 +10,7 @@
           </h1>
         </div>
         <div class="page-header__actions">
-          <button class="btn btn--cta" @click="$router.push('/requests/new')">
+          <button class="btn btn--cta" type="button" @click="$router.push('/requests/new')">
             <q-icon name="add" size="20px" />
             <span>Novi zahtjev</span>
           </button>
@@ -32,7 +32,7 @@
           <q-icon name="undo" size="15px" class="returned-alert__icon" />
           <span>
             <strong>{{ returnedAlertItem.request_number }}</strong>
-            je vraćen na dopunu — pregledajte komentar administratora.
+            je vraćen na dopunu. Pregledajte komentar administratora.
           </span>
           <q-icon name="chevron_right" size="15px" class="returned-alert__chevron" />
         </div>
@@ -54,7 +54,7 @@
             <div class="empty-state__hint">
               {{ isAdmin
                 ? 'Trenutno nema zahtjeva koji čekaju vašu akciju.'
-                : 'Kreirajte novi zahtjev za nabavu kad bude potrebno.' }}
+                : 'Kreirajte novi zahtjev za nabavu kada vam zatreba.' }}
             </div>
           </div>
 
