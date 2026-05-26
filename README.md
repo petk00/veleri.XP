@@ -4,6 +4,36 @@
 
 veleri.XP je full-stack MVP aplikacija za digitalizaciju procesa nabave: zaposlenik kreira zahtjev, administrator ga preuzima, odobrava ili vraca na izmjenu, a zahtjev se zatvara nakon potrebne dokumentacije.
 
+## TODO
+
+Napravljeno je:
+
+prijava
+osnovne role i role-based pristup
+kreiranje zahtjeva
+automatski broj zahtjeva
+odabir aktivne poslovne godine
+odabir odjela/mjesta troška
+odabir kategorije/predmeta nabave
+unos stavki i količina
+lista, detalji, uređivanje zahtjeva
+workflow statusa
+upload/download/brisanje dokumenata
+audit trail/povijest aktivnosti
+
+
+Nije ili je samo djelomično:
+
+registracija korisnika
+admin upravljanje korisnicima i ulogama
+otvaranje nove poslovne godine
+kopiranje šifrarnika u novu godinu
+uređivanje šifrarnika kroz aplikaciju
+zaključavanje prethodne godine kroz aplikaciju
+pregled/filtriranje prethodnih godina kao posebna funkcionalnost
+stvarna validacija godišnjih limita
+eksplicitna zabrana brisanja poslovne godine, jer CRUD poslovnih godina uopće ne postoji
+
 ## Status projekta
 
 **Verzija:** 0.2  
