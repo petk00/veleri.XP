@@ -71,7 +71,7 @@
 
           <div v-if="step === 'email'" class="account-copy">
             <span>Nemate korisnički račun?</span>
-            <button type="button">Zatražite pristup</button>
+            <a href="mailto:ipetkovic@veleri.hr">Zatražite pristup</a>
           </div>
 
           <button v-if="step === 'email'" type="button" class="support-link">
@@ -385,7 +385,7 @@ const handleLogin = async () => {
   font-size: 13px;
 }
 
-.account-copy button,
+.account-copy a,
 .support-link {
   border: 0;
   background: transparent;
@@ -394,8 +394,9 @@ const handleLogin = async () => {
   cursor: pointer;
 }
 
-.account-copy button {
+.account-copy a {
   padding: 0;
+  text-decoration: none;
 }
 
 .support-link {
@@ -406,7 +407,7 @@ const handleLogin = async () => {
   text-align: left;
 }
 
-.account-copy button:hover,
+.account-copy a:hover,
 .support-link:hover {
   color: #004578;
   text-decoration: underline;
