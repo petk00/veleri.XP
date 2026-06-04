@@ -3,6 +3,15 @@
 Ovaj dokument mapira zahtjeve iz specifikacije na trenutno stanje aplikacije.
 Status je procijenjen prema kodu u repozitoriju, a ne prema potpunom end-to-end testiranju u pregledniku.
 
+Zadnja provjera: **2026-06-04**
+
+Provjereni izvori:
+
+- backend rute u `server/src/routes`,
+- frontend stranice u `client/src/pages`,
+- dokumentacija u `docs`,
+- SQL dump u `database/dump-XP-202605061957.sql`.
+
 ## Legenda
 
 | Status | Značenje |
@@ -29,6 +38,19 @@ Status je procijenjen prema kodu u repozitoriju, a ne prema potpunom end-to-end 
 Ukupna procjena prema SRS-u: **45-50%**.
 
 Procjena osnovnog MVP workflowa nabave: **70-75%**.
+
+## Najvažnije nedovršene cjeline
+
+1. Administracija korisnika nije implementirana.
+2. Poslovne godine nisu administrativno podržane kroz aplikaciju.
+3. Šifrarnici postoje u bazi, ali nemaju CRUD kroz aplikaciju.
+4. Backend ne provjerava strogo pripadnost odjela i kategorija istoj poslovnoj godini kao zahtjev.
+5. Draft zahtjeva nije implementiran.
+6. Storniranje zahtjeva nije implementirano.
+7. Workflow nije potpuno usklađen sa SRS nazivima i statusima.
+8. Dokumenti su ograničeni na `Ponuda` i `Otpremnica`.
+9. Pregled zahtjeva nema serversku paginaciju i napredne backend filtere.
+10. Financijski limiti, potrošnja i analitika nisu implementirani.
 
 ## Detaljna matrica zahtjeva
 
@@ -82,16 +104,36 @@ Procjena osnovnog MVP workflowa nabave: **70-75%**.
 
 Limiti se namjerno ostavljaju za kraj jer ovise o poslovnim godinama, šifrarnicima, statusima i storniranju.
 
-1. Uskladiti README i dokumentaciju sa stvarnim stanjem projekta.
-2. Dodati admin upravljanje korisnicima i validaciju `@veleri.hr`.
-3. Dodati poslovne godine: listanje, otvaranje nove godine, zaključavanje.
-4. Dodati šifrarnike: mjesta troška i predmeti nabave, s deaktivacijom korištenih zapisa.
-5. Dodati provjeru da zahtjev, mjesto troška i predmet nabave pripadaju istoj poslovnoj godini.
-6. Dodati draft i storniranje.
-7. Proširiti dokumente: `Narudžbenica`, `Ostalo`, eventualno šifrarnik tipova dokumenata.
-8. Dodati serversku paginaciju i filtere.
-9. Doraditi notifikacije i audit.
-10. Na kraju implementirati limite, potrošnju, prekoračenja i analitiku.
+1. Dodati admin upravljanje korisnicima.
+2. Dodati backend rute i frontend stranicu za listanje korisnika.
+3. Dodati kreiranje korisnika s validacijom domene `@veleri.hr`.
+4. Dodati uređivanje korisnika, uloge i aktivnosti računa.
+5. Dodati deaktivaciju korisnika umjesto fizičkog brisanja.
+6. Dodati poslovne godine: listanje, otvaranje i zaključavanje.
+7. Kod otvaranja poslovne godine kopirati odjele i kategorije iz prethodne godine.
+8. Dodati admin CRUD za mjesta troška / odjele.
+9. Dodati admin CRUD za predmete nabave / kategorije.
+10. Dodati deaktivaciju korištenih šifrarnika umjesto brisanja.
+11. Provjeravati da odjel pripada istoj poslovnoj godini kao zahtjev.
+12. Provjeravati da sve kategorije/stavke pripadaju istoj poslovnoj godini kao zahtjev.
+13. Spriječiti kreiranje zahtjeva u zaključanoj poslovnoj godini.
+14. Dodati draft status i spremanje zahtjeva bez slanja.
+15. Dodati nastavak uređivanja draft zahtjeva.
+16. Dodati storniranje zahtjeva.
+17. Uskladiti workflow statuse sa SRS-om ili jasno dokumentirati odstupanje.
+18. Dodati tip dokumenta `Narudžbenica`.
+19. Dodati tip dokumenta `Ostalo`.
+20. Razmotriti šifrarnik tipova dokumenata.
+21. Dodati serversku paginaciju pregleda zahtjeva.
+22. Dodati backend filtere po poslovnoj godini, statusu, odjelu, korisniku i predmetu nabave.
+23. Dodati perzistentne notifikacije.
+24. Dodati obavijesti za svaku važnu promjenu statusa.
+25. Dodati `updated_by_user` ili ekvivalentnu jasnu evidenciju zadnjeg izmjenitelja.
+26. Implementirati praćenje limita po mjestu troška.
+27. Implementirati praćenje limita po predmetu nabave.
+28. Dodati upozorenja kod prekoračenja limita.
+29. Dodati administrativni pregled potrošnje i analitiku.
+30. Uskladiti README i završnu dokumentaciju nakon funkcionalnih dorada.
 
 ## Napomene za dokumentaciju
 
@@ -100,3 +142,4 @@ Limiti se namjerno ostavljaju za kraj jer ovise o poslovnim godinama, šifrarnic
 - Financijsko praćenje limita treba opisati kao planiranu doradu ili budući rad dok se ne implementira.
 - Status `Na odobrenju` u trenutnom kodu funkcionalno predstavlja fazu obrade, ali naziv nije potpuno isti kao `U obradi` iz SRS-a.
 - Status `Odobreno` postoji u bazi kao stariji status, ali trenutni workflow prelazi iz `Na odobrenju` u `Naručeno`.
+- Dozvoljeni formati dokumenata u aplikaciji trenutno su širi od SRS-a, pa to treba navesti kao svjesno odstupanje ili uskladiti implementaciju.
