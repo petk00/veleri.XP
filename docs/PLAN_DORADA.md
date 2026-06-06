@@ -59,8 +59,8 @@ Cilj ove faze je uskladiti dokumentaciju sa stvarnim stanjem projekta.
 | DOK-01 | Popuniti SRS status implementacije. | Dovršeno |
 | DOK-02 | Popuniti test plan. | Dovršeno |
 | DOK-03 | Popuniti arhitekturu sustava. | Dovršeno |
-| DOK-04 | Popuniti plan dorada. | U tijeku |
-| DOK-05 | Popuniti API dokumentaciju. | Nije započeto |
+| DOK-04 | Popuniti plan dorada. | Dovršeno |
+| DOK-05 | Popuniti API dokumentaciju. | Dovršeno |
 | DOK-06 | Popuniti dokumentaciju baze podataka. | Dovršeno |
 | DOK-07 | Popuniti korisničke upute. | Dovršeno |
 | DOK-08 | Uskladiti README sa stvarnim stanjem projekta. | Nije započeto |
