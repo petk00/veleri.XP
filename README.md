@@ -4,42 +4,56 @@
 
 veleri.XP je full-stack MVP aplikacija za digitalizaciju procesa nabave: zaposlenik kreira zahtjev, administrator ga preuzima, odobrava ili vraca na izmjenu, a zahtjev se zatvara nakon potrebne dokumentacije.
 
-## TODO
-
-Napravljeno je:
-
-prijava
-osnovne role i role-based pristup
-kreiranje zahtjeva
-automatski broj zahtjeva
-odabir aktivne poslovne godine
-odabir odjela/mjesta troška
-odabir kategorije/predmeta nabave
-unos stavki i količina
-lista, detalji, uređivanje zahtjeva
-workflow statusa
-upload/download/brisanje dokumenata
-audit trail/povijest aktivnosti
-
-
-Nije ili je samo djelomično:
-
-registracija korisnika
-admin upravljanje korisnicima i ulogama
-otvaranje nove poslovne godine
-kopiranje šifrarnika u novu godinu
-uređivanje šifrarnika kroz aplikaciju
-zaključavanje prethodne godine kroz aplikaciju
-pregled/filtriranje prethodnih godina kao posebna funkcionalnost
-stvarna validacija godišnjih limita
-eksplicitna zabrana brisanja poslovne godine, jer CRUD poslovnih godina uopće ne postoji
-
 ## Status projekta
 
 **Verzija:** 0.2  
 **Faza:** MVP u razvoju / demo sprint
 
 Trenutno je implementiran end-to-end tijek: prijava korisnika, kreiranje zahtjeva, pregled liste, detalji zahtjeva, promjena statusa, upload dokumenata i audit trail.
+
+### Implementirano
+
+- Prijava korisnika.
+- Osnovne uloge i role-based pristup.
+- Kreiranje zahtjeva.
+- Automatski broj zahtjeva.
+- Odabir aktivne poslovne godine.
+- Odabir odjela / mjesta troška.
+- Odabir kategorije / predmeta nabave.
+- Unos stavki i količina.
+- Lista, detalji i uređivanje zahtjeva.
+- Workflow statusa zahtjeva.
+- Upload, download i brisanje dokumenata.
+- Audit trail kroz povijest aktivnosti.
+- Osnovne in-app obavijesti.
+- Ispis zahtjeva za administratora.
+
+### Nije implementirano ili je djelomično
+
+- Administracija korisnika i uloga.
+- Otvaranje i zaključavanje poslovnih godina kroz aplikaciju.
+- Kopiranje šifrarnika u novu poslovnu godinu.
+- Uređivanje šifrarnika kroz aplikaciju.
+- Provjera da odjeli i kategorije pripadaju istoj poslovnoj godini kao zahtjev.
+- Draft i storniranje zahtjeva.
+- Tipovi dokumenata `Narudžbenica` i `Ostalo`.
+- Serverska paginacija i napredni backend filteri.
+- Perzistentne notifikacije.
+- Stvarna validacija godišnjih limita i financijsko praćenje.
+
+## Dokumentacija
+
+Detaljniji dokumenti nalaze se u mapi `docs/`:
+
+| Dokument | Opis |
+|---|---|
+| `docs/SRS_STATUS.md` | Status implementacije prema SRS zahtjevima. |
+| `docs/ARHITEKTURA.md` | Arhitektura sustava i opis slojeva. |
+| `docs/API.md` | REST API dokumentacija. |
+| `docs/BAZA_PODATAKA.md` | Dokumentacija baze podataka. |
+| `docs/KORISNICKE_UPUTE.md` | Korisničke upute za zaposlenika i administratora. |
+| `docs/TEST_PLAN.md` | Plan testiranja. |
+| `docs/PLAN_DORADA.md` | Preporučeni redoslijed daljnjih dorada. |
 
 ## Tech Stack
 
