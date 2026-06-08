@@ -4,8 +4,8 @@
     <q-header class="app-header">
       <q-toolbar class="toolbar">
 
-        <!-- Brand -->
-        <button class="brand" @click="$router.push('/dashboard')">
+        <!-- Logo -->
+        <button class="brand" @click="$router.push('/home')">
           <img
             src="/veleri-logo-horizontal.png"
             alt="Veleučilište u Rijeci"
@@ -13,42 +13,29 @@
           />
         </button>
 
-        <span class="brand-divider" aria-hidden="true" />
-
-        <button class="product-title" @click="$router.push('/home')">
-          XP
-        </button>
-
-        <!-- Center: module + nav -->
-        <div class="center-group gt-sm">
-          <span class="module-chip">**</span>
-          <span class="center-sep" aria-hidden="true" />
-          <nav class="nav">
-            <button
-              class="nav__item"
-              :class="{ 'nav__item--active': isActive('/dashboard') }"
-              @click="$router.push('/dashboard')"
-            >
-              Dashboard
-            </button>
-            <button
-              class="nav__item"
-              :class="{ 'nav__item--active': isActive('/requests') }"
-              @click="$router.push('/requests')"
-            >
-              Zahtjevi
-            </button>
-          </nav>
-        </div>
-
         <q-space />
 
-        <!-- User dropdown -->
-        <button v-if="user" class="user-btn">
-          <div class="avatar" :style="{ background: avatarColor }">{{ initials }}</div>
-          <div class="user-meta gt-xs">
-            <span class="user-name">{{ fullName }}</span>
-          </div>
+        <!-- Nav (samo u aplikaciji nabave) -->
+        <nav v-if="!isHome" class="nav gt-sm">
+          <button
+            class="nav__item"
+            :class="{ 'nav__item--active': isActive('/dashboard') }"
+            @click="$router.push('/dashboard')"
+          >
+            Dashboard
+          </button>
+          <button
+            class="nav__item"
+            :class="{ 'nav__item--active': isActive('/requests') }"
+            @click="$router.push('/requests')"
+          >
+            Zahtjevi
+          </button>
+        </nav>
+
+        <!-- Hamburger -->
+        <button v-if="user" class="hamburger-btn">
+          <q-icon name="menu" size="22px" />
 
           <q-menu
             anchor="bottom right"
@@ -78,8 +65,8 @@
 
       </q-toolbar>
 
-      <!-- Mobile nav (sm i manji) -->
-      <div class="mobile-nav lt-md">
+      <!-- Mobile nav (samo u aplikaciji nabave) -->
+      <div v-if="!isHome" class="mobile-nav lt-md">
         <button
           class="mobile-nav__item"
           :class="{ 'mobile-nav__item--active': isActive('/dashboard') }"
@@ -139,6 +126,8 @@ const avatarColor = computed(() => {
   const idx = [...str].reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % palette.length;
   return palette[idx];
 });
+
+const isHome = computed(() => route.path === '/home');
 
 const isActive = (path) => {
   if (path === '/requests') return route.path.startsWith('/requests');
@@ -228,8 +217,6 @@ onMounted(() => {
   display: flex;
   align-items: center;
   cursor: pointer;
-  padding: 0;
-  margin-right: 18px;
 }
 
 .brand__logo {
@@ -239,64 +226,14 @@ onMounted(() => {
   object-fit: contain;
 }
 
-.brand-divider {
-  width: 1px;
-  height: 24px;
-  background: #1a1a1a;
-  margin: 0 26px 0 0;
-}
-
-.product-title {
-  all: unset;
-  color: #1a1a1a;
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.module-chip {
-  display: inline-flex;
-  align-items: center;
-  height: 22px;
-  padding: 0 9px;
-  border-radius: 3px;
-  background: rgba(0, 103, 184, 0.12);
-  color: #0067b8;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-/* ─────────────────────────────────────
-   Center group
-   ───────────────────────────────────── */
-.center-group {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  flex-shrink: 0;
-}
-
-.center-sep {
-  width: 1px;
-  height: 16px;
-  background: #d1d5db;
-  margin: 0 16px;
-  flex-shrink: 0;
-}
-
 /* ─────────────────────────────────────
    Primary nav (desktop)
    ───────────────────────────────────── */
 .nav {
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: 4px;
+  margin-right: 16px;
 }
 
 .nav__item {
@@ -331,57 +268,24 @@ onMounted(() => {
 }
 
 /* ─────────────────────────────────────
-   User button & dropdown
+   Hamburger button
    ───────────────────────────────────── */
-.user-btn {
+.hamburger-btn {
   all: unset;
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 36px;
-  padding: 0 0 0 10px;
-  cursor: pointer;
-  position: relative;
-  color: #242424;
-}
-.user-btn:hover .user-name { text-decoration: underline; }
-
-.avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #0067b8;
-  color: #fff;
-  border: none;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-.avatar--lg {
-  width: 40px;
-  height: 40px;
-  font-size: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 3px;
+  color: #424242;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
 }
 
-.user-meta {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.15;
-  text-align: left;
-  min-width: 0;
-}
-
-.user-name {
-  font-size: 0.8125rem;
-  font-weight: 400;
-  color: #242424;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 160px;
+.hamburger-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #111827;
 }
 
 /* ─────────────────────────────────────
@@ -422,18 +326,31 @@ onMounted(() => {
    ───────────────────────────────────── */
 @media (max-width: 600px) {
   .toolbar { padding: 0 16px; }
-  .brand { margin-right: 12px; }
   .brand__logo { width: 112px; }
-  .brand-divider { height: 20px; margin-right: 14px; }
-  .product-title { margin-right: 0; font-size: 0.93rem; }
-  .user-name { max-width: 100px; }
-  .user-btn { padding-left: 6px; }
-  .user-btn .user-meta { display: none; }
 }
 </style>
 
 <style>
 /* ── Globalni stilovi (ne-scoped) ────────────── */
+
+/* Avatar (koristi se unutar q-menu portala) */
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.avatar--lg {
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
+}
 
 /* Dropdown menu */
 .user-menu {

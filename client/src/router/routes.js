@@ -8,18 +8,11 @@ const routes = [
   },
 
   {
-    path: '/home',
-    component: () => import('layouts/AuthLayout.vue'),
-    children: [
-      { path: '', component: () => import('pages/LandingPage.vue') },
-    ],
-  },
-
-  {
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
       { path: '', redirect: '/login' },
+      { path: 'home', component: () => import('pages/LandingPage.vue') },
       { path: 'dashboard', component: () => import('pages/IndexPage.vue') },
       { path: 'requests', component: () => import('pages/RequestsPage.vue') },
       { path: 'requests/new', component: () => import('pages/NewRequestPage.vue') },
