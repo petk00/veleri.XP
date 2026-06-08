@@ -7,9 +7,10 @@
     <main class="login-shell">
       <section class="signin-card" aria-labelledby="signin-title">
         <form class="signin-form" @submit.prevent="submitCurrentStep">
+
           <div class="brand-row">
             <img
-              src="/veleri-logo-horizontal.png"
+              src="/logo.svg"
               alt="Veleučilište u Rijeci"
               class="brand-logo"
             />
@@ -22,22 +23,22 @@
             :disabled="loading"
             @click="goBackToEmail"
           >
-            <q-icon name="arrow_back" size="18px" />
+            <q-icon name="arrow_back" size="16px" />
             <span>{{ email }}</span>
           </button>
 
           <h1 id="signin-title" class="signin-title">
-            {{ step === 'email' ? 'Prijava u sustav' : 'Unos lozinke' }}
+            {{ step === 'email' ? 'Prijavite se u aplikaciju nabave' : 'Unesite lozinku' }}
           </h1>
 
           <div v-if="step === 'email'" class="field">
-            <label class="sr-only" for="login-email">E-mail adresa</label>
+            <label class="field-label" for="login-email">E-mail adresa</label>
             <input
               id="login-email"
               v-model="email"
               type="email"
               class="text-input"
-              placeholder="E-mail adresa"
+              placeholder="ime.prezime@veleri.hr"
               autocomplete="username"
               :disabled="loading"
               autofocus
@@ -45,14 +46,14 @@
           </div>
 
           <div v-else class="field">
-            <label class="sr-only" for="login-password">Lozinka</label>
+            <label class="field-label" for="login-password">Lozinka</label>
             <div class="password-field">
               <input
                 id="login-password"
                 v-model="password"
                 :type="showPassword ? 'text' : 'password'"
                 class="text-input"
-                placeholder="Lozinka"
+                placeholder="••••••••"
                 autocomplete="current-password"
                 :disabled="loading"
                 autofocus
@@ -69,32 +70,42 @@
             </div>
           </div>
 
-          <div v-if="step === 'email'" class="account-copy">
-            <span>Nemate korisnički račun?</span>
-            <a href="mailto:ipetkovic@veleri.hr">Zatražite pristup</a>
-          </div>
-
-          <button v-if="step === 'email'" type="button" class="support-link">
-            Problem s pristupom? Zatražite podršku
-          </button>
-
           <div v-if="errorMessage" class="form-error" role="alert">
             {{ errorMessage }}
           </div>
 
           <div class="actions">
-            <button
-              type="submit"
-              class="primary-btn"
-              :disabled="loading"
-            >
-              <q-spinner v-if="loading" size="18px" color="white" />
+            <button type="submit" class="primary-btn" :disabled="loading">
+              <q-spinner v-if="loading" size="16px" color="white" />
               <span v-else>{{ step === 'email' ? 'Dalje' : 'Prijavi se' }}</span>
             </button>
           </div>
+
+          <div v-if="step === 'email'" class="help-section">
+            <a
+              href="mailto:ipetkovic@veleri.hr?subject=Zahtjev%20za%20korisnički%20račun"
+              class="help-item"
+            >
+              <div class="help-item__body">
+                <span class="help-item__question">Nemate korisnički račun?</span>
+                <span class="help-item__action">Zatražite pristup</span>
+              </div>
+              <q-icon name="chevron_right" size="16px" class="help-item__arrow" />
+            </a>
+            <a
+              href="mailto:ipetkovic@veleri.hr?subject=Problem%20s%20pristupom%20ili%20zaboravljena%20lozinka"
+              class="help-item"
+            >
+              <div class="help-item__body">
+                <span class="help-item__question">Zaboravili ste lozinku ili imate problem s pristupom?</span>
+                <span class="help-item__action">Zatražite podršku</span>
+              </div>
+              <q-icon name="chevron_right" size="16px" class="help-item__arrow" />
+            </a>
+          </div>
+
         </form>
       </section>
-
     </main>
 
     <footer class="login-footer">
@@ -148,7 +159,6 @@ const submitCurrentStep = () => {
     continueToPassword();
     return;
   }
-
   handleLogin();
 };
 
@@ -182,6 +192,8 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
+/* ── Page & background ─────────────────────────── */
+
 .login-page {
   position: relative;
   display: flex;
@@ -193,7 +205,7 @@ const handleLogin = async () => {
     radial-gradient(circle at 18% 20%, rgba(219, 243, 255, 0.78), transparent 30%),
     radial-gradient(circle at 70% 62%, rgba(255, 244, 249, 0.85), transparent 34%),
     linear-gradient(135deg, #f8fbff 0%, #f5f2fb 50%, #fffdfb 100%);
-  color: #1b1b1b;
+  color: #111827;
   font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   padding: 48px 24px;
 }
@@ -220,83 +232,84 @@ const handleLogin = async () => {
 }
 
 .background-shape--one {
-  width: 680px;
-  height: 620px;
-  left: -160px;
-  bottom: -240px;
+  width: 680px; height: 620px;
+  left: -160px; bottom: -240px;
   transform: rotate(-42deg);
 }
 
 .background-shape--two {
-  width: 700px;
-  height: 520px;
-  right: -150px;
-  top: -260px;
+  width: 700px; height: 520px;
+  right: -150px; top: -260px;
   transform: rotate(-12deg);
 }
 
 .background-shape--three {
-  width: 680px;
-  height: 360px;
-  right: 145px;
-  bottom: -150px;
+  width: 680px; height: 360px;
+  right: 145px; bottom: -150px;
   border-color: rgba(238, 220, 214, 0.42);
   transform: rotate(17deg);
 }
 
+/* ── Card ──────────────────────────────────────── */
+
 .login-shell {
   position: relative;
   z-index: 1;
-  width: min(440px, 100%);
+  width: min(420px, 100%);
 }
 
 .signin-card {
   width: 100%;
   background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  border: 1px solid #e5e7eb;
+  border-top: 2px solid #0067b8;
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 36px 40px 32px;
+  box-sizing: border-box;
 }
 
-.signin-card {
-  min-height: 338px;
-  padding: 44px 44px 40px;
-}
+/* ── Form layout ───────────────────────────────── */
 
 .signin-form {
   display: flex;
-  min-height: 254px;
   flex-direction: column;
 }
 
+/* ── Logo ──────────────────────────────────────── */
+
 .brand-row {
-  display: inline-flex;
-  align-items: center;
-  margin-left: -10px;
-  margin-bottom: 18px;
+  margin-bottom: 28px;
+  display: flex;
+  justify-content: center;
 }
 
 .brand-logo {
   display: block;
-  width: 450px;
-  max-width: 100%;
-  height: auto;
+  width: 120px;
+  height: 120px;
   object-fit: contain;
 }
 
+/* ── Back button ───────────────────────────────── */
+
 .back-step {
   display: inline-flex;
-  width: 100%;
   align-items: center;
   gap: 6px;
-  margin: 0 0 10px -4px;
+  margin-bottom: 16px;
   padding: 0;
   border: 0;
   background: transparent;
-  color: #1b1b1b;
+  color: #4b5563;
   font: inherit;
-  font-size: 15px;
-  text-align: left;
+  font-size: 0.8125rem;
   cursor: pointer;
+  transition: color 0.15s;
 }
+
+.back-step:hover { color: #111827; }
 
 .back-step span {
   min-width: 0;
@@ -306,52 +319,59 @@ const handleLogin = async () => {
 }
 
 .signin-title {
-  margin: 0 0 18px;
-  color: #1b1b1b;
-  font-size: 24px;
+  margin: 0 0 24px;
+  color: #111827;
+  font-size: 1.375rem;
   font-weight: 600;
-  line-height: 1.25;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
 }
+
+/* ── Fields ────────────────────────────────────── */
 
 .field {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #374151;
+  font-size: 0.8125rem;
+  font-weight: 500;
 }
 
 .text-input {
   width: 100%;
-  height: 36px;
-  padding: 5px 0 7px;
-  border: 0;
-  border-bottom: 1px solid #666;
-  border-radius: 0;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
   outline: none;
-  background: transparent;
-  color: #1b1b1b;
+  background: #fff;
+  color: #111827;
   font: inherit;
-  font-size: 15px;
+  font-size: 0.9375rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
 }
 
 .text-input::placeholder {
-  color: #616161;
-  opacity: 1;
+  color: #9ca3af;
+}
+
+.text-input:hover:not(:disabled):not(:focus) {
+  border-color: #9ca3af;
 }
 
 .text-input:focus {
-  border-bottom-color: #0067b8;
-  box-shadow: 0 1px 0 #0067b8;
+  border-color: #0067b8;
+  box-shadow: 0 0 0 2px rgba(0, 103, 184, 0.14);
 }
 
 .text-input:disabled {
-  color: #767676;
+  background: #f9fafb;
+  color: #9ca3af;
   cursor: not-allowed;
 }
 
@@ -360,108 +380,147 @@ const handleLogin = async () => {
 }
 
 .password-field .text-input {
-  padding-right: 34px;
+  padding-right: 38px;
 }
 
 .password-toggle {
   position: absolute;
-  right: 0;
-  top: 3px;
+  right: 1px;
+  top: 1px;
+  bottom: 1px;
+  width: 36px;
   display: inline-flex;
-  width: 30px;
-  height: 30px;
   align-items: center;
   justify-content: center;
   border: 0;
+  border-radius: 0 2px 2px 0;
   background: transparent;
-  color: #616161;
+  color: #9ca3af;
   cursor: pointer;
+  transition: color 0.15s;
 }
 
-.account-copy {
-  display: flex;
-  gap: 4px;
-  margin-top: 2px;
-  font-size: 13px;
-}
+.password-toggle:hover { color: #4b5563; }
 
-.account-copy a,
-.support-link {
-  border: 0;
-  background: transparent;
-  color: #0067b8;
-  font: inherit;
-  cursor: pointer;
-}
-
-.account-copy a {
-  padding: 0;
-  text-decoration: none;
-}
-
-.support-link {
-  width: fit-content;
-  margin-top: 18px;
-  padding: 0;
-  font-size: 13px;
-  text-align: left;
-}
-
-.account-copy a:hover,
-.support-link:hover {
-  color: #004578;
-  text-decoration: underline;
-}
+/* ── Error ─────────────────────────────────────── */
 
 .form-error {
-  margin-top: 16px;
-  color: #a4262c;
-  font-size: 13px;
+  margin-bottom: 14px;
+  padding: 9px 12px;
+  border-left: 3px solid #c50f1f;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.8125rem;
   line-height: 1.4;
 }
 
+/* ── Actions ───────────────────────────────────── */
+
 .actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: auto;
-  padding-top: 28px;
+  margin-top: 4px;
+  margin-bottom: 0;
 }
 
 .primary-btn {
   display: inline-flex;
-  min-width: 108px;
-  height: 32px;
+  width: 100%;
+  height: 38px;
   align-items: center;
   justify-content: center;
-  border: 1px solid #0067b8;
+  gap: 8px;
+  border: none;
+  border-radius: 3px;
   background: #0067b8;
-  color: white;
+  color: #fff;
   font: inherit;
-  font-size: 14px;
+  font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
-.primary-btn:hover:not(:disabled) {
-  border-color: #005da6;
-  background: #005da6;
-}
+.primary-btn:hover:not(:disabled) { background: #005a9e; }
 
 .primary-btn:disabled {
-  opacity: 0.65;
+  opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* ── Help section ──────────────────────────────── */
+
+.help-section {
+  margin-top: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.help-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  text-decoration: none;
+  color: inherit;
+  background: #fff;
+  transition: background 0.12s;
+}
+
+.help-item:not(:last-child) {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.help-item:hover {
+  background: #f9fafb;
+}
+
+.help-item:hover .help-item__action {
+  text-decoration: underline;
+}
+
+.help-item__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.help-item__question {
+  color: #6b7280;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.help-item__action {
+  color: #0067b8;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.help-item__arrow {
+  color: #d1d5db;
+  flex-shrink: 0;
+  transition: color 0.12s, transform 0.12s;
+}
+
+.help-item:hover .help-item__arrow {
+  color: #0067b8;
+  transform: translateX(2px);
+}
+
+/* ── Footer ────────────────────────────────────── */
 
 .login-footer {
   position: absolute;
   right: 20px;
   bottom: 14px;
   z-index: 1;
-  display: flex;
-  gap: 18px;
-  color: rgba(27, 27, 27, 0.72);
-  font-size: 12px;
+  color: rgba(17, 24, 39, 0.4);
+  font-size: 0.75rem;
 }
+
+/* ── Mobile ────────────────────────────────────── */
 
 @media (max-width: 560px) {
   .login-page {
@@ -480,21 +539,14 @@ const handleLogin = async () => {
   }
 
   .signin-card {
-    min-height: auto;
-    padding: 32px 28px 36px;
+    border: none;
+    border-top: 2px solid #0067b8;
     box-shadow: none;
-  }
-
-  .signin-form {
-    min-height: 300px;
+    padding: 32px 24px 36px;
   }
 
   .login-footer {
-    position: fixed;
-    right: 16px;
-    bottom: 10px;
-    left: 16px;
-    justify-content: space-between;
+    display: none;
   }
 }
 </style>
