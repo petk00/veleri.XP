@@ -84,7 +84,6 @@ router.post('/login', async (req, res) => {
     console.error('POST /api/auth/login error:', error);
     return res.status(500).json({
       message: 'Greška pri prijavi.',
-      error: error.message,
     });
   }
 });

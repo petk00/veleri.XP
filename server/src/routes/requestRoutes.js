@@ -227,7 +227,6 @@ router.get('/', authenticateToken, async (req, res) => {
     console.error('GET /api/requests error:', error);
     res.status(500).json({
       message: 'Greška pri dohvaćanju zahtjeva.',
-      error: error.message,
     });
   }
 });
@@ -357,7 +356,6 @@ router.get('/:id', authenticateToken, async (req, res) => {
     console.error('GET /api/requests/:id error:', error);
     res.status(500).json({
       message: 'Greška pri dohvaćanju detalja zahtjeva.',
-      error: error.message,
     });
   }
 });
@@ -551,7 +549,6 @@ router.post('/', authenticateToken, async (req, res) => {
 
     return res.status(500).json({
       message: 'Greška pri kreiranju zahtjeva.',
-      error: error.message,
     });
   } finally {
     connection.release();
@@ -700,7 +697,6 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     console.error('PATCH /api/requests/:id/status error:', error);
     return res.status(500).json({
       message: 'Greška pri izvršavanju akcije.',
-      error: error.message,
     });
   } finally {
     connection.release();
@@ -872,7 +868,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
     console.error('PUT /api/requests/:id error:', error);
     return res.status(500).json({
       message: 'Greška pri ažuriranju zahtjeva.',
-      error: error.message,
     });
   } finally {
     connection.release();

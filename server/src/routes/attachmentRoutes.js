@@ -61,7 +61,7 @@ router.get('/download/:id', authenticateToken, async (req, res) => {
     res.sendFile(attachment.file_path);
   } catch (error) {
     console.error('GET download error:', error);
-    res.status(500).json({ message: 'Greška pri preuzimanju fajla.', error: error.message });
+    res.status(500).json({ message: 'Greška pri preuzimanju fajla.' });
   }
 });
 
@@ -146,7 +146,7 @@ router.delete('/delete/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     await connection.rollback();
     console.error('DELETE attachment error:', error);
-    res.status(500).json({ message: 'Greška pri brisanju fajla.', error: error.message });
+    res.status(500).json({ message: 'Greška pri brisanju fajla.' });
   } finally {
     connection.release();
   }
