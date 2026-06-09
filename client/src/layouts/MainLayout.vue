@@ -39,6 +39,14 @@
           >
             Korisnici
           </button>
+          <button
+            v-if="isAdmin"
+            class="nav__item"
+            :class="{ 'nav__item--active': isActive('/fiscal-years') }"
+            @click="$router.push('/fiscal-years')"
+          >
+            Poslovne godine
+          </button>
         </nav>
 
         <!-- Hamburger -->
@@ -96,6 +104,14 @@
           @click="$router.push('/users')"
         >
           Korisnici
+        </button>
+        <button
+          v-if="isAdmin"
+          class="mobile-nav__item"
+          :class="{ 'mobile-nav__item--active': isActive('/fiscal-years') }"
+          @click="$router.push('/fiscal-years')"
+        >
+          Posl. godine
         </button>
       </div>
     </q-header>
