@@ -26,6 +26,21 @@
         <q-spinner color="primary" size="32px" />
       </div>
 
+      <!-- Nema aktivne poslovne godine -->
+      <div v-else-if="noActiveFiscalYear" class="no-fy-block">
+        <div class="no-fy-block__icon">
+          <q-icon name="lock_clock" size="32px" />
+        </div>
+        <div class="no-fy-block__title">Kreiranje zahtjeva nije moguće</div>
+        <div class="no-fy-block__body">
+          Trenutno nije otvorena nijedna poslovna godina.<br />
+          Obratite se administratoru da otvori novu poslovnu godinu.
+        </div>
+        <button class="btn btn--secondary" @click="$router.push('/dashboard')">
+          Povratak na dashboard
+        </button>
+      </div>
+
       <!-- ─────────────────────────────────
            Wizard
            ───────────────────────────────── -->
@@ -454,6 +469,7 @@ const loadingReferenceData = ref(false);
 const submitting = ref(false);
 
 const activeFiscalYearId = ref(null);
+const noActiveFiscalYear = ref(false);
 const departmentOptions = ref([]);
 const categoryOptions = ref([]);
 
@@ -518,17 +534,22 @@ const selectedCategoryLabel = computed(() =>
 const fetchReferenceData = async () => {
   loadingReferenceData.value = true;
   try {
-    const [fiscalYearRes, departmentsRes, categoriesRes] = await Promise.all([
-      api.get('/reference/active-fiscal-year'),
+    const fiscalYearRes = await api.get('/reference/active-fiscal-year');
+    activeFiscalYearId.value = fiscalYearRes.data.id_fiscal_year;
+
+    const [departmentsRes, categoriesRes] = await Promise.all([
       api.get('/reference/departments'),
       api.get('/reference/item-categories'),
     ]);
-    activeFiscalYearId.value = fiscalYearRes.data.id_fiscal_year;
     departmentOptions.value = departmentsRes.data.map((d) => ({ label: d.name, value: d.id_department }));
     categoryOptions.value = categoriesRes.data.map((c) => ({ label: c.name, value: c.id_item_category }));
   } catch (error) {
-    console.error('Greška:', error);
-    $q.notify({ type: 'negative', message: 'Greška pri dohvaćanju podataka.' });
+    if (error?.response?.status === 404) {
+      noActiveFiscalYear.value = true;
+    } else {
+      console.error('Greška:', error);
+      $q.notify({ type: 'negative', message: 'Greška pri dohvaćanju podataka.' });
+    }
   } finally {
     loadingReferenceData.value = false;
   }
@@ -1498,5 +1519,39 @@ onMounted(() => fetchReferenceData());
 @media (max-width: 600px) {
   .page { padding: 24px 16px 56px; }
   .wizard__inner { padding: 20px 16px 16px; }
+}
+
+.no-fy-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 420px;
+  margin: 64px auto 0;
+  text-align: center;
+}
+
+.no-fy-block__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border: 1px solid #e5e7eb;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+.no-fy-block__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.no-fy-block__body {
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 4px;
 }
 </style>

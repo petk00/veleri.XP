@@ -34,6 +34,14 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     await connection.beginTransaction();
 
+    const currentYear = new Date().getFullYear();
+    if (Number(year) > currentYear) {
+      await connection.rollback();
+      return res.status(400).json({
+        message: `Poslovna godina ${year} ne može se otvoriti dok ne počne kalendarska godina ${year}.`,
+      });
+    }
+
     const [open] = await connection.query(
       'SELECT id_fiscal_year, year FROM FiscalYear WHERE is_closed = 0 LIMIT 1'
     );
@@ -108,6 +116,12 @@ router.patch('/:id/close', authenticateToken, requireAdmin, async (req, res) => 
     );
     if (rows.length === 0) return res.status(404).json({ message: 'Godina nije pronađena.' });
     if (rows[0].is_closed) return res.status(400).json({ message: 'Godina je već zatvorena.' });
+
+    if (rows[0].year === new Date().getFullYear()) {
+      return res.status(400).json({
+        message: `Poslovna godina ${rows[0].year} ne može se zatvoriti dok traje tekuća kalendarska godina.`,
+      });
+    }
 
     await db.query(
       'UPDATE FiscalYear SET is_closed = 1 WHERE id_fiscal_year = ?', [id]

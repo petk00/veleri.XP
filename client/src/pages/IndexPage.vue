@@ -23,6 +23,26 @@
 
       <!-- ── Admin view ── -->
       <template v-else-if="isAdmin">
+
+        <div class="admin-stats">
+          <div class="stat-card">
+            <span class="stat-card__value">{{ adminTotal }}</span>
+            <span class="stat-card__label">Ukupno zahtjeva</span>
+          </div>
+          <div class="stat-card" :class="{ 'stat-card--action': adminActionable > 0 }">
+            <span class="stat-card__value">{{ adminActionable }}</span>
+            <span class="stat-card__label">Čeka akciju</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card__value">{{ adminOrdered }}</span>
+            <span class="stat-card__label">Naručeno</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card__value">{{ adminClosed }}</span>
+            <span class="stat-card__label">Zatvoreno</span>
+          </div>
+        </div>
+
         <section class="list-surface">
           <div class="surface-header">
             <h2 class="surface-title">Čeka vašu akciju</h2>
@@ -133,6 +153,18 @@ const todayFormatted = computed(() => {
 
 const returnedAlertItem = computed(() =>
   allRequests.value.find(r => r.status_name === 'Vraćeno na dopunu / izmjenu') || null
+);
+
+// Admin stats
+const adminTotal = computed(() => allRequests.value.length);
+const adminActionable = computed(() =>
+  allRequests.value.filter(r => ['Poslano', 'Na odobrenju'].includes(r.status_name)).length
+);
+const adminOrdered = computed(() =>
+  allRequests.value.filter(r => r.status_name === 'Naručeno').length
+);
+const adminClosed = computed(() =>
+  allRequests.value.filter(r => r.status_name === 'Zatvoreno').length
 );
 
 const totalCount = computed(() => allRequests.value.length);
@@ -484,6 +516,22 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
+/* ── Admin stats ── */
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-card--action {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.stat-card--action .stat-card__value { color: #1d4ed8; }
+.stat-card--action .stat-card__label { color: #1e40af; }
+
 /* ── Employee stats ── */
 .emp-stats {
   display: grid;
@@ -549,6 +597,7 @@ onMounted(async () => {
   .page { padding: 24px 16px 56px; }
   .page-header { flex-direction: column; align-items: stretch; gap: 16px; }
   .page-header__title { font-size: 1.75rem; }
+  .admin-stats { grid-template-columns: repeat(2, 1fr); }
   .emp-stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .stat-card { padding: 12px 14px; }
   .stat-card__value { font-size: 1.375rem; }
