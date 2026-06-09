@@ -56,10 +56,16 @@ const ACTIONS = {
     defaultComment: 'Zahtjev preuzet na obradu.',
   },
   odbij: {
-    from: STATUS.POSLANO,
+    from: [STATUS.POSLANO, STATUS.VRACENO],
     to: STATUS.ODBIJENO,
     adminOnly: true,
     requiresComment: true,
+  },
+  'vrati-u-obradu': {
+    from: STATUS.VRACENO,
+    to: STATUS.NA_ODOBRENJU,
+    adminOnly: true,
+    defaultComment: 'Zahtjev preuzet na ponovnu obradu bez čekanja ponovnog slanja.',
   },
   odobri: {
     from: STATUS.NA_ODOBRENJU,
@@ -616,7 +622,8 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       });
     }
 
-    if (currentStatus !== definition.from) {
+    const validFrom = Array.isArray(definition.from) ? definition.from : [definition.from];
+    if (!validFrom.includes(currentStatus)) {
       await connection.rollback();
       return res.status(400).json({
         message: `Akcija "${action}" nije dozvoljena u trenutnom statusu.`,
