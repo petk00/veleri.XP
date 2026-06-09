@@ -139,6 +139,30 @@ router.patch('/:id/status', authenticateToken, requireAdmin, async (req, res) =>
   }
 });
 
+// POST /api/users/:id/reset-link — generiraj novi invite/reset link
+router.post('/:id/reset-link', authenticateToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await db.query(
+      'SELECT id_user, first_name, last_name FROM AppUser WHERE id_user = ?', [id]
+    );
+    if (rows.length === 0) return res.status(404).json({ message: 'Korisnik nije pronađen.' });
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 48 * 60 * 60 * 1000);
+
+    await db.query(
+      'UPDATE AppUser SET invite_token = ?, invite_token_expires = ? WHERE id_user = ?',
+      [token, expires, id]
+    );
+
+    const inviteLink = `${CLIENT_URL}/#/set-password?token=${token}`;
+    res.json({ inviteLink });
+  } catch (err) {
+    res.status(500).json({ message: 'Greška pri generiranju linka.' });
+  }
+});
+
 // DELETE /api/users/:id — briši korisnika (samo ako nema zahtjeva)
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   const { id } = req.params;

@@ -49,6 +49,9 @@
               <button class="action-btn" title="Uredi" @click="openEditDialog(u)">
                 <q-icon name="edit" size="16px" />
               </button>
+              <button class="action-btn" title="Pošalji link za postavljanje lozinke" @click="resetLink(u)">
+                <q-icon name="key" size="16px" />
+              </button>
               <button
                 class="action-btn"
                 :title="u.is_active ? 'Deaktiviraj' : 'Aktiviraj'"
@@ -70,15 +73,19 @@
     <q-dialog v-model="inviteDialog.open" persistent>
       <div class="dialog-card">
         <div class="dialog-header">
-          <h2 class="dialog-title">Korisnik kreiran</h2>
+          <h2 class="dialog-title">{{ inviteDialog.isReset ? 'Reset lozinke' : 'Korisnik kreiran' }}</h2>
           <button class="dialog-close" @click="inviteDialog.open = false">
             <q-icon name="close" size="20px" />
           </button>
         </div>
         <div class="dialog-body">
           <p class="invite-info">
-            Korisnik <strong>{{ inviteDialog.name }}</strong> je kreiran s neaktivnim računom.
-            Proslijedite ovaj link korisniku (Teams, email...) kako bi postavio lozinku:
+            <template v-if="inviteDialog.isReset">
+              Proslijedite ovaj link korisniku <strong>{{ inviteDialog.name }}</strong> kako bi postavio novu lozinku:
+            </template>
+            <template v-else>
+              Korisnik <strong>{{ inviteDialog.name }}</strong> je kreiran. Proslijedite ovaj link (Teams, email...) kako bi postavio lozinku:
+            </template>
           </p>
           <div class="invite-link-box">
             <span class="invite-link-text">{{ inviteDialog.link }}</span>
@@ -160,7 +167,7 @@ const roles = ref([]);
 
 const dialog = ref({ open: false, isEdit: false, editId: null, error: '', saving: false });
 const form = ref({ first_name: '', last_name: '', email: '', role_id: '' });
-const inviteDialog = ref({ open: false, link: '', name: '', copied: false });
+const inviteDialog = ref({ open: false, link: '', name: '', copied: false, isReset: false });
 
 const avatarPalette = ['#0067b8', '#7c3aed', '#059669', '#d97706', '#dc2626', '#0891b2', '#9333ea', '#be185d'];
 
@@ -221,6 +228,7 @@ const submitDialog = async () => {
         link: data.inviteLink,
         name: `${form.value.first_name} ${form.value.last_name}`,
         copied: false,
+        isReset: false,
       };
     }
     loading.value = true;
@@ -239,6 +247,21 @@ const copyLink = async () => {
     setTimeout(() => { inviteDialog.value.copied = false; }, 2000);
   } catch {
     $q.notify({ type: 'negative', message: 'Kopiranje nije uspjelo. Kopirajte link ručno.' });
+  }
+};
+
+const resetLink = async (u) => {
+  try {
+    const { data } = await api.post(`/users/${u.id_user}/reset-link`);
+    inviteDialog.value = {
+      open: true,
+      link: data.inviteLink,
+      name: `${u.first_name} ${u.last_name}`,
+      copied: false,
+      isReset: true,
+    };
+  } catch {
+    $q.notify({ type: 'negative', message: 'Greška pri generiranju linka.' });
   }
 };
 
