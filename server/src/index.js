@@ -8,6 +8,7 @@ const requestRoutes = require('./routes/requestRoutes');
 const requestAttachmentRoutes = require('./routes/requestAttachmentRoutes');
 const attachmentRoutes = require('./routes/attachmentRoutes');
 const referenceRoutes = require('./routes/referenceRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use('/api/attachments', attachmentRoutes);
 app.use('/api/requests', requestAttachmentRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/reference', referenceRoutes);
+app.use('/api/users', userRoutes);
 
 const PORT = process.env.PORT || 3000;
 

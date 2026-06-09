@@ -31,6 +31,14 @@
           >
             Zahtjevi
           </button>
+          <button
+            v-if="isAdmin"
+            class="nav__item"
+            :class="{ 'nav__item--active': isActive('/users') }"
+            @click="$router.push('/users')"
+          >
+            Korisnici
+          </button>
         </nav>
 
         <!-- Hamburger -->
@@ -81,6 +89,14 @@
         >
           Zahtjevi
         </button>
+        <button
+          v-if="isAdmin"
+          class="mobile-nav__item"
+          :class="{ 'mobile-nav__item--active': isActive('/users') }"
+          @click="$router.push('/users')"
+        >
+          Korisnici
+        </button>
       </div>
     </q-header>
 
@@ -127,6 +143,7 @@ const avatarColor = computed(() => {
   return palette[idx];
 });
 
+const isAdmin = computed(() => user.value?.role_name === 'Administrator');
 const isHome = computed(() => route.path === '/home');
 
 const isActive = (path) => {
