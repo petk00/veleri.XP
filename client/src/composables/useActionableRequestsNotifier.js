@@ -73,8 +73,8 @@ export function useActionableRequestsNotifier() {
   const checkPendingReview = async (userId) => {
     const ids = getIdSet('session', userId);
 
-    const { data } = await api.get('/requests');
-    const list = Array.isArray(data) ? data : [];
+    const { data } = await api.get('/requests', { params: { status: 'Poslano', limit: 500 } });
+    const list = Array.isArray(data.data) ? data.data : [];
     const pending = list.filter((r) => r.status_name === 'Poslano');
 
     for (const req of pending) {
@@ -101,8 +101,8 @@ export function useActionableRequestsNotifier() {
   const checkReturnedForRevision = async (userId) => {
     const ids = getIdSet('session', userId);
 
-    const { data } = await api.get('/requests');
-    const list = Array.isArray(data) ? data : [];
+    const { data } = await api.get('/requests', { params: { status: 'Vraćeno na dopunu/izmjenu', limit: 500 } });
+    const list = Array.isArray(data.data) ? data.data : [];
     const returned = list.filter((r) => r.status_name === 'Vraćeno na dopunu/izmjenu');
 
     for (const req of returned) {
@@ -124,7 +124,35 @@ export function useActionableRequestsNotifier() {
   };
 
   /**
-   * SCENARIJ 3 — naručeni zahtjev bez otpremnice.
+   * SCENARIJ 3 — zahtjev odbijen (samo zaposlenik, permanent dedup)
+   */
+  const checkRejected = async (userId) => {
+    const ids = getIdSet('permanent', userId);
+
+    const { data } = await api.get('/requests', { params: { status: 'Odbijeno', limit: 500 } });
+    const list = Array.isArray(data.data) ? data.data : [];
+    const rejected = list.filter((r) => r.status_name === 'Odbijeno');
+
+    for (const req of rejected) {
+      const key = `rejected:${req.id_purchase_request}`;
+      if (ids.has(key)) continue;
+
+      showNotification({
+        requestId: req.id_purchase_request,
+        icon: 'cancel',
+        color: 'red-8',
+        message: `Zahtjev ${req.request_number} je odbijen`,
+        caption: 'Pregledajte razlog odbijanja.',
+      });
+
+      ids.add(key);
+    }
+
+    persistIdSet(ids, 'permanent', userId);
+  };
+
+  /**
+   * SCENARIJ 4 — naručeni zahtjev bez otpremnice.
    *
    * Za admina: mode='permanent' — jednom ikad po zahtjevu
    * Za usera:  mode='session'   — jednom po sesiji (podsjetnik pri svakom loginu)
@@ -132,8 +160,8 @@ export function useActionableRequestsNotifier() {
   const checkMissingDeliveryNotes = async (userId, mode = 'session') => {
     const ids = getIdSet(mode, userId);
 
-    const { data } = await api.get('/requests');
-    const list = Array.isArray(data) ? data : [];
+    const { data } = await api.get('/requests', { params: { status: 'Naručeno', limit: 500 } });
+    const list = Array.isArray(data.data) ? data.data : [];
     const ordered = list.filter((r) => r.status_name === 'Naručeno');
     if (ordered.length === 0) return;
 
@@ -182,8 +210,9 @@ export function useActionableRequestsNotifier() {
         await checkPendingReview(userId);
         await checkMissingDeliveryNotes(userId, 'permanent');
       } else {
-        // Zaposlenik: vraćeno na izmjenu + fali otpremnica (oba session)
+        // Zaposlenik: vraćeno na izmjenu (session) + odbijeno (permanent) + fali otpremnica (session)
         await checkReturnedForRevision(userId);
+        await checkRejected(userId);
         await checkMissingDeliveryNotes(userId, 'session');
       }
     } catch (error) {

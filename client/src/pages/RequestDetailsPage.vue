@@ -31,9 +31,10 @@
             </div>
           </div>
           <div class="page-header__actions">
-            <button v-if="isAdmin" class="btn btn--ghost" @click="printRequest">
-              <q-icon name="print" size="16px" />
-              <span>Ispiši</span>
+            <button v-if="isAdmin" class="btn btn--ghost" :disabled="pdfGenerating" @click="downloadPdf">
+              <q-spinner v-if="pdfGenerating" size="14px" />
+              <q-icon v-else name="download" size="16px" />
+              <span>{{ pdfGenerating ? 'Generiranje...' : 'Preuzmi PDF' }}</span>
             </button>
             <button v-if="canEdit" class="btn btn--ghost" @click="editRequest">
               <q-icon name="edit" size="16px" />
@@ -512,6 +513,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
+import { jsPDF } from 'jspdf';
 import { api } from 'boot/axios';
 import { getStoredUser } from 'src/utils/authStorage';
 
@@ -565,6 +567,7 @@ const actionDialog = ref(false);
 const pendingAction = ref(null);
 const actionComment = ref('');
 const submittingAction = ref(false);
+const pdfGenerating = ref(false);
 
 const currentUser = ref(null);
 
@@ -840,8 +843,180 @@ const confirmAction = async () => {
 const editRequest = () => router.push(`/requests/${route.params.id}/edit`);
 const goBack = () => router.push('/requests');
 
-const printRequest = () => {
-  window.print();
+const svgToPng = (src, size = 128) =>
+  new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = size; c.height = size;
+      c.getContext('2d').drawImage(img, 0, 0, size, size);
+      resolve(c.toDataURL('image/png'));
+    };
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+
+const downloadPdf = async () => {
+  if (!request.value) return;
+  pdfGenerating.value = true;
+  try {
+    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    const M   = 18;           // margina
+    const PW  = 210;          // širina A4
+    const CW  = PW - 2 * M;  // širina sadržaja
+    let y = M;
+
+    // ── Logo ──
+    const logoPng = await svgToPng(ORG.logoPath, 128);
+    const LOGO_SIZE = 13;
+    if (logoPng) pdf.addImage(logoPng, 'PNG', M, y - 1, LOGO_SIZE, LOGO_SIZE);
+
+    // ── Naziv institucije ──
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.setTextColor(31, 56, 100);
+    pdf.text(ORG.name, M + (logoPng ? LOGO_SIZE + 3 : 0), y + 5);
+
+    pdf.setFontSize(8);
+    pdf.text(ORG.nameLatin, PW - M, y + 2, { align: 'right' });
+    pdf.setFont('helvetica', 'italic');
+    pdf.text(ORG.nameEnglish, PW - M, y + 7, { align: 'right' });
+
+    y += LOGO_SIZE + 2;
+
+    // ── Kontakt linija ──
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7.5);
+    pdf.setTextColor(85, 85, 85);
+    pdf.text(
+      `${ORG.address} · Telefon ${ORG.phone} · E-mail: ${ORG.email} · ${ORG.web}`,
+      PW / 2, y, { align: 'center' }
+    );
+    y += 3.5;
+    pdf.text(
+      `OIB: ${ORG.oib} · MB: ${ORG.mb} · RKP: ${ORG.rkp} · IBAN: ${ORG.iban}`,
+      PW / 2, y, { align: 'center' }
+    );
+    y += 5;
+
+    // ── Horizontalna crta ──
+    pdf.setDrawColor(0);
+    pdf.setLineWidth(0.5);
+    pdf.line(M, y, PW - M, y);
+    y += 8;
+
+    // ── Naslov u okviru ──
+    pdf.setLineWidth(0.3);
+    pdf.rect(M, y, CW, 10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13);
+    pdf.setTextColor(0);
+    pdf.text('ZAHTJEV ZA NABAVU', PW / 2, y + 7, { align: 'center' });
+    y += 16;
+
+    // ── Polja ──
+    const LABEL_W = 58;
+    const VALUE_X = M + LABEL_W + 4;
+    const fields = [
+      { label: 'Broj zahtjeva:',                              value: request.value.request_number },
+      { label: 'Datum:',                                      value: formatDateOnly(request.value.created_at) },
+      { label: 'Zahtjev podnio\n(ime i prezime djelatnika):', value: request.value.created_by },
+      { label: 'Odjel / Služba:',                            value: request.value.department_name },
+      { label: 'Predmet nabave\n(kategorija):',               value: predmetNabave.value },
+    ];
+
+    pdf.setFontSize(10);
+    for (const f of fields) {
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(0);
+      const labelLines = pdf.splitTextToSize(f.label, LABEL_W);
+      pdf.text(labelLines, M, y);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(String(f.value || '—'), VALUE_X, y);
+      y += labelLines.length * 5 + 3;
+    }
+    y += 3;
+
+    // ── Svrha nabave (okvir) ──
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    pdf.setTextColor(0);
+    pdf.text('Svrha nabave (obrazloženje):', M, y);
+    y += 4;
+
+    const justLines = pdf.splitTextToSize(request.value.justification || '—', CW - 8);
+    const boxH = Math.max(34, justLines.length * 5 + 8);
+    pdf.setLineWidth(0.3);
+    pdf.rect(M, y, CW, boxH);
+    pdf.text(justLines, M + 4, y + 6);
+    y += boxH + 8;
+
+    // ── Stavke ──
+    if (items.value.length > 0) {
+      pdf.setFont('helvetica', 'italic');
+      pdf.setFontSize(9);
+      pdf.setTextColor(85, 85, 85);
+      pdf.text('Specifikacija stavki:', M, y);
+      y += 5;
+
+      const cols  = [CW * 0.55, CW * 0.30, CW * 0.15];
+      const ROW_H = 7;
+
+      // Zaglavlje tablice
+      pdf.setFillColor(240, 240, 240);
+      let cx = M;
+      cols.forEach((cw) => { pdf.rect(cx, y, cw, ROW_H, 'FD'); cx += cw; });
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9);
+      pdf.setTextColor(0);
+      cx = M;
+      ['Naziv artikla', 'Kategorija', 'Kol.'].forEach((h, i) => {
+        if (i === 2) pdf.text(h, cx + cols[i] - 2, y + 4.8, { align: 'right' });
+        else         pdf.text(h, cx + 2, y + 4.8);
+        cx += cols[i];
+      });
+      y += ROW_H;
+
+      // Redovi
+      pdf.setFont('helvetica', 'normal');
+      for (const item of items.value) {
+        cx = M;
+        [item.item_name, item.category_name, String(item.quantity)].forEach((cell, i) => {
+          pdf.rect(cx, y, cols[i], ROW_H, 'S');
+          const txt = (pdf.splitTextToSize(cell, cols[i] - 4)[0]) || '';
+          if (i === 2) pdf.text(txt, cx + cols[i] - 2, y + 4.8, { align: 'right' });
+          else         pdf.text(txt, cx + 2, y + 4.8);
+          cx += cols[i];
+        });
+        y += ROW_H;
+      }
+      y += 8;
+    }
+
+    // ── Ukupni iznos ──
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10.5);
+    pdf.setTextColor(0);
+    pdf.text(
+      `Ukupna nabava se procjenjuje na iznos od ${formatCurrency(request.value.total_amount)}.`,
+      M, y
+    );
+    y += 14;
+
+    // ── Status + datum ──
+    pdf.setLineWidth(0.4);
+    pdf.line(M, y, PW - M, y);
+    y += 5;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8.5);
+    pdf.text(`Status: ${request.value.status_name}`, M, y);
+    pdf.text(`Ispisano: ${todayDate.value}`, PW - M, y, { align: 'right' });
+
+    pdf.save(`${request.value.request_number}.pdf`);
+  } finally {
+    pdfGenerating.value = false;
+  }
 };
 
 /* ───────── Formatters ───────── */

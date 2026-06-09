@@ -105,16 +105,88 @@ const getRequestAccessCondition = (user) => {
 
 /**
  * GET /api/requests
- * Lista zahtjeva (admin vidi sve, zaposlenik samo svoje).
+ * Lista zahtjeva s paginacijom i filterima (admin vidi sve, zaposlenik samo svoje).
+ * Query params: page, limit, search, status, department, user (admin only)
+ * Response: { data, total, page, limit, counts: { total, active, attention, closed } }
  */
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const whereClause = isAdmin(req.user) ? '' : 'WHERE pr.fk_created_by_user = ?';
-    const params = isAdmin(req.user) ? [] : [req.user.id_user];
+    const page    = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit   = Math.min(500, Math.max(1, parseInt(req.query.limit) || 10));
+    const offset  = (page - 1) * limit;
+    const search  = (req.query.search  || '').trim();
+    const statusParam     = req.query.status     || '';
+    const departmentParam = req.query.department || '';
+    const userParam       = isAdmin(req.user) ? (req.query.user || '') : '';
+
+    const adminUser = isAdmin(req.user);
+
+    const baseConditions = adminUser ? [] : ['pr.fk_created_by_user = ?'];
+    const baseParams      = adminUser ? [] : [req.user.id_user];
+
+    const filterConditions = [...baseConditions];
+    const filterParams     = [...baseParams];
+
+    if (search) {
+      filterConditions.push(
+        "(pr.request_number LIKE ? OR CONCAT(u.first_name, ' ', u.last_name) LIKE ? OR d.name LIKE ?)"
+      );
+      filterParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    if (statusParam) {
+      const statusId = Object.entries(STATUS_LABELS).find(([, label]) => label === statusParam)?.[0];
+      if (statusId) {
+        filterConditions.push('pr.fk_request_status = ?');
+        filterParams.push(parseInt(statusId, 10));
+      }
+    }
+
+    if (departmentParam) {
+      filterConditions.push('d.name = ?');
+      filterParams.push(departmentParam);
+    }
+
+    if (userParam) {
+      filterConditions.push("CONCAT(u.first_name, ' ', u.last_name) = ?");
+      filterParams.push(userParam);
+    }
+
+    const filterWhere = filterConditions.length
+      ? 'WHERE ' + filterConditions.join(' AND ')
+      : '';
+
+    // Summary counts — always unfiltered (only access control)
+    const summaryWhere  = adminUser ? '' : 'WHERE fk_created_by_user = ?';
+    const summaryParams = adminUser ? [] : [req.user.id_user];
+    const attentionStatusId  = adminUser ? STATUS.POSLANO : STATUS.VRACENO;
+    const activeStatusIds    = [STATUS.POSLANO, STATUS.NA_ODOBRENJU, STATUS.VRACENO, STATUS.NARUCENO];
+
+    const [[summary]] = await db.query(
+      `SELECT
+        COUNT(*) AS total,
+        SUM(fk_request_status IN (${activeStatusIds.join(',')})) AS active,
+        SUM(fk_request_status = ?) AS attention,
+        SUM(fk_request_status = ?) AS closed
+       FROM PurchaseRequest
+       ${summaryWhere}`,
+      [attentionStatusId, STATUS.ZATVORENO, ...summaryParams]
+    );
+
+    const baseJoin = `
+      FROM PurchaseRequest pr
+      INNER JOIN FiscalYear fy ON pr.fk_fiscal_year = fy.id_fiscal_year
+      INNER JOIN Department d  ON pr.fk_department  = d.id_department
+      INNER JOIN AppUser u     ON pr.fk_created_by_user = u.id_user
+    `;
+
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(*) AS total ${baseJoin} ${filterWhere}`,
+      filterParams
+    );
 
     const [rows] = await db.query(
-      `
-      SELECT
+      `SELECT
         pr.id_purchase_request,
         pr.request_number,
         fy.year AS fiscal_year,
@@ -123,28 +195,73 @@ router.get('/', authenticateToken, async (req, res) => {
         CONCAT(u.first_name, ' ', u.last_name) AS created_by,
         pr.total_amount,
         pr.created_at
-      FROM PurchaseRequest pr
-      INNER JOIN FiscalYear fy ON pr.fk_fiscal_year = fy.id_fiscal_year
-      INNER JOIN Department d ON pr.fk_department = d.id_department
-      INNER JOIN AppUser u ON pr.fk_created_by_user = u.id_user
-      ${whereClause}
-      ORDER BY pr.created_at DESC, pr.id_purchase_request DESC
-      `,
-      params
+       ${baseJoin}
+       ${filterWhere}
+       ORDER BY pr.created_at DESC, pr.id_purchase_request DESC
+       LIMIT ? OFFSET ?`,
+      [...filterParams, limit, offset]
     );
 
-    res.json(
-      rows.map((row) => ({
+    res.json({
+      data: rows.map((row) => ({
         ...row,
         status_name: STATUS_LABELS[row.fk_request_status] || `Status #${row.fk_request_status}`,
-      }))
-    );
+      })),
+      total,
+      page,
+      limit,
+      counts: {
+        total:     Number(summary.total)     || 0,
+        active:    Number(summary.active)    || 0,
+        attention: Number(summary.attention) || 0,
+        closed:    Number(summary.closed)    || 0,
+      },
+    });
   } catch (error) {
     console.error('GET /api/requests error:', error);
     res.status(500).json({
       message: 'Greška pri dohvaćanju zahtjeva.',
       error: error.message,
     });
+  }
+});
+
+/**
+ * GET /api/requests/meta
+ * Unique department names (and submitter names for admin) across all visible requests.
+ * Used to populate filter dropdowns on the client.
+ */
+router.get('/meta', authenticateToken, async (req, res) => {
+  try {
+    const adminUser   = isAdmin(req.user);
+    const userClause  = adminUser ? '' : 'WHERE pr.fk_created_by_user = ?';
+    const userParam   = adminUser ? [] : [req.user.id_user];
+
+    const [deptRows] = await db.query(
+      `SELECT DISTINCT d.name
+       FROM PurchaseRequest pr
+       INNER JOIN Department d ON pr.fk_department = d.id_department
+       ${userClause}
+       ORDER BY d.name`,
+      userParam
+    );
+
+    const result = { departments: deptRows.map((r) => r.name) };
+
+    if (adminUser) {
+      const [userRows] = await db.query(
+        `SELECT DISTINCT CONCAT(u.first_name, ' ', u.last_name) AS name
+         FROM PurchaseRequest pr
+         INNER JOIN AppUser u ON pr.fk_created_by_user = u.id_user
+         ORDER BY name`
+      );
+      result.users = userRows.map((r) => r.name);
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('GET /api/requests/meta error:', error);
+    res.status(500).json({ message: 'Greška pri dohvatu metapodataka.' });
   }
 });
 

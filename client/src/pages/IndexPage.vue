@@ -152,7 +152,7 @@ const todayFormatted = computed(() => {
 });
 
 const returnedAlertItem = computed(() =>
-  allRequests.value.find(r => r.status_name === 'Vraćeno na dopunu / izmjenu') || null
+  allRequests.value.find(r => r.status_name === 'Vraćeno na dopunu/izmjenu') || null
 );
 
 // Admin stats
@@ -174,7 +174,7 @@ const activeCount = computed(() =>
 );
 
 const returnedCount = computed(() =>
-  allRequests.value.filter(r => r.status_name === 'Vraćeno na dopunu / izmjenu').length
+  allRequests.value.filter(r => r.status_name === 'Vraćeno na dopunu/izmjenu').length
 );
 
 const displayRows = computed(() => {
@@ -219,8 +219,8 @@ const statusClass = (status) => {
 
 onMounted(async () => {
   try {
-    const { data } = await api.get('/requests');
-    allRequests.value = Array.isArray(data) ? data : [];
+    const { data } = await api.get('/requests', { params: { limit: 500 } });
+    allRequests.value = Array.isArray(data.data) ? data.data : [];
   } catch (e) {
     console.error(e);
   } finally {
