@@ -8,6 +8,14 @@ const routes = [
   },
 
   {
+    path: '/set-password',
+    component: () => import('layouts/AuthLayout.vue'),
+    children: [
+      { path: '', component: () => import('pages/SetPasswordPage.vue') },
+    ],
+  },
+
+  {
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
@@ -18,6 +26,7 @@ const routes = [
       { path: 'requests/new', component: () => import('pages/NewRequestPage.vue') },
       { path: 'requests/:id', component: () => import('pages/RequestDetailsPage.vue') },
       { path: 'requests/:id/edit', component: () => import('pages/EditRequestPage.vue') },
+      { path: 'users', component: () => import('pages/UsersPage.vue') },
     ],
   },
 

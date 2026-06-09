@@ -21,11 +21,43 @@
         <q-spinner color="primary" size="28px" />
       </div>
 
+      <!-- ── Admin view ── -->
+      <template v-else-if="isAdmin">
+        <section class="list-surface">
+          <div class="surface-header">
+            <h2 class="surface-title">Čeka vašu akciju</h2>
+            <span v-if="displayRows.length > 0" class="surface-count">{{ displayRows.length }}</span>
+          </div>
+          <div v-if="displayRows.length === 0" class="empty-state">
+            <div class="empty-state__icon"><q-icon name="check_circle" size="28px" /></div>
+            <div class="empty-state__title">Sve je obrađeno</div>
+            <div class="empty-state__hint">Trenutno nema zahtjeva koji čekaju vašu akciju.</div>
+          </div>
+          <ul v-else class="request-list">
+            <li
+              v-for="r in displayRows"
+              :key="r.id_purchase_request"
+              class="request-row"
+              @click="$router.push(`/requests/${r.id_purchase_request}`)"
+            >
+              <span class="row-number">{{ r.request_number }}</span>
+              <span class="row-dept">{{ r.department_name }}</span>
+              <span class="row-person">{{ r.created_by }}</span>
+              <span class="status" :class="statusClass(r.status_name)">{{ r.status_name }}</span>
+              <span class="row-amount">{{ formatCurrency(r.total_amount) }}</span>
+              <span class="row-date">{{ formatDate(r.created_at) }}</span>
+              <q-icon name="chevron_right" size="16px" class="row-chevron" />
+            </li>
+          </ul>
+        </section>
+      </template>
+
+      <!-- ── Employee view ── -->
       <template v-else>
 
-        <!-- Alert: vraćen zahtjev -->
+        <!-- Vraćen alert -->
         <div
-          v-if="!isAdmin && returnedAlertItem"
+          v-if="returnedAlertItem"
           class="returned-alert"
           @click="$router.push(`/requests/${returnedAlertItem.id_purchase_request}`)"
         >
@@ -37,28 +69,30 @@
           <q-icon name="chevron_right" size="15px" class="returned-alert__chevron" />
         </div>
 
+        <!-- Statistike -->
+        <div class="emp-stats">
+          <div class="stat-card">
+            <span class="stat-card__value">{{ totalCount }}</span>
+            <span class="stat-card__label">Ukupno zahtjeva</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card__value">{{ activeCount }}</span>
+            <span class="stat-card__label">Aktivni</span>
+          </div>
+          <div class="stat-card" :class="{ 'stat-card--warn': returnedCount > 0 }">
+            <span class="stat-card__value">{{ returnedCount }}</span>
+            <span class="stat-card__label">Vraćeno na dopunu</span>
+          </div>
+        </div>
+
+        <!-- Nedavni zahtjevi -->
         <section class="list-surface">
-
-          <div class="surface-header">
-            <h2 class="surface-title">{{ isAdmin ? 'Čeka vašu akciju' : 'Moji zahtjevi' }}</h2>
-            <span v-if="displayRows.length > 0" class="surface-count">{{ displayRows.length }}</span>
-          </div>
-
           <div v-if="displayRows.length === 0" class="empty-state">
-            <div class="empty-state__icon">
-              <q-icon name="check_circle" size="28px" />
-            </div>
-            <div class="empty-state__title">
-              {{ isAdmin ? 'Sve je obrađeno' : 'Nemate aktivnih zahtjeva' }}
-            </div>
-            <div class="empty-state__hint">
-              {{ isAdmin
-                ? 'Trenutno nema zahtjeva koji čekaju vašu akciju.'
-                : 'Kreirajte novi zahtjev za nabavu kada vam zatreba.' }}
-            </div>
+            <div class="empty-state__icon"><q-icon name="inbox" size="28px" /></div>
+            <div class="empty-state__title">Nemate zahtjeva</div>
+            <div class="empty-state__hint">Kreirajte prvi zahtjev za nabavu klikom na "Novi zahtjev".</div>
           </div>
-
-          <ul v-else class="request-list">
+          <ul v-else class="request-list request-list--minimal">
             <li
               v-for="r in displayRows"
               :key="r.id_purchase_request"
@@ -66,24 +100,11 @@
               @click="$router.push(`/requests/${r.id_purchase_request}`)"
             >
               <span class="row-number">{{ r.request_number }}</span>
-              <span class="row-dept">{{ r.department_name }}</span>
-              <span v-if="isAdmin" class="row-person">{{ r.created_by }}</span>
               <span class="status" :class="statusClass(r.status_name)">{{ r.status_name }}</span>
-              <span class="row-amount">{{ formatCurrency(r.total_amount) }}</span>
               <span class="row-date">{{ formatDate(r.created_at) }}</span>
               <q-icon name="chevron_right" size="16px" class="row-chevron" />
             </li>
           </ul>
-
-          <button
-            v-if="!isAdmin && allRequests.length > 5"
-            class="surface-footer"
-            @click="$router.push('/requests')"
-          >
-            <span>Svi zahtjevi</span>
-            <q-icon name="arrow_forward" size="14px" />
-          </button>
-
         </section>
 
       </template>
@@ -114,6 +135,16 @@ const returnedAlertItem = computed(() =>
   allRequests.value.find(r => r.status_name === 'Vraćeno na dopunu / izmjenu') || null
 );
 
+const totalCount = computed(() => allRequests.value.length);
+
+const activeCount = computed(() =>
+  allRequests.value.filter(r => !['Zatvoreno', 'Odbijeno'].includes(r.status_name)).length
+);
+
+const returnedCount = computed(() =>
+  allRequests.value.filter(r => r.status_name === 'Vraćeno na dopunu / izmjenu').length
+);
+
 const displayRows = computed(() => {
   if (isAdmin) {
     const priority = { 'Poslano': 1, 'Na odobrenju': 2, 'Naručeno': 3 };
@@ -126,7 +157,7 @@ const displayRows = computed(() => {
   }
   return [...allRequests.value]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 5);
+    .slice(0, 3);
 });
 
 const formatCurrency = (value) => {
@@ -423,6 +454,76 @@ onMounted(async () => {
   line-height: 1.5;
 }
 
+/* ── Minimal list (employee dashboard) ── */
+.request-list--minimal .request-row {
+  height: auto;
+  padding: 12px 20px;
+  align-items: center;
+}
+
+.request-list--minimal .row-number {
+  flex: 1;
+  min-width: 0;
+}
+
+.request-list--minimal .status {
+  flex: 1;
+  justify-content: center;
+  margin-right: 0;
+  font-size: 0.75rem;
+  padding: 4px 12px;
+  min-height: 24px;
+}
+
+.request-list--minimal .row-date {
+  flex: 1;
+  text-align: right;
+  padding-right: 12px;
+  color: #6b7280;
+  font-size: 0.8125rem;
+  flex-shrink: 0;
+}
+
+/* ── Employee stats ── */
+.emp-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+}
+
+.stat-card--warn {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+.stat-card__value {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.stat-card--warn .stat-card__value { color: #c2410c; }
+
+.stat-card__label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.stat-card--warn .stat-card__label { color: #9a3412; }
+
 /* ── Surface footer ── */
 .surface-footer {
   all: unset;
@@ -448,6 +549,9 @@ onMounted(async () => {
   .page { padding: 24px 16px 56px; }
   .page-header { flex-direction: column; align-items: stretch; gap: 16px; }
   .page-header__title { font-size: 1.75rem; }
+  .emp-stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat-card { padding: 12px 14px; }
+  .stat-card__value { font-size: 1.375rem; }
   .row-dept, .row-person, .row-amount, .row-date { display: none; }
   .row-number { flex: 1; }
 }

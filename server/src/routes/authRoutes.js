@@ -89,4 +89,42 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// POST /api/auth/set-password — postavljanje lozinke putem invite tokena
+router.post('/set-password', async (req, res) => {
+  const { token, password } = req.body;
+
+  if (!token || !password || password.length < 8) {
+    return res.status(400).json({ message: 'Token i lozinka (min. 8 znakova) su obavezni.' });
+  }
+
+  try {
+    const [rows] = await db.query(
+      `SELECT id_user, invite_token_expires FROM AppUser WHERE invite_token = ? LIMIT 1`,
+      [token]
+    );
+
+    if (rows.length === 0) {
+      return res.status(400).json({ message: 'Nevažeći ili već iskorišteni link.' });
+    }
+
+    const user = rows[0];
+
+    if (new Date() > new Date(user.invite_token_expires)) {
+      return res.status(400).json({ message: 'Link je istekao. Zamolite administratora da vam pošalje novi.' });
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+
+    await db.query(
+      `UPDATE AppUser SET password_hash = ?, is_active = 1, invite_token = NULL, invite_token_expires = NULL WHERE id_user = ?`,
+      [hash, user.id_user]
+    );
+
+    res.json({ message: 'Lozinka je postavljena. Možete se prijaviti.' });
+  } catch (err) {
+    console.error('POST /api/auth/set-password error:', err);
+    res.status(500).json({ message: 'Greška pri postavljanju lozinke.' });
+  }
+});
+
 module.exports = router;
