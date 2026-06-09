@@ -305,13 +305,39 @@ router.post('/', authenticateToken, async (req, res) => {
     await connection.beginTransaction();
 
     const [fyRows] = await connection.query(
-      'SELECT year FROM FiscalYear WHERE id_fiscal_year = ? LIMIT 1',
+      'SELECT year, is_closed FROM FiscalYear WHERE id_fiscal_year = ? LIMIT 1',
       [fk_fiscal_year]
     );
 
     if (fyRows.length === 0) {
       await connection.rollback();
       return res.status(400).json({ message: 'Fiskalna godina ne postoji.' });
+    }
+
+    if (fyRows[0].is_closed) {
+      await connection.rollback();
+      return res.status(400).json({ message: 'Odabrana poslovna godina je zatvorena. Kreiranje zahtjeva nije moguće.' });
+    }
+
+    // odjel mora pripadati istoj poslovnoj godini
+    const [deptCheck] = await connection.query(
+      'SELECT id_department FROM Department WHERE id_department = ? AND fk_fiscal_year = ?',
+      [fk_department, fk_fiscal_year]
+    );
+    if (deptCheck.length === 0) {
+      await connection.rollback();
+      return res.status(400).json({ message: 'Odabrani odjel ne pripada odabranoj poslovnoj godini.' });
+    }
+
+    // sve kategorije moraju pripadati istoj poslovnoj godini
+    const categoryIds = [...new Set(items.map((i) => i.fk_item_category))];
+    const [catCheck] = await connection.query(
+      `SELECT id_item_category FROM ItemCategory WHERE id_item_category IN (?) AND fk_fiscal_year = ?`,
+      [categoryIds, fk_fiscal_year]
+    );
+    if (catCheck.length !== categoryIds.length) {
+      await connection.rollback();
+      return res.status(400).json({ message: 'Jedna ili više kategorija artikala ne pripada odabranoj poslovnoj godini.' });
     }
 
     const year = fyRows[0].year;
@@ -608,7 +634,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     const [requestRows] = await connection.query(
       `
-      SELECT fk_request_status, fk_created_by_user
+      SELECT fk_request_status, fk_created_by_user, fk_fiscal_year
       FROM PurchaseRequest
       WHERE id_purchase_request = ?
       FOR UPDATE
@@ -623,6 +649,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     const currentStatus = requestRows[0].fk_request_status;
     const isCreator = requestRows[0].fk_created_by_user === userId;
+    const fyId = requestRows[0].fk_fiscal_year;
 
     if (LOCKED_STATUSES.includes(currentStatus)) {
       await connection.rollback();
@@ -644,6 +671,27 @@ router.put('/:id', authenticateToken, async (req, res) => {
           message: 'Možete editirati samo svoje zahtjeve.',
         });
       }
+    }
+
+    // odjel mora pripadati poslovnoj godini zahtjeva
+    const [deptCheck] = await connection.query(
+      'SELECT id_department FROM Department WHERE id_department = ? AND fk_fiscal_year = ?',
+      [fk_department, fyId]
+    );
+    if (deptCheck.length === 0) {
+      await connection.rollback();
+      return res.status(400).json({ message: 'Odabrani odjel ne pripada poslovnoj godini ovog zahtjeva.' });
+    }
+
+    // sve kategorije moraju pripadati poslovnoj godini zahtjeva
+    const categoryIds = [...new Set(items.map((i) => i.fk_item_category))];
+    const [catCheck] = await connection.query(
+      `SELECT id_item_category FROM ItemCategory WHERE id_item_category IN (?) AND fk_fiscal_year = ?`,
+      [categoryIds, fyId]
+    );
+    if (catCheck.length !== categoryIds.length) {
+      await connection.rollback();
+      return res.status(400).json({ message: 'Jedna ili više kategorija artikala ne pripada poslovnoj godini ovog zahtjeva.' });
     }
 
     await connection.query(
