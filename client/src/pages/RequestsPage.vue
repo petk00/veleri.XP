@@ -23,28 +23,28 @@
           <div class="summary-item__icon">
             <q-icon name="folder_open" size="15px" />
           </div>
-          <span class="summary-item__value">{{ rows.length }}</span>
+          <span class="summary-item__value">{{ counts.total }}</span>
           <span class="summary-item__label">Ukupno zahtjeva</span>
         </div>
         <div class="summary-item summary-item--active">
           <div class="summary-item__icon">
             <q-icon name="autorenew" size="15px" />
           </div>
-          <span class="summary-item__value">{{ activeCount }}</span>
+          <span class="summary-item__value">{{ counts.active }}</span>
           <span class="summary-item__label">Aktivni</span>
         </div>
         <div class="summary-item summary-item--attention">
           <div class="summary-item__icon">
             <q-icon :name="isAdmin ? 'inbox' : 'undo'" size="15px" />
           </div>
-          <span class="summary-item__value">{{ attentionCount }}</span>
+          <span class="summary-item__value">{{ counts.attention }}</span>
           <span class="summary-item__label">{{ isAdmin ? 'Čeka pregled' : 'Vraćeno' }}</span>
         </div>
         <div class="summary-item summary-item--closed">
           <div class="summary-item__icon">
             <q-icon name="task_alt" size="15px" />
           </div>
-          <span class="summary-item__value">{{ closedCount }}</span>
+          <span class="summary-item__value">{{ counts.closed }}</span>
           <span class="summary-item__label">Zatvoreno</span>
         </div>
       </section>
@@ -57,15 +57,16 @@
         </div>
 
         <q-table
-          :rows="filteredRows"
+          :rows="rows"
           :columns="columns"
           row-key="id_purchase_request"
           :loading="loading"
           flat
-          :pagination="{ rowsPerPage: 15, sortBy: 'created_at', descending: true }"
-          :rows-per-page-options="[10, 15, 30, 50, 0]"
+          v-model:pagination="pagination"
+          :rows-per-page-options="[10, 25, 50]"
           rows-per-page-label="Redaka po stranici"
           class="data-table"
+          @request="onTableRequest"
           @row-click="(_, row) => openRequest(row.id_purchase_request)"
         >
           <template #top>
@@ -187,52 +188,45 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 import { getStoredUser } from 'src/utils/authStorage';
 
 const router = useRouter();
-const $q = useQuasar();
 
-const loading = ref(false);
-const rows = ref([]);
+const loading      = ref(false);
+const rows         = ref([]);
 const errorMessage = ref('');
+const counts       = ref({ total: 0, active: 0, attention: 0, closed: 0 });
+
+const currentUser = ref(null);
+const isAdmin     = ref(false);
 
 // Filteri
-const searchQuery = ref('');
-const statusFilter = ref('all');
+const searchQuery     = ref('');
+const statusFilter    = ref('all');
 const departmentFilter = ref('all');
-const userFilter = ref('all');
+const userFilter      = ref('all');
+
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 10,
+  rowsNumber: 0,
+});
 
 const statusOptions = [
-  { label: 'Svi statusi', value: 'all' },
-  { label: 'Poslano', value: 'Poslano' },
-  { label: 'Na odobrenju', value: 'Na odobrenju' },
-  { label: 'Vraćeno na dopunu', value: 'Vraćeno na dopunu / izmjenu' },
-  { label: 'Naručeno', value: 'Naručeno' },
-  { label: 'Zatvoreno', value: 'Zatvoreno' },
-  { label: 'Odbijeno', value: 'Odbijeno' },
+  { label: 'Svi statusi',       value: 'all' },
+  { label: 'Poslano',           value: 'Poslano' },
+  { label: 'Na odobrenju',      value: 'Na odobrenju' },
+  { label: 'Vraćeno na dopunu', value: 'Vraćeno na dopunu/izmjenu' },
+  { label: 'Naručeno',          value: 'Naručeno' },
+  { label: 'Zatvoreno',         value: 'Zatvoreno' },
+  { label: 'Odbijeno',          value: 'Odbijeno' },
 ];
 
-// Lista jedinstvenih odjela iz podataka
-const departmentOptions = computed(() => {
-  const set = new Set(rows.value.map(r => r.department_name).filter(Boolean));
-  return [
-    { label: 'Svi odjeli', value: 'all' },
-    ...[...set].sort().map(name => ({ label: name, value: name })),
-  ];
-});
-
-// Lista jedinstvenih podnositelja iz podataka (samo admin)
-const userOptions = computed(() => {
-  const set = new Set(rows.value.map(r => r.created_by).filter(Boolean));
-  return [
-    { label: 'Svi podnositelji', value: 'all' },
-    ...[...set].sort().map(name => ({ label: name, value: name })),
-  ];
-});
+const departmentOptions = ref([{ label: 'Svi odjeli', value: 'all' }]);
+const userOptions       = ref([{ label: 'Svi podnositelji', value: 'all' }]);
 
 const hasActiveFilters = computed(() =>
   searchQuery.value
@@ -241,69 +235,13 @@ const hasActiveFilters = computed(() =>
   || userFilter.value !== 'all'
 );
 
-const filteredRows = computed(() => {
-  let result = rows.value;
-
-  // Status
-  if (statusFilter.value !== 'all') {
-    result = result.filter(r => normalizeStatus(r.status_name) === normalizeStatus(statusFilter.value));
-  }
-
-  // Odjel
-  if (departmentFilter.value !== 'all') {
-    result = result.filter(r => r.department_name === departmentFilter.value);
-  }
-
-  // Podnositelj (samo admin)
-  if (userFilter.value !== 'all') {
-    result = result.filter(r => r.created_by === userFilter.value);
-  }
-
-  // Search (case-insensitive, više polja)
-  if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase().trim();
-    result = result.filter(r =>
-      (r.request_number || '').toLowerCase().includes(q)
-      || (r.created_by || '').toLowerCase().includes(q)
-      || (r.department_name || '').toLowerCase().includes(q)
-    );
-  }
-
-  return result;
-});
-
-const activeStatuses = ['Poslano', 'Na odobrenju', 'Vraćeno na dopunu/izmjenu', 'Naručeno'];
-
-const activeCount = computed(() =>
-  rows.value.filter((r) => activeStatuses.includes(normalizeStatus(r.status_name))).length
-);
-
-const closedCount = computed(() =>
-  rows.value.filter((r) => normalizeStatus(r.status_name) === 'Zatvoreno').length
-);
-
-const attentionCount = computed(() => {
-  const status = isAdmin.value ? 'Poslano' : 'Vraćeno na dopunu/izmjenu';
-  return rows.value.filter((r) => normalizeStatus(r.status_name) === status).length;
-});
-
-const resetFilters = () => {
-  searchQuery.value = '';
-  statusFilter.value = 'all';
-  departmentFilter.value = 'all';
-  userFilter.value = 'all';
-};
-
-const currentUser = ref(null);
-const isAdmin = ref(false);
-
 const columns = [
-  { name: 'request_number', label: 'Broj zahtjeva', field: 'request_number', align: 'left', sortable: true, style: 'min-width: 160px' },
-  { name: 'department_name',label: 'Odjel',         field: 'department_name',align: 'left', sortable: true, style: 'min-width: 160px' },
-  { name: 'status_name',    label: 'Status',        field: 'status_name',    align: 'left', sortable: true, style: 'min-width: 140px' },
-  { name: 'created_by',     label: 'Podnositelj',   field: 'created_by',     align: 'left', style: 'min-width: 140px' },
-  { name: 'total_amount',   label: 'Iznos',         field: 'total_amount',   align: 'left',  sortable: true, style: 'min-width: 100px', sort: (a, b) => (parseFloat(a) || 0) - (parseFloat(b) || 0) },
-  { name: 'created_at',     label: 'Datum',         field: 'created_at',     align: 'left', sortable: true, style: 'min-width: 110px' },
+  { name: 'request_number', label: 'Broj zahtjeva', field: 'request_number', align: 'left', sortable: false, style: 'min-width: 160px' },
+  { name: 'department_name', label: 'Odjel',        field: 'department_name', align: 'left', sortable: false, style: 'min-width: 160px' },
+  { name: 'status_name',    label: 'Status',        field: 'status_name',    align: 'left', sortable: false, style: 'min-width: 140px' },
+  { name: 'created_by',     label: 'Podnositelj',   field: 'created_by',     align: 'left', sortable: false, style: 'min-width: 140px' },
+  { name: 'total_amount',   label: 'Iznos',         field: 'total_amount',   align: 'left', sortable: false, style: 'min-width: 100px' },
+  { name: 'created_at',     label: 'Datum',         field: 'created_at',     align: 'left', sortable: false, style: 'min-width: 110px' },
   { name: 'actions',        label: '',              field: 'actions',        align: 'right', style: 'width: 38px' },
 ];
 
@@ -312,10 +250,19 @@ const fetchRequests = async () => {
   errorMessage.value = '';
 
   try {
-    const response = await api.get('/requests');
-    rows.value = Array.isArray(response.data) ? response.data : [];
+    const params = {
+      page:  pagination.value.page,
+      limit: pagination.value.rowsPerPage,
+    };
+    if (searchQuery.value)          params.search     = searchQuery.value;
+    if (statusFilter.value !== 'all')    params.status     = statusFilter.value;
+    if (departmentFilter.value !== 'all') params.department = departmentFilter.value;
+    if (isAdmin.value && userFilter.value !== 'all') params.user = userFilter.value;
 
-    notifyActionable();
+    const { data } = await api.get('/requests', { params });
+    rows.value                 = Array.isArray(data.data) ? data.data : [];
+    pagination.value.rowsNumber = data.total || 0;
+    counts.value               = data.counts || { total: 0, active: 0, attention: 0, closed: 0 };
   } catch (error) {
     console.error('Greška:', error);
     errorMessage.value = error.response?.data?.message || 'Zahtjevi se trenutno ne mogu dohvatiti.';
@@ -325,60 +272,51 @@ const fetchRequests = async () => {
   }
 };
 
-/**
- * Notifikacije ovisno o roli i statusu zahtjeva.
- * Statusi sada usklađeni s novim workflow-om (Poslano, Naručeno).
- */
-const notifyActionable = () => {
-  if (isAdmin.value) {
-    // Admin: Poslano = treba ga preuzeti na obradu
-    const cekaju = rows.value.filter(r => r.status_name === 'Poslano');
-
-    if (cekaju.length === 1) {
-      $q.notify({
-        color: 'dark',
-        icon: 'inbox',
-        message: `Zahtjev ${cekaju[0].request_number} čeka pregled.`,
-        timeout: 7000,
-        actions: [
-          {
-            label: 'Otvori',
-            color: 'white',
-            handler: () => router.push(`/requests/${cekaju[0].id_purchase_request}`),
-          },
-        ],
-      });
-    } else if (cekaju.length > 1) {
-      $q.notify({
-        color: 'dark',
-        icon: 'inbox',
-        message: `${cekaju.length} zahtjeva čeka pregled.`,
-        timeout: 7000,
-      });
+const fetchMeta = async () => {
+  try {
+    const { data } = await api.get('/requests/meta');
+    departmentOptions.value = [
+      { label: 'Svi odjeli', value: 'all' },
+      ...(data.departments || []).map((name) => ({ label: name, value: name })),
+    ];
+    if (isAdmin.value && data.users) {
+      userOptions.value = [
+        { label: 'Svi podnositelji', value: 'all' },
+        ...data.users.map((name) => ({ label: name, value: name })),
+      ];
     }
-  } else {
-    // Zaposlenik: Vraćeno = treba ispraviti i ponovno poslati
-    const vraceni = rows.value.filter(
-      r => normalizeStatus(r.status_name) === 'Vraćeno na dopunu/izmjenu'
-    );
-    vraceni.forEach(r => {
-      $q.notify({
-        color: 'orange-9',
-        icon: 'undo',
-        message: `Zahtjev ${r.request_number} je vraćen na izmjenu.`,
-        caption: 'Provjerite komentar administratora i pošaljite ispravku.',
-        timeout: 7000,
-        actions: [
-          {
-            label: 'Otvori',
-            color: 'white',
-            handler: () => router.push(`/requests/${r.id_purchase_request}`),
-          },
-        ],
-      });
-    });
+  } catch {
+    // ignore
   }
 };
+
+const onTableRequest = async (props) => {
+  pagination.value.page        = props.pagination.page;
+  pagination.value.rowsPerPage = props.pagination.rowsPerPage;
+  await fetchRequests();
+};
+
+const resetFilters = () => {
+  searchQuery.value      = '';
+  statusFilter.value     = 'all';
+  departmentFilter.value = 'all';
+  userFilter.value       = 'all';
+  pagination.value.page  = 1;
+};
+
+let searchTimer = null;
+watch(searchQuery, () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    pagination.value.page = 1;
+    fetchRequests();
+  }, 300);
+});
+
+watch([statusFilter, departmentFilter, userFilter], () => {
+  pagination.value.page = 1;
+  fetchRequests();
+});
 
 const openRequest = (id) => router.push(`/requests/${id}`);
 
@@ -394,33 +332,26 @@ const formatDate = (value) => {
   });
 };
 
-
-/**
- * Mapiranje status name → CSS klasa.
- * Status nazivi moraju odgovarati onome što backend vraća iz STATUS_LABELS.
- */
 const normalizeStatus = (status) =>
   (status || '').replace(/\s*\/\s*/g, '/').trim();
 
 const statusClass = (status) => {
   switch (normalizeStatus(status).toLowerCase()) {
-    case 'poslano':                     return 'status--sent';
-    case 'na odobrenju':                return 'status--review';
-    case 'vraćeno na dopunu/izmjenu':   return 'status--returned';
-    case 'odbijeno':                    return 'status--rejected';
-    case 'naručeno':                    return 'status--ordered';
-    case 'odobreno':                    return 'status--ordered';
-    case 'zatvoreno':                   return 'status--closed';
-    default:                            return 'status--default';
+    case 'poslano':                   return 'status--sent';
+    case 'na odobrenju':              return 'status--review';
+    case 'vraćeno na dopunu/izmjenu': return 'status--returned';
+    case 'odbijeno':                  return 'status--rejected';
+    case 'naručeno':                  return 'status--ordered';
+    case 'odobreno':                  return 'status--ordered';
+    case 'zatvoreno':                 return 'status--closed';
+    default:                          return 'status--default';
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
   currentUser.value = getStoredUser();
-  isAdmin.value = currentUser.value?.role_name === 'Administrator';
-  // Default: prvi item u listi je 'all', ostavi tako
-  statusFilter.value = 'all';
-  fetchRequests();
+  isAdmin.value     = currentUser.value?.role_name === 'Administrator';
+  await Promise.all([fetchRequests(), fetchMeta()]);
 });
 </script>
 
