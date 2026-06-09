@@ -8,15 +8,26 @@ const routes = [
   },
 
   {
+    path: '/set-password',
+    component: () => import('layouts/AuthLayout.vue'),
+    children: [
+      { path: '', component: () => import('pages/SetPasswordPage.vue') },
+    ],
+  },
+
+  {
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
       { path: '', redirect: '/login' },
+      { path: 'home', component: () => import('pages/LandingPage.vue') },
       { path: 'dashboard', component: () => import('pages/IndexPage.vue') },
       { path: 'requests', component: () => import('pages/RequestsPage.vue') },
       { path: 'requests/new', component: () => import('pages/NewRequestPage.vue') },
       { path: 'requests/:id', component: () => import('pages/RequestDetailsPage.vue') },
       { path: 'requests/:id/edit', component: () => import('pages/EditRequestPage.vue') },
+      { path: 'users', component: () => import('pages/UsersPage.vue') },
+      { path: 'fiscal-years', component: () => import('pages/FiscalYearPage.vue') },
     ],
   },
 

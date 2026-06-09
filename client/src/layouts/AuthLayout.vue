@@ -1,7 +1,11 @@
 <template>
   <q-layout view="lHh Lpr lFf" class="auth-layout">
     <q-page-container>
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <transition name="page" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </q-page-container>
   </q-layout>
 </template>
@@ -12,9 +16,11 @@
 <style>
 .auth-layout {
   min-height: 100vh;
-  background:
-    radial-gradient(ellipse at 0% 0%, rgba(74, 127, 212, 0.18) 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 100%, rgba(22, 41, 78, 0.4) 0%, transparent 50%),
-    linear-gradient(160deg, #0a1628 0%, #16294e 50%, #1a3260 100%);
+  background: #F5F5F5;
 }
+
+.page-enter-active { transition: opacity 0.18s ease, transform 0.18s ease; }
+.page-leave-active { transition: opacity 0.1s ease, transform 0.1s ease; }
+.page-enter-from   { opacity: 0; transform: translateY(8px); }
+.page-leave-to     { opacity: 0; transform: translateY(-4px); }
 </style>

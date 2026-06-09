@@ -2,88 +2,133 @@
   <q-layout view="lHh Lpr lFf" class="app-layout">
 
     <q-header class="app-header">
-      <q-toolbar class="toolbar-shell">
+      <q-toolbar class="toolbar">
 
-        <!-- Brand -->
-        <div class="brand" @click="$router.push('/dashboard')">
-          <div class="brand__icon">
-            <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
-              <rect x="2" y="2" width="11" height="11" rx="3" fill="white" fill-opacity="0.95"/>
-              <rect x="15" y="2" width="11" height="11" rx="3" fill="white" fill-opacity="0.5"/>
-              <rect x="2" y="15" width="11" height="11" rx="3" fill="white" fill-opacity="0.5"/>
-              <rect x="15" y="15" width="11" height="11" rx="3" fill="white" fill-opacity="0.95"/>
-            </svg>
-          </div>
-          <div class="brand__text">
-            <span class="brand__name">XP</span>
-            <span class="brand__sub">Sustav nabave</span>
-          </div>
-        </div>
+        <!-- Logo -->
+        <button class="brand" @click="$router.push('/home')">
+          <img
+            src="/veleri-logo-horizontal.png"
+            alt="Veleučilište u Rijeci"
+            class="brand__logo"
+          />
+        </button>
 
-        <!-- Nav -->
-        <nav class="nav gt-sm">
+        <q-space />
+
+        <!-- Nav (samo u aplikaciji nabave) -->
+        <nav v-if="!isHome" class="nav gt-sm">
           <button
             class="nav__item"
             :class="{ 'nav__item--active': isActive('/dashboard') }"
             @click="$router.push('/dashboard')"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="7" height="7" rx="1"/>
-              <rect x="14" y="3" width="7" height="7" rx="1"/>
-              <rect x="3" y="14" width="7" height="7" rx="1"/>
-              <rect x="14" y="14" width="7" height="7" rx="1"/>
-            </svg>
             Dashboard
           </button>
-
           <button
             class="nav__item"
             :class="{ 'nav__item--active': isActive('/requests') }"
             @click="$router.push('/requests')"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14,2 14,8 20,8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-              <polyline points="10,9 9,9 8,9"/>
-            </svg>
             Zahtjevi
+          </button>
+          <button
+            v-if="isAdmin"
+            class="nav__item"
+            :class="{ 'nav__item--active': isActive('/users') }"
+            @click="$router.push('/users')"
+          >
+            Korisnici
+          </button>
+          <button
+            v-if="isAdmin"
+            class="nav__item"
+            :class="{ 'nav__item--active': isActive('/fiscal-years') }"
+            @click="$router.push('/fiscal-years')"
+          >
+            Poslovne godine
           </button>
         </nav>
 
-        <div class="toolbar-spacer" />
+        <!-- Hamburger -->
+        <button v-if="user" class="hamburger-btn">
+          <q-icon name="menu" size="22px" />
 
-        <!-- User panel -->
-        <div v-if="user" class="user-panel">
-          <div class="user-avatar">{{ initials }}</div>
-
-          <div class="user-meta gt-xs">
-            <span class="user-name">{{ fullName }}</span>
-            <span class="user-role">{{ user.role_name }}</span>
-          </div>
-
-          <button class="logout-btn" @click="logout" title="Odjava">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16,17 21,12 16,7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-          </button>
-        </div>
+          <q-menu
+            anchor="bottom right"
+            self="top right"
+            :offset="[0, 6]"
+            class="user-menu"
+            transition-show="jump-down"
+            transition-hide="jump-up"
+          >
+            <div class="user-menu__header">
+              <div class="avatar avatar--lg" :style="{ background: avatarColor }">{{ initials }}</div>
+              <div>
+                <div class="user-menu__name">{{ fullName }}</div>
+                <div class="user-menu__email">{{ user.email || user.role_name }}</div>
+              </div>
+            </div>
+            <q-list class="user-menu__list">
+              <q-item clickable v-close-popup @click="logout" class="user-menu__item">
+                <q-item-section avatar>
+                  <q-icon name="logout" size="18px" />
+                </q-item-section>
+                <q-item-section>Odjava</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </button>
 
       </q-toolbar>
+
+      <!-- Mobile nav (samo u aplikaciji nabave) -->
+      <div v-if="!isHome" class="mobile-nav lt-md">
+        <button
+          class="mobile-nav__item"
+          :class="{ 'mobile-nav__item--active': isActive('/dashboard') }"
+          @click="$router.push('/dashboard')"
+        >
+          Dashboard
+        </button>
+        <button
+          class="mobile-nav__item"
+          :class="{ 'mobile-nav__item--active': isActive('/requests') }"
+          @click="$router.push('/requests')"
+        >
+          Zahtjevi
+        </button>
+        <button
+          v-if="isAdmin"
+          class="mobile-nav__item"
+          :class="{ 'mobile-nav__item--active': isActive('/users') }"
+          @click="$router.push('/users')"
+        >
+          Korisnici
+        </button>
+        <button
+          v-if="isAdmin"
+          class="mobile-nav__item"
+          :class="{ 'mobile-nav__item--active': isActive('/fiscal-years') }"
+          @click="$router.push('/fiscal-years')"
+        >
+          Posl. godine
+        </button>
+      </div>
     </q-header>
 
     <q-page-container>
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <transition name="page" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </q-page-container>
 
   </q-layout>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getStoredUser } from 'src/utils/authStorage';
 import { useActionableRequestsNotifier } from 'src/composables/useActionableRequestsNotifier';
@@ -103,9 +148,19 @@ const fullName = computed(() => {
 const initials = computed(() => {
   if (!user.value) return '?';
   const first = user.value.first_name?.[0] || '';
-  const last  = user.value.last_name?.[0]  || '';
+  const last = user.value.last_name?.[0] || '';
   return `${first}${last}`.toUpperCase();
 });
+
+const avatarColor = computed(() => {
+  const palette = ['#0067b8', '#7c3aed', '#059669', '#d97706', '#dc2626', '#0891b2', '#9333ea', '#be185d'];
+  const str = (user.value?.first_name || '') + (user.value?.last_name || '');
+  const idx = [...str].reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % palette.length;
+  return palette[idx];
+});
+
+const isAdmin = computed(() => user.value?.role_name === 'Administrator');
+const isHome = computed(() => route.path === '/home');
 
 const isActive = (path) => {
   if (path === '/requests') return route.path.startsWith('/requests');
@@ -119,217 +174,309 @@ const logout = () => {
   router.replace('/login');
 };
 
-import { onMounted } from 'vue';
 onMounted(() => {
   checkActionableRequests();
 });
 </script>
 
 <style scoped>
-/* ── Layout ──────────────────────────────────────────── */
+/* ─────────────────────────────────────
+   Layout & header
+   ───────────────────────────────────── */
 .app-layout {
-  background: #f0f4fa;
+  background:
+    radial-gradient(circle at 10% 12%, rgba(219, 243, 255, 0.58), transparent 28%),
+    radial-gradient(circle at 88% 34%, rgba(255, 244, 249, 0.72), transparent 30%),
+    linear-gradient(135deg, #fbfdff 0%, #f7f5fb 52%, #fffdfb 100%);
 }
 
-/* ── Header ──────────────────────────────────────────── */
+.app-layout::before,
+.app-layout::after {
+  content: '';
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  border: 1px solid rgba(188, 222, 255, 0.42);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 0 70px rgba(217, 239, 255, 0.24);
+}
+
+.app-layout::before {
+  width: 560px;
+  height: 470px;
+  left: -190px;
+  bottom: -210px;
+  transform: rotate(-42deg);
+}
+
+.app-layout::after {
+  width: 620px;
+  height: 360px;
+  right: -180px;
+  top: 92px;
+  transform: rotate(-14deg);
+}
+
 .app-header {
-  background: #16294e !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 4px 24px rgba(10, 22, 40, 0.24);
+  background: linear-gradient(90deg,
+    rgba(180, 218, 255, 0.85) 0%,
+    rgba(235, 247, 255, 0.98) 28%,
+    rgba(245, 245, 252, 0.98) 72%,
+    rgba(255, 210, 232, 0.75) 100%
+  ) !important;
+  color: #1a1a1a;
+  box-shadow: none;
+  border-bottom: 1px solid rgba(155, 200, 240, 0.75);
+  z-index: 10;
 }
 
-.toolbar-shell {
-  min-height: 64px;
-  padding: 0 24px;
-  gap: 8px;
+:deep(.q-page-container) {
+  position: relative;
+  z-index: 1;
 }
 
-.toolbar-spacer {
-  flex: 1;
+.toolbar {
+  min-height: 52px;
+  padding: 0 32px;
+  gap: 0;
 }
 
-/* ── Brand ───────────────────────────────────────────── */
+/* ─────────────────────────────────────
+   Brand
+   ───────────────────────────────────── */
 .brand {
+  all: unset;
   display: flex;
   align-items: center;
-  gap: 12px;
   cursor: pointer;
-  text-decoration: none;
-  margin-right: 32px;
-  flex-shrink: 0;
 }
 
-.brand__icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background 0.2s;
+.brand__logo {
+  display: block;
+  width: 136px;
+  height: auto;
+  object-fit: contain;
 }
 
-.brand:hover .brand__icon {
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.brand__text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
-}
-
-.brand__name {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: white;
-  letter-spacing: 0.06em;
-}
-
-.brand__sub {
-  font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.45);
-  margin-top: 2px;
-  letter-spacing: 0.04em;
-}
-
-/* ── Nav ─────────────────────────────────────────────── */
+/* ─────────────────────────────────────
+   Primary nav (desktop)
+   ───────────────────────────────────── */
 .nav {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
+  margin-right: 16px;
 }
 
 .nav__item {
   all: unset;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.55);
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 3px;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: #424242;
   cursor: pointer;
-  transition: all 0.18s;
-  letter-spacing: -0.01em;
   white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
 }
 
 .nav__item:hover {
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.06);
+  color: #111827;
 }
 
 .nav__item--active {
-  color: white;
-  background: rgba(255, 255, 255, 0.12);
+  background: #111827;
+  color: #fff;
+  font-weight: 500;
 }
 
-/* ── User panel ──────────────────────────────────────── */
-.user-panel {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 6px 6px 10px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+.nav__item--active:hover {
+  background: #000;
+  color: #fff;
 }
 
-.user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: rgba(74, 127, 212, 0.5);
-  color: white;
-  font-size: 0.72rem;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  letter-spacing: 0.04em;
-  flex-shrink: 0;
-}
-
-.user-meta {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
-  min-width: 100px;
-}
-
-.user-name {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: white;
-  letter-spacing: -0.01em;
-}
-
-.user-role {
-  font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.45);
-  margin-top: 2px;
-}
-
-.logout-btn {
+/* ─────────────────────────────────────
+   Hamburger button
+   ───────────────────────────────────── */
+.hamburger-btn {
   all: unset;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.4);
+  width: 36px;
+  height: 36px;
+  border-radius: 3px;
+  color: #424242;
   cursor: pointer;
-  transition: all 0.18s;
+  transition: background 0.12s, color 0.12s;
 }
 
-.logout-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.9);
+.hamburger-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #111827;
 }
 
-/* ── Responsive ──────────────────────────────────────── */
+/* ─────────────────────────────────────
+   Mobile nav (visible <md)
+   ───────────────────────────────────── */
+.mobile-nav {
+  display: flex;
+  align-items: stretch;
+  background: #fff;
+  border-top: 1px solid #edebe9;
+}
+
+.mobile-nav__item {
+  all: unset;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 8px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #424242;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: background 0.12s;
+}
+
+.mobile-nav__item:hover { background: rgba(0,0,0,0.04); color: #111827; }
+
+.mobile-nav__item--active {
+  color: #111827;
+  border-bottom-color: #0067b8;
+  font-weight: 500;
+}
+
+/* ─────────────────────────────────────
+   Responsive tweaks
+   ───────────────────────────────────── */
 @media (max-width: 600px) {
-  .toolbar-shell {
-    padding: 0 14px;
-    min-height: 56px;
-  }
-
-  .brand {
-    margin-right: 0;
-  }
-
-  .brand__sub {
-    display: none;
-  }
+  .toolbar { padding: 0 16px; }
+  .brand__logo { width: 112px; }
 }
 </style>
 
 <style>
-/* Global notify stilovi */
+/* ── Globalni stilovi (ne-scoped) ────────────── */
+
+/* Avatar (koristi se unutar q-menu portala) */
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.avatar--lg {
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
+}
+
+/* Dropdown menu */
+.user-menu {
+  background: white;
+  border: 1px solid #E1DFDD;
+  border-radius: 6px;
+  box-shadow:
+    0 6.4px 14.4px rgba(0, 0, 0, 0.13),
+    0 1.2px 3.6px rgba(0, 0, 0, 0.10);
+  min-width: 240px;
+  overflow: hidden;
+}
+.user-menu__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid #EDEBE9;
+  background: #FAFAFA;
+}
+.user-menu__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #201F1E;
+  letter-spacing: -0.005em;
+}
+.user-menu__email {
+  font-size: 11px;
+  color: #605E5C;
+  margin-top: 1px;
+}
+.user-menu__list { padding: 4px; }
+.user-menu__item {
+  border-radius: 4px;
+  min-height: 36px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #201F1E;
+}
+.user-menu__item:hover { background: #F3F2F1; }
+.user-menu__item .q-icon { color: #605E5C; }
+
+/* Page transitions */
+.page-enter-active { transition: opacity 0.18s ease, transform 0.18s ease; }
+.page-leave-active { transition: opacity 0.1s ease, transform 0.1s ease; }
+.page-enter-from   { opacity: 0; transform: translateY(8px); }
+.page-leave-to     { opacity: 0; transform: translateY(-4px); }
+
+/* Notify stilovi */
 .actionable-request-notify {
-  min-width: 360px;
-  max-width: 460px;
-  border-radius: 14px !important;
-  padding: 14px 16px !important;
-  box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.25) !important;
+  min-width: 320px;
+  max-width: 420px;
+  border-radius: 6px !important;
+  padding: 12px 14px !important;
+  box-shadow:
+    0 6.4px 14.4px rgba(0, 0, 0, 0.13),
+    0 1.2px 3.6px rgba(0, 0, 0, 0.10) !important;
 }
-
 .actionable-request-notify .q-notification__message {
-  font-weight: 700;
-  font-size: 0.9rem;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  letter-spacing: -0.005em;
+}
+.actionable-request-notify .q-notification__caption {
+  margin-top: 2px;
+  opacity: 0.85;
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
 
-.actionable-request-notify .q-notification__caption {
-  margin-top: 3px;
-  opacity: 0.85;
-  font-size: 0.78rem;
-  line-height: 1.4;
+/* PRINT — sakrij sve UI elemente Layout-a */
+@media print {
+  .app-header,
+  .q-header,
+  .toolbar,
+  .mobile-nav {
+    display: none !important;
+  }
+
+  .q-page-container {
+    padding-top: 0 !important;
+    min-height: 0 !important;
+  }
+
+  .q-layout,
+  .q-page-container,
+  .q-page {
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  body, .app-layout, .q-layout {
+    background: white !important;
+  }
 }
 </style>

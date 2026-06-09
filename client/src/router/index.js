@@ -23,12 +23,15 @@ export default route(function () {
   Router.beforeEach((to, from, next) => {
     const token = localStorage.getItem('token');
     const isLoggedIn = !!token;
-    const isLoginRoute = to.path === '/login';
+    const publicRoutes = ['/login', '/set-password'];
+    const isPublic = publicRoutes.some(p => to.path === p || to.path.startsWith(p + '/'));
 
-    if (!isLoggedIn && !isLoginRoute) {
+    if (!isLoggedIn && !isPublic) {
       next('/login');
       return;
     }
+
+    const isLoginRoute = to.path === '/login';
 
     if (isLoggedIn && isLoginRoute) {
       next('/dashboard');
