@@ -27,6 +27,7 @@ const routes = [
       { path: 'requests/:id', component: () => import('pages/RequestDetailsPage.vue') },
       { path: 'requests/:id/edit', component: () => import('pages/EditRequestPage.vue') },
       { path: 'users', component: () => import('pages/UsersPage.vue') },
+      { path: 'fiscal-years', component: () => import('pages/FiscalYearPage.vue') },
     ],
   },
 

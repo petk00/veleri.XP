@@ -34,12 +34,11 @@ router.get('/active-fiscal-year', authenticateToken, async (req, res) => {
 router.get('/departments', authenticateToken, async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT
-        id_department,
-        name
-      FROM Department
-      WHERE is_active = 1
-      ORDER BY name ASC
+      SELECT d.id_department, d.name
+      FROM Department d
+      INNER JOIN FiscalYear fy ON d.fk_fiscal_year = fy.id_fiscal_year
+      WHERE fy.is_closed = 0 AND d.is_active = 1
+      ORDER BY d.name ASC
     `);
 
     res.json(rows);
@@ -55,12 +54,11 @@ router.get('/departments', authenticateToken, async (req, res) => {
 router.get('/item-categories', authenticateToken, async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT
-        id_item_category,
-        name
-      FROM ItemCategory
-      WHERE is_active = 1
-      ORDER BY name ASC
+      SELECT ic.id_item_category, ic.name
+      FROM ItemCategory ic
+      INNER JOIN FiscalYear fy ON ic.fk_fiscal_year = fy.id_fiscal_year
+      WHERE fy.is_closed = 0 AND ic.is_active = 1
+      ORDER BY ic.name ASC
     `);
 
     res.json(rows);

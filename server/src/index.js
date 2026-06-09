@@ -9,6 +9,7 @@ const requestAttachmentRoutes = require('./routes/requestAttachmentRoutes');
 const attachmentRoutes = require('./routes/attachmentRoutes');
 const referenceRoutes = require('./routes/referenceRoutes');
 const userRoutes = require('./routes/userRoutes');
+const fiscalYearRoutes = require('./routes/fiscalYearRoutes');
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use('/api/requests', requestAttachmentRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/reference', referenceRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/fiscal-years', fiscalYearRoutes);
 
 const PORT = process.env.PORT || 3000;
 
