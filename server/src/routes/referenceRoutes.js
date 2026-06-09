@@ -26,7 +26,6 @@ router.get('/active-fiscal-year', authenticateToken, async (req, res) => {
     console.error('GET /api/reference/active-fiscal-year error:', error);
     res.status(500).json({
       message: 'Greška pri dohvaćanju aktivne fiskalne godine.',
-      error: error.message,
     });
   }
 });
@@ -46,7 +45,6 @@ router.get('/departments', authenticateToken, async (req, res) => {
     console.error('GET /api/reference/departments error:', error);
     res.status(500).json({
       message: 'Greška pri dohvaćanju odjela.',
-      error: error.message,
     });
   }
 });
@@ -66,7 +64,6 @@ router.get('/item-categories', authenticateToken, async (req, res) => {
     console.error('GET /api/reference/item-categories error:', error);
     res.status(500).json({
       message: 'Greška pri dohvaćanju kategorija.',
-      error: error.message,
     });
   }
 });

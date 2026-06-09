@@ -11,9 +11,30 @@ const referenceRoutes = require('./routes/referenceRoutes');
 const userRoutes = require('./routes/userRoutes');
 const fiscalYearRoutes = require('./routes/fiscalYearRoutes');
 
+const REQUIRED_ENV = ['JWT_SECRET', 'DB_HOST', 'DB_USER', 'DB_NAME'];
+for (const key of REQUIRED_ENV) {
+  if (!process.env[key]) {
+    console.error(`[startup] Nedostaje env varijabla: ${key}`);
+    process.exit(1);
+  }
+}
+
 const app = express();
 
-app.use(cors());
+const allowedOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map((o) => o.trim())
+  : ['http://localhost:9000', 'http://localhost:8080'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin nije dozvoljen — ${origin}`));
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 app.use('/api/test', testRoutes);

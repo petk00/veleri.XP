@@ -120,6 +120,29 @@
           </div>
         </div>
 
+        <div v-if="isAdmin && status === STATUS.VRACENO" class="action-banner action-banner--neutral no-print">
+          <div class="action-banner__icon">
+            <q-icon name="hourglass_empty" size="18px" />
+          </div>
+          <div class="action-banner__body">
+            <div class="action-banner__title">Čeka odgovor podnositelja</div>
+            <div class="action-banner__desc">
+              Zahtjev je vraćen podnositelju na dopunu. Možete ga preuzeti na ponovnu obradu bez čekanja ili ga odbiti.
+            </div>
+          </div>
+          <div class="action-banner__actions">
+            <button class="btn btn--danger" @click="openActionDialog('odbij')">
+              <q-icon name="close" size="16px" />
+              <span>Odbij</span>
+            </button>
+            <button class="btn btn--primary" :disabled="submittingAction" @click="quickAction('vrati-u-obradu')">
+              <q-spinner v-if="submittingAction" size="14px" color="white" />
+              <q-icon v-else name="assignment_turned_in" size="16px" />
+              <span>Preuzmi na obradu</span>
+            </button>
+          </div>
+        </div>
+
         <div v-if="canFinish" class="action-banner action-banner--success no-print">
           <div class="action-banner__icon">
             <q-icon name="verified" size="18px" />
@@ -282,6 +305,10 @@
                   </div>
                 </div>
                 <div class="file-actions">
+                  <button v-if="canPreview(att)" class="icon-btn" @click="previewAttachment(att)">
+                    <q-icon name="visibility" size="16px" />
+                    <q-tooltip>Prikaži</q-tooltip>
+                  </button>
                   <button class="icon-btn" @click="downloadAttachment(att)">
                     <q-icon name="download" size="16px" />
                     <q-tooltip>Preuzmi</q-tooltip>
@@ -697,7 +724,7 @@ const dialogConfirmLabel = computed(() => {
 
 /* ───────── API ───────── */
 
-const fetchRequestDetails = async () => {
+const fetchRequestDetails = async (isRefresh = false) => {
   loading.value = true;
   try {
     const [detailsRes, attachmentsRes] = await Promise.all([
@@ -714,7 +741,7 @@ const fetchRequestDetails = async () => {
       type: 'negative',
       message: error.response?.data?.message || 'Greška pri dohvaćanju zahtjeva.',
     });
-    request.value = null;
+    if (!isRefresh) request.value = null;
   } finally {
     loading.value = false;
   }
@@ -735,7 +762,7 @@ const uploadAttachment = async () => {
     });
     $q.notify({ type: 'positive', message: `${docType} uspješno dodana.` });
     uploadForm.value = { document_type: null, file: null };
-    await fetchRequestDetails();
+    await fetchRequestDetails(true);
   } catch (error) {
     $q.notify({
       type: 'negative',
@@ -743,6 +770,24 @@ const uploadAttachment = async () => {
     });
   } finally {
     uploading.value = false;
+  }
+};
+
+const canPreview = (att) => {
+  const t = att.file_type || '';
+  return t.includes('pdf') || t.startsWith('image/') || t.startsWith('text/');
+};
+
+const previewAttachment = async (att) => {
+  try {
+    const response = await api.get(`/attachments/download/${att.id_attachment}`, {
+      responseType: 'blob',
+    });
+    const blob = new Blob([response.data], { type: att.file_type });
+    const url = window.URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  } catch {
+    $q.notify({ type: 'negative', message: 'Greška pri otvaranju datoteke.' });
   }
 };
 
@@ -774,7 +819,7 @@ const deleteAttachment = (att) => {
     try {
       await api.delete(`/attachments/delete/${att.id_attachment}`);
       $q.notify({ type: 'positive', message: 'Dokument obrisan.' });
-      await fetchRequestDetails();
+      await fetchRequestDetails(true);
     } catch (error) {
       $q.notify({
         type: 'negative',
@@ -792,9 +837,10 @@ const quickAction = async (action) => {
       preuzmi: 'Zahtjev preuzet na obradu.',
       resubmit: 'Zahtjev je ponovno poslan.',
       zavrsi: 'Zahtjev je označen kao završen.',
+      'vrati-u-obradu': 'Zahtjev preuzet na ponovnu obradu.',
     };
     $q.notify({ type: 'positive', message: messages[action] || 'Akcija izvršena.' });
-    await fetchRequestDetails();
+    await fetchRequestDetails(true);
   } catch (error) {
     $q.notify({
       type: 'negative',
@@ -829,7 +875,7 @@ const confirmAction = async () => {
     });
     $q.notify({ type: 'positive', message: 'Status zahtjeva ažuriran.' });
     closeActionDialog();
-    await fetchRequestDetails();
+    await fetchRequestDetails(true);
   } catch (error) {
     $q.notify({
       type: 'negative',

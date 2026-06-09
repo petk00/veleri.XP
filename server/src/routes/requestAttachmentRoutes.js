@@ -180,7 +180,7 @@ router.post('/:id/attachments', authenticateToken, upload.single('file'), async 
     await connection.rollback();
     cleanupUploadedFile(req.file?.path);
     console.error('POST attachment error:', error);
-    return res.status(500).json({ message: 'Greška pri spremanju fajla.', error: error.message });
+    return res.status(500).json({ message: 'Greška pri spremanju fajla.' });
   } finally {
     connection.release();
   }
@@ -219,7 +219,7 @@ router.get('/:id/attachments', authenticateToken, async (req, res) => {
     res.json(rows);
   } catch (error) {
     console.error('GET attachments error:', error);
-    res.status(500).json({ message: 'Greška pri dohvaćanju fajlova.', error: error.message });
+    res.status(500).json({ message: 'Greška pri dohvaćanju fajlova.' });
   }
 });
 
