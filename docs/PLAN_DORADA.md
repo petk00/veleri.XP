@@ -13,29 +13,27 @@ Financijski limiti i analitika namjerno se ostavljaju za zadnju fazu jer ovise o
 
 ## Trenutno stanje
 
-Aplikacija trenutno ima implementiranu osnovnu jezgru procesa nabave:
+Aplikacija ima implementiran kompletan MVP proces nabave:
 
-- prijava korisnika,
-- osnovne korisničke uloge,
-- kreiranje zahtjeva,
-- pregled zahtjeva,
-- detalji zahtjeva,
-- promjene statusa,
-- upload ponude i otpremnice,
-- brisanje i download dokumenata,
+- prijava i odjava korisnika (httpOnly cookie JWT),
+- postavljanje lozinke putem invite linka,
+- admin upravljanje korisnicima (CRUD, invite, reset, deaktivacija),
+- admin upravljanje poslovnim godinama, odjelima i kategorijama,
+- kreiranje i uređivanje zahtjeva,
+- pregled zahtjeva s serverskom paginacijom i naprednim filterima,
+- kompletan workflow: preuzmi, odobri, vrati na izmjenu, odbij, naruči, zatvori, storno, vrati-u-obradu,
+- upload, pregled, download i brisanje dokumenata (Ponuda, Otpremnica),
 - povijest aktivnosti zahtjeva,
-- osnovne in-app obavijesti.
+- in-app obavijesti za sve relevantne promjene statusa,
+- sigurnosni hardening (Helmet, CORS whitelist, rate limiting, path traversal zaštita).
 
-Najveće neimplementirane cjeline su:
+Preostale neimplementirane cjeline:
 
-- administracija korisnika,
-- poslovne godine,
-- šifrarnici,
-- draft i storniranje,
-- proširene vrste dokumenata,
-- serverska paginacija i napredni filteri,
-- perzistentne notifikacije,
-- limiti i financijsko praćenje.
+- draft zahtjeva (spremanje bez slanja),
+- proširene vrste dokumenata (Narudžbenica, Ostalo),
+- financijski limiti i analitika,
+- automatizirani testovi,
+- produkcijski deployment.
 
 ## Prioriteti
 
@@ -69,7 +67,7 @@ Cilj ove faze je uskladiti dokumentaciju sa stvarnim stanjem projekta.
 
 Nakon ove faze projekt ima dokumentacijsku osnovu koja jasno objašnjava što je implementirano, što nije implementirano i kojim redoslijedom se nastavlja razvoj.
 
-## Faza 2: Admin upravljanje korisnicima
+## Faza 2: Admin upravljanje korisnicima ✅ DOVRŠENO
 
 Prioritet: **Visoko**
 
@@ -95,7 +93,7 @@ Ova faza pokriva zahtjev 1.1 i dopunjuje zahtjev 1.3 iz SRS-a.
 - Deaktivirani korisnik se ne može prijaviti.
 - Svaki korisnik ima točno jednu ulogu.
 
-## Faza 3: Poslovne godine
+## Faza 3: Poslovne godine ✅ DOVRŠENO
 
 Prioritet: **Visoko**
 
@@ -121,7 +119,7 @@ Ova faza pokriva zahtjeve 2.1, 2.3, 2.4 i 2.5 iz SRS-a.
 - Zaključana godina je samo za čitanje.
 - Poslovna godina se ne može obrisati kroz aplikaciju.
 
-## Faza 4: Šifrarnici
+## Faza 4: Šifrarnici ✅ DOVRŠENO
 
 Prioritet: **Visoko**
 
@@ -164,7 +162,7 @@ Ova faza dodatno učvršćuje zahtjev 3.2 iz SRS-a.
 - Nije moguće poslati zahtjev koji kombinira šifrarnike iz različitih poslovnih godina.
 - Nije moguće kreirati novi zahtjev u zaključanoj godini.
 
-## Faza 6: Draft i storniranje
+## Faza 6: Draft i storniranje — ⚠️ DJELOMIČNO
 
 Prioritet: **Srednje**
 
@@ -213,7 +211,7 @@ Ova faza pokriva zahtjeve 5.1, 5.3 i djelomično 5.7 iz SRS-a.
 - Zatvoreni zahtjev ne dopušta dodavanje ni brisanje dokumenata.
 - Upload pravila su jednaka na frontendu i backendu.
 
-## Faza 8: Pregled, filteri i paginacija
+## Faza 8: Pregled, filteri i paginacija ✅ DOVRŠENO
 
 Prioritet: **Srednje**
 
@@ -237,7 +235,7 @@ Ova faza pokriva zahtjeve 6.3 i 6.4 iz SRS-a.
 - Filteri iz SRS-a dostupni su korisniku.
 - Zaposlenik i dalje vidi samo vlastite zahtjeve.
 
-## Faza 9: Notifikacije i audit dorade
+## Faza 9: Notifikacije i audit dorade ✅ DOVRŠENO
 
 Prioritet: **Srednje**
 

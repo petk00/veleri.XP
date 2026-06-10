@@ -24,7 +24,7 @@ Komunikacija između klijenta i poslužitelja odvija se preko REST API-ja. Front
 +--------------+--------------+
                |
                | HTTP/JSON
-               | Authorization: Bearer JWT
+               | Cookie: token (httpOnly)
                v
 +--------------+--------------+
 |       Node.js / Express      |
@@ -74,26 +74,22 @@ Glavne frontend cjeline:
 | `client/src/router/routes.js` | Definicija ruta aplikacije. |
 | `client/src/layouts/AuthLayout.vue` | Layout za login i početne stranice. |
 | `client/src/layouts/MainLayout.vue` | Glavni layout aplikacije nakon prijave. |
-| `client/src/pages/LoginPage.vue` | Prijava korisnika. |
-| `client/src/pages/RequestsPage.vue` | Pregled i filtriranje zahtjeva. |
+| `client/src/pages/LoginPage.vue` | Prijava korisnika (dvofazni email → lozinka flow). |
+| `client/src/pages/SetPasswordPage.vue` | Postavljanje lozinke putem invite linka. |
+| `client/src/pages/RequestsPage.vue` | Pregled i filtriranje zahtjeva s serverskom paginacijom. |
 | `client/src/pages/NewRequestPage.vue` | Kreiranje novog zahtjeva. |
-| `client/src/pages/EditRequestPage.vue` | Uređivanje zahtjeva. |
+| `client/src/pages/EditRequestPage.vue` | Uređivanje zahtjeva (samo u statusu Vraćeno). |
 | `client/src/pages/RequestDetailsPage.vue` | Detalji zahtjeva, dokumenti, statusi i povijest. |
 | `client/src/pages/IndexPage.vue` | Početni dashboard nakon prijave. |
-| `client/src/boot/axios.js` | Konfiguracija Axios klijenta i dodavanje JWT tokena u zahtjeve. |
+| `client/src/pages/UsersPage.vue` | Admin upravljanje korisnicima (CRUD, invite, deaktivacija). |
+| `client/src/pages/FiscalYearPage.vue` | Admin upravljanje poslovnim godinama, odjelima i kategorijama. |
+| `client/src/boot/axios.js` | Konfiguracija Axios klijenta; API URL iz env varijable. |
+| `client/src/composables/useActionableRequestsNotifier.js` | In-app notifikacije o promjenama statusa zahtjeva. |
 | `client/src/utils/authStorage.js` | Pomoćne funkcije za čitanje korisnika iz lokalne pohrane. |
 
-Frontend koristi Axios za komunikaciju s backendom. Osnovna API adresa trenutno je definirana kao:
+Frontend koristi Axios za komunikaciju s backendom. Osnovna API adresa konfigurira se kroz environment varijablu `API_URL` (u `quasar.config.js`); zadana vrijednost za razvoj je `http://localhost:3000/api`.
 
-```text
-http://localhost:3000/api
-```
-
-JWT token se sprema u `localStorage` i dodaje se u svaki API zahtjev kroz `Authorization` header:
-
-```text
-Authorization: Bearer <token>
-```
+JWT token se **ne sprema u `localStorage`** nego se koristi kao `httpOnly` cookie kojeg postavlja backend pri prijavi. Frontend ne čita niti šalje token eksplicitno — Axios šalje cookie automatski kroz `withCredentials: true`.
 
 ## Backend arhitektura
 
@@ -106,22 +102,24 @@ Glavne backend cjeline:
 | `server/src/index.js` | Pokretanje Express aplikacije i registracija ruta. |
 | `server/src/config/db.js` | Konfiguracija konekcije prema MySQL/MariaDB bazi. |
 | `server/src/middleware/authMiddleware.js` | Provjera JWT tokena i zaštita API ruta. |
-| `server/src/routes/authRoutes.js` | Login korisnika. |
+| `server/src/routes/authRoutes.js` | Login, odjava, postavljanje lozinke putem invite tokena. |
 | `server/src/routes/requestRoutes.js` | Kreiranje, pregled, uređivanje i promjena statusa zahtjeva. |
 | `server/src/routes/requestAttachmentRoutes.js` | Upload i pregled dokumenata vezanih uz zahtjev. |
 | `server/src/routes/attachmentRoutes.js` | Download i brisanje dokumenata. |
+| `server/src/routes/userRoutes.js` | Admin upravljanje korisnicima (CRUD, invite, reset linka). |
+| `server/src/routes/fiscalYearRoutes.js` | Upravljanje poslovnim godinama, odjelima i kategorijama. |
 | `server/src/routes/referenceRoutes.js` | Dohvat aktivne poslovne godine, mjesta troška i predmeta nabave. |
-| `server/src/routes/testRoutes.js` | Testna ruta za provjeru rada servera/baze. |
 
 Backend koristi REST pristup. Najvažnije grupe ruta su:
 
 | Prefiks | Namjena |
 |---|---|
-| `/api/auth` | Autentikacija korisnika. |
+| `/api/auth` | Autentikacija korisnika (login, logout, set-password). |
 | `/api/requests` | Zahtjevi za nabavu i dokumenti zahtjeva. |
 | `/api/attachments` | Download i brisanje dokumenata. |
+| `/api/users` | Admin upravljanje korisnicima. |
+| `/api/fiscal-years` | Upravljanje poslovnim godinama, odjelima i kategorijama. |
 | `/api/reference` | Referentni podaci: aktivna godina, odjeli i kategorije. |
-| `/api/test` | Testna provjera. |
 
 ## Podatkovni sloj
 
@@ -173,8 +171,8 @@ Autorizacija se temelji na ulozi korisnika:
 
 | Uloga | Ovlasti |
 |---|---|
-| `Zaposlenik` | Kreira zahtjeve, vidi vlastite zahtjeve, uređuje zahtjeve kada su vraćeni na dopunu. |
-| `Administrator` | Vidi sve zahtjeve, preuzima zahtjeve, mijenja statuse, odobrava, vraća, odbija i zatvara zahtjeve. |
+| `Zaposlenik` | Kreira zahtjeve, vidi vlastite zahtjeve, uređuje zahtjeve kada su vraćeni na dopunu, ponovo šalje vraćene zahtjeve. |
+| `Administrator` | Vidi sve zahtjeve, preuzima zahtjeve na obradu, odobrava, vraća na izmjenu, odbija, naručuje, zatvara i stornira zahtjeve; upravlja korisnicima i poslovnim godinama. |
 
 Zaštićene backend rute koriste `authMiddleware`, koji provjerava JWT token i postavlja podatke korisnika u `req.user`.
 
@@ -201,7 +199,7 @@ Zatvoreno
 Dodatne grane:
 
 ```text
-Poslano
+Poslano / Vraćeno
    |
    | admin: odbij
    v
@@ -213,12 +211,18 @@ Na odobrenju
    v
 Vraćeno na dopunu/izmjenu
    |
-   | korisnik: resubmit
+   | korisnik: resubmit      | admin: vrati-u-obradu
+   v                          v
+Poslano                   Na odobrenju
+
+Bilo koji aktivni status (osim Zatvoreno)
+   |
+   | admin: storno
    v
-Poslano
+Odbijeno
 ```
 
-Napomena: status `Odobreno` postoji u bazi, ali se u trenutnom workflowu ne koristi kao zaseban operativni status. Odobreni zahtjev prelazi u status `Naručeno`.
+Napomena: status `Odobreno` postoji u bazi, ali se u trenutnom workflowu ne koristi kao zaseban operativni status.
 
 ## Dokumenti
 
@@ -283,45 +287,39 @@ Ako korisnik prilikom kreiranja dodaje ponudu, frontend nakon kreiranja zahtjeva
 POST /api/requests/{id}/attachments
 ```
 
-## Sigurnosne značajke
+## ## Sigurnosne značajke
 
-Trenutno implementirano:
+Implementirano:
 
-- JWT autentikacija.
+- JWT autentikacija putem `httpOnly` cookie-ja (`sameSite: strict`, `secure` u produkciji).
 - bcrypt hashiranje lozinki.
 - provjera aktivnog korisničkog računa.
 - role-based provjere za administratorske akcije.
 - parametrizirani SQL upiti.
-- backend validacija osnovnih ulaznih podataka.
+- backend validacija ulaznih podataka.
 - provjera statusnih tranzicija kroz state machine.
-- ograničenje veličine uploadane datoteke.
+- ograničenje veličine uploadane datoteke (10 MB).
 - whitelist dopuštenih MIME tipova.
 - transakcije i `FOR UPDATE` lockovi kod osjetljivih promjena.
-
-Preporučene sigurnosne dorade:
-
-- ograničiti CORS na poznate domene,
-- dodati rate limit za login,
-- dodati Helmet middleware,
-- provjeriti postojanje `JWT_SECRET` pri pokretanju servera,
-- razmotriti httpOnly cookie umjesto `localStorage` tokena,
-- ne vraćati `error.message` direktno klijentu u produkciji.
+- CORS whitelist konfiguriran kroz env varijablu `CLIENT_URL`.
+- rate limiting: login (20 pokušaja / 15 min), set-password (10 pokušaja / sat).
+- Helmet middleware (sigurnosni HTTP headeri).
+- provjera postojanja obaveznih env varijabli pri pokretanju servera.
+- zaštita od path traversal napada kod preuzimanja dokumenata.
+- API ne vraća `error.message` niti stack trace klijentu.
 
 ## Trenutna arhitekturna ograničenja
 
 | Ograničenje | Opis |
 |---|---|
-| Nema admin modula za šifrarnike | Odjeli i kategorije postoje u bazi, ali se samo dohvaćaju. |
-| Nema admin modula za poslovne godine | Aktivna godina se dohvaća, ali se ne može otvarati ili zaključavati kroz aplikaciju. |
-| Limiti nisu aktivno korišteni | Limiti postoje u bazi, ali se ne računaju i ne prikazuju u workflowu. |
-| Nema serverske paginacije | Lista zahtjeva koristi client-side filtriranje i paginaciju. |
+| Limiti nisu aktivno korišteni | `department_limit` i `category_limit` postoje u bazi, ali se ne računaju i ne prikazuju u workflowu. |
 | Dokumenti koriste lokalne putanje | U bazi se spremaju lokalne filesystem putanje, što otežava prijenos okruženja. |
-| Token se sprema u localStorage | Jednostavno za MVP, ali slabije od httpOnly cookie pristupa za produkciju. |
 | Nema automatiziranih testova | Test plan postoji, ali testovi još nisu implementirani. |
+| Nema draft statusa | Zahtjev se ne može privremeno spremiti bez slanja. |
 
 ## Zaključak
 
-Arhitektura aplikacije je jednostavna troslojna web arhitektura: Vue/Quasar frontend, Express REST API i MySQL/MariaDB baza.
-Takva arhitektura je prikladna za MVP i akademski projekt jer jasno razdvaja korisničko sučelje, poslovnu logiku i podatkovni sloj.
+Arhitektura aplikacije je troslojna web arhitektura: Vue/Quasar frontend, Express REST API i MySQL/MariaDB baza.
+Takva arhitektura je prikladna za akademski projekt jer jasno razdvaja korisničko sučelje, poslovnu logiku i podatkovni sloj.
 
-Trenutna implementacija dobro pokriva osnovni proces zahtjeva za nabavu, ali za potpunu produkcijsku spremnost potrebno je dodati administraciju korisnika, poslovnih godina, šifrarnika, serversku paginaciju, perzistentne notifikacije, financijsko praćenje limita i automatizirane testove.
+Implementacija pokriva kompletan proces zahtjeva za nabavu, administraciju korisnika i poslovnih godina, serversku paginaciju s filterima, in-app notifikacije i sigurnosni hardening. Preostale dorade su financijsko praćenje limita, automatizirani testovi i produkcijski deployment.
