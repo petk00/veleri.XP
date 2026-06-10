@@ -124,6 +124,8 @@ router.get('/', authenticateToken, async (req, res) => {
     const statusParam     = req.query.status     || '';
     const departmentParam = req.query.department || '';
     const userParam       = isAdmin(req.user) ? (req.query.user || '') : '';
+    const fiscalYearParam = req.query.fiscalYear || '';
+    const categoryParam   = req.query.category   || '';
 
     const adminUser = isAdmin(req.user);
 
@@ -156,6 +158,26 @@ router.get('/', authenticateToken, async (req, res) => {
     if (userParam) {
       filterConditions.push("CONCAT(u.first_name, ' ', u.last_name) = ?");
       filterParams.push(userParam);
+    }
+
+    if (fiscalYearParam) {
+      const yr = parseInt(fiscalYearParam, 10);
+      if (Number.isInteger(yr)) {
+        filterConditions.push('fy.year = ?');
+        filterParams.push(yr);
+      }
+    }
+
+    if (categoryParam) {
+      filterConditions.push(
+        `EXISTS (
+          SELECT 1 FROM PurchaseRequestItem pri
+          INNER JOIN ItemCategory ic ON pri.fk_item_category = ic.id_item_category
+          WHERE pri.fk_purchase_request = pr.id_purchase_request
+            AND ic.name = ?
+        )`
+      );
+      filterParams.push(categoryParam);
     }
 
     const filterWhere = filterConditions.length
@@ -251,7 +273,30 @@ router.get('/meta', authenticateToken, async (req, res) => {
       userParam
     );
 
-    const result = { departments: deptRows.map((r) => r.name) };
+    const [yearRows] = await db.query(
+      `SELECT DISTINCT fy.year
+       FROM PurchaseRequest pr
+       INNER JOIN FiscalYear fy ON pr.fk_fiscal_year = fy.id_fiscal_year
+       ${userClause}
+       ORDER BY fy.year DESC`,
+      userParam
+    );
+
+    const [catRows] = await db.query(
+      `SELECT DISTINCT ic.name
+       FROM PurchaseRequest pr
+       INNER JOIN PurchaseRequestItem pri ON pri.fk_purchase_request = pr.id_purchase_request
+       INNER JOIN ItemCategory ic ON pri.fk_item_category = ic.id_item_category
+       ${userClause}
+       ORDER BY ic.name`,
+      userParam
+    );
+
+    const result = {
+      departments: deptRows.map((r) => r.name),
+      fiscalYears: yearRows.map((r) => r.year),
+      categories:  catRows.map((r) => r.name),
+    };
 
     if (adminUser) {
       const [userRows] = await db.query(
