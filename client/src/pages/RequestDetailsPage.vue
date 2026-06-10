@@ -40,6 +40,10 @@
               <q-icon name="edit" size="16px" />
               <span>Uredi</span>
             </button>
+            <button v-if="isAdmin && status && !LOCKED_STATUSES.includes(status)" class="btn btn--danger" @click="openActionDialog('storno')">
+              <q-icon name="block" size="16px" />
+              <span>Storniraj</span>
+            </button>
           </div>
         </header>
 
@@ -620,6 +624,7 @@ const missingForFinish = computed(() => {
   return missing;
 });
 
+
 const canEdit = computed(() => {
   if (!status.value) return false;
   if (LOCKED_STATUSES.includes(status.value)) return false;
@@ -691,6 +696,7 @@ const dialogTitle = computed(() => {
     case 'odobri': return 'Odobravanje zahtjeva';
     case 'odbij': return 'Odbijanje zahtjeva';
     case 'vrati-na-izmjenu': return 'Vraćanje na dopunu';
+    case 'storno': return 'Storniranje zahtjeva';
     default: return 'Akcija nad zahtjevom';
   }
 });
@@ -699,6 +705,7 @@ const dialogDescription = computed(() => {
     case 'odobri': return 'Komentar je neobavezan, ali preporučen.';
     case 'odbij': return 'Komentar je obavezan pri odbijanju zahtjeva.';
     case 'vrati-na-izmjenu': return 'Komentar je obavezan kako bi podnositelj znao što ispraviti.';
+    case 'storno': return 'Navedite razlog storniranja. Akcija je nepovratna.';
     default: return '';
   }
 });
@@ -709,7 +716,8 @@ const dialogConfirmClass = computed(() => {
   switch (pendingAction.value) {
     case 'odobri': return 'btn--primary';
     case 'vrati-na-izmjenu': return 'btn--warning';
-    case 'odbij': return 'btn--danger';
+    case 'odbij':
+    case 'storno': return 'btn--danger';
     default: return 'btn--primary';
   }
 });
@@ -718,6 +726,7 @@ const dialogConfirmIcon = computed(() => {
     case 'odobri': return 'check';
     case 'vrati-na-izmjenu': return 'undo';
     case 'odbij': return 'close';
+    case 'storno': return 'block';
     default: return '';
   }
 });
@@ -726,6 +735,7 @@ const dialogConfirmLabel = computed(() => {
     case 'odobri': return 'Odobri';
     case 'vrati-na-izmjenu': return 'Vrati na dopunu';
     case 'odbij': return 'Odbij';
+    case 'storno': return 'Storniraj';
     default: return 'Potvrdi';
   }
 });
@@ -870,7 +880,7 @@ const closeActionDialog = () => {
   actionComment.value = '';
 };
 const confirmAction = async () => {
-  const requiresComment = ['odbij', 'vrati-na-izmjenu'].includes(pendingAction.value);
+  const requiresComment = ['odbij', 'vrati-na-izmjenu', 'storno'].includes(pendingAction.value);
   if (requiresComment && !actionComment.value.trim()) {
     $q.notify({ type: 'negative', message: 'Komentar je obavezan za ovu akciju.' });
     return;
