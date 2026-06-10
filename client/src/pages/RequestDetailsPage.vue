@@ -573,7 +573,7 @@ const STATUS = {
 const LOCKED_STATUSES = [STATUS.ODBIJENO, STATUS.ZATVORENO];
 
 const UPLOAD_RULES = {
-  Ponuda: [STATUS.POSLANO, STATUS.NA_ODOBRENJU, STATUS.VRACENO],
+  Ponuda: [STATUS.POSLANO, STATUS.NA_ODOBRENJU, STATUS.VRACENO, STATUS.NARUCENO],
   Otpremnica: [STATUS.NARUCENO],
 };
 
@@ -641,7 +641,13 @@ const lastReturnComment = computed(() => {
 const allowedDocumentTypes = computed(() => {
   if (!status.value) return [];
   return Object.entries(UPLOAD_RULES)
-    .filter(([, allowed]) => allowed.includes(status.value))
+    .filter(([type, allowed]) => {
+      if (!allowed.includes(status.value)) return false;
+      // U NARUCENO fazi ponuda je već trebala biti priložena pri odobrenju.
+      // Pokazujemo je samo ako nedostaje (edge case: obrisana).
+      if (status.value === STATUS.NARUCENO && type === 'Ponuda') return !hasPonuda.value;
+      return true;
+    })
     .map(([type]) => type);
 });
 const canUploadAny = computed(() => allowedDocumentTypes.value.length > 0);
@@ -649,11 +655,13 @@ const effectiveDocumentType = computed(() => {
   if (allowedDocumentTypes.value.length === 1) return allowedDocumentTypes.value[0];
   return uploadForm.value.document_type;
 });
+const UPLOAD_FORMATS_HINT = 'Dozvoljeni formati: PDF, DOC, DOCX, JPG, PNG. Maks. veličina: 5 MB.';
+
 const uploadHint = computed(() => {
   if (!status.value) return '';
-  if (status.value === STATUS.NARUCENO) return 'U ovoj fazi može se učitati otpremnica.';
+  if (status.value === STATUS.NARUCENO) return `U ovoj fazi može se učitati otpremnica. ${UPLOAD_FORMATS_HINT}`;
   if ([STATUS.POSLANO, STATUS.NA_ODOBRENJU, STATUS.VRACENO].includes(status.value)) {
-    return 'U ovoj fazi može se učitati ponuda.';
+    return `U ovoj fazi može se učitati ponuda. ${UPLOAD_FORMATS_HINT}`;
   }
   return '';
 });
