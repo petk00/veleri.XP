@@ -33,6 +33,14 @@ const loginLimiter = rateLimit({
   message: { message: 'Previše pokušaja prijave. Pokušajte ponovo za 15 minuta.' },
 });
 
+const setPasswordLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Previše pokušaja. Pokušajte ponovo za sat vremena.' },
+});
+
 const allowedOrigins = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(',').map((o) => o.trim())
   : ['http://localhost:9000', 'http://localhost:8080'];
@@ -47,10 +55,11 @@ app.use(cors({
   },
   credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 app.use('/api/test', testRoutes);
 app.use('/api/auth/login', loginLimiter);
+app.use('/api/auth/set-password', setPasswordLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/attachments', attachmentRoutes);
 app.use('/api/requests', requestAttachmentRoutes);

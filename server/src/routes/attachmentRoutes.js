@@ -1,8 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const fs = require('fs');
+const path = require('path');
 const db = require('../config/db');
 const authenticateToken = require('../middleware/authMiddleware');
+
+const UPLOADS_DIR = path.resolve(__dirname, '../../uploads');
 
 const LOCKED_STATUSES = [5, 7]; // Odbijeno, Zatvoreno
 
@@ -52,13 +55,18 @@ router.get('/download/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Fajl nije pronađen.' });
     }
 
-    if (!fs.existsSync(attachment.file_path)) {
+    const resolvedPath = path.resolve(attachment.file_path);
+    if (!resolvedPath.startsWith(UPLOADS_DIR + path.sep) && resolvedPath !== UPLOADS_DIR) {
+      return res.status(403).json({ message: 'Pristup odbijen.' });
+    }
+
+    if (!fs.existsSync(resolvedPath)) {
       return res.status(404).json({ message: 'Fajl ne postoji na disku.' });
     }
 
     res.setHeader('Content-Disposition', `attachment; filename="${attachment.file_name}"`);
     res.setHeader('Content-Type', attachment.file_type);
-    res.sendFile(attachment.file_path);
+    res.sendFile(resolvedPath);
   } catch (error) {
     console.error('GET download error:', error);
     res.status(500).json({ message: 'Greška pri preuzimanju fajla.' });
