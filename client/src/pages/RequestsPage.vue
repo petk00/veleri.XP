@@ -90,9 +90,27 @@
               />
 
               <q-select
+                v-if="fiscalYearOptions.length > 1"
+                v-model="fiscalYearFilter"
+                :options="fiscalYearOptions"
+                borderless dense
+                emit-value map-options
+                class="toolbar__select"
+              />
+
+              <q-select
                 v-if="isAdmin && departmentOptions.length > 1"
                 v-model="departmentFilter"
                 :options="departmentOptions"
+                borderless dense
+                emit-value map-options
+                class="toolbar__select"
+              />
+
+              <q-select
+                v-if="categoryOptions.length > 1"
+                v-model="categoryFilter"
+                :options="categoryOptions"
                 borderless dense
                 emit-value map-options
                 class="toolbar__select"
@@ -204,10 +222,12 @@ const currentUser = ref(null);
 const isAdmin     = ref(false);
 
 // Filteri
-const searchQuery     = ref('');
-const statusFilter    = ref('all');
+const searchQuery      = ref('');
+const statusFilter     = ref('all');
 const departmentFilter = ref('all');
-const userFilter      = ref('all');
+const userFilter       = ref('all');
+const fiscalYearFilter = ref('all');
+const categoryFilter   = ref('all');
 
 const pagination = ref({
   page: 1,
@@ -225,14 +245,18 @@ const statusOptions = [
   { label: 'Odbijeno',          value: 'Odbijeno' },
 ];
 
-const departmentOptions = ref([{ label: 'Svi odjeli', value: 'all' }]);
-const userOptions       = ref([{ label: 'Svi podnositelji', value: 'all' }]);
+const departmentOptions  = ref([{ label: 'Svi odjeli', value: 'all' }]);
+const userOptions        = ref([{ label: 'Svi podnositelji', value: 'all' }]);
+const fiscalYearOptions  = ref([{ label: 'Sve godine', value: 'all' }]);
+const categoryOptions    = ref([{ label: 'Svi predmeti', value: 'all' }]);
 
 const hasActiveFilters = computed(() =>
   searchQuery.value
   || statusFilter.value !== 'all'
   || departmentFilter.value !== 'all'
   || userFilter.value !== 'all'
+  || fiscalYearFilter.value !== 'all'
+  || categoryFilter.value !== 'all'
 );
 
 const columns = [
@@ -254,10 +278,12 @@ const fetchRequests = async () => {
       page:  pagination.value.page,
       limit: pagination.value.rowsPerPage,
     };
-    if (searchQuery.value)          params.search     = searchQuery.value;
-    if (statusFilter.value !== 'all')    params.status     = statusFilter.value;
-    if (departmentFilter.value !== 'all') params.department = departmentFilter.value;
-    if (isAdmin.value && userFilter.value !== 'all') params.user = userFilter.value;
+    if (searchQuery.value)                        params.search     = searchQuery.value;
+    if (statusFilter.value !== 'all')             params.status     = statusFilter.value;
+    if (departmentFilter.value !== 'all')         params.department = departmentFilter.value;
+    if (isAdmin.value && userFilter.value !== 'all') params.user    = userFilter.value;
+    if (fiscalYearFilter.value !== 'all')         params.fiscalYear = fiscalYearFilter.value;
+    if (categoryFilter.value !== 'all')           params.category   = categoryFilter.value;
 
     const { data } = await api.get('/requests', { params });
     rows.value                 = Array.isArray(data.data) ? data.data : [];
@@ -285,6 +311,18 @@ const fetchMeta = async () => {
         ...data.users.map((name) => ({ label: name, value: name })),
       ];
     }
+    if (data.fiscalYears?.length) {
+      fiscalYearOptions.value = [
+        { label: 'Sve godine', value: 'all' },
+        ...data.fiscalYears.map((yr) => ({ label: String(yr), value: String(yr) })),
+      ];
+    }
+    if (data.categories?.length) {
+      categoryOptions.value = [
+        { label: 'Svi predmeti', value: 'all' },
+        ...data.categories.map((name) => ({ label: name, value: name })),
+      ];
+    }
   } catch {
     // ignore
   }
@@ -301,6 +339,8 @@ const resetFilters = () => {
   statusFilter.value     = 'all';
   departmentFilter.value = 'all';
   userFilter.value       = 'all';
+  fiscalYearFilter.value = 'all';
+  categoryFilter.value   = 'all';
   pagination.value.page  = 1;
 };
 
@@ -313,7 +353,7 @@ watch(searchQuery, () => {
   }, 300);
 });
 
-watch([statusFilter, departmentFilter, userFilter], () => {
+watch([statusFilter, departmentFilter, userFilter, fiscalYearFilter, categoryFilter], () => {
   pagination.value.page = 1;
   fetchRequests();
 });
