@@ -214,10 +214,11 @@ router.get('/', authenticateToken, async (req, res) => {
       INNER JOIN AppUser u     ON pr.fk_created_by_user = u.id_user
     `;
 
-    const [[{ total }]] = await db.query(
+    const [[countRow]] = await db.query(
       `SELECT COUNT(*) AS total ${baseJoin} ${filterWhere}`,
       filterParams
     );
+    const total = countRow?.total || 0;
 
     const [rows] = await db.query(
       `SELECT

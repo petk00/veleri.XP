@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const testRoutes = require('./routes/testRoutes');
@@ -21,6 +23,16 @@ for (const key of REQUIRED_ENV) {
 
 const app = express();
 
+app.use(helmet());
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Previše pokušaja prijave. Pokušajte ponovo za 15 minuta.' },
+});
+
 const allowedOrigins = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(',').map((o) => o.trim())
   : ['http://localhost:9000', 'http://localhost:8080'];
@@ -38,6 +50,7 @@ app.use(cors({
 app.use(express.json());
 
 app.use('/api/test', testRoutes);
+app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/attachments', attachmentRoutes);
 app.use('/api/requests', requestAttachmentRoutes);
