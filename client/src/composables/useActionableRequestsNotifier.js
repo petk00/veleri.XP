@@ -152,6 +152,87 @@ export function useActionableRequestsNotifier() {
   };
 
   /**
+   * SCENARIJ 4a — zahtjev preuzet na obradu (zaposlenik, session dedup)
+   */
+  const checkUnderReview = async (userId) => {
+    const ids = getIdSet('session', userId);
+
+    const { data } = await api.get('/requests', { params: { status: 'Na odobrenju', limit: 500 } });
+    const list = Array.isArray(data.data) ? data.data : [];
+
+    for (const req of list) {
+      const key = `review:${req.id_purchase_request}`;
+      if (ids.has(key)) continue;
+
+      showNotification({
+        requestId: req.id_purchase_request,
+        icon: 'manage_search',
+        color: 'blue-grey-7',
+        message: `Zahtjev ${req.request_number} je preuzet na obradu`,
+        caption: 'Administrator pregledava vaš zahtjev.',
+      });
+
+      ids.add(key);
+    }
+
+    persistIdSet(ids, 'session', userId);
+  };
+
+  /**
+   * SCENARIJ 4b — zahtjev odobren (zaposlenik, permanent dedup)
+   */
+  const checkApproved = async (userId) => {
+    const ids = getIdSet('permanent', userId);
+
+    const { data } = await api.get('/requests', { params: { status: 'Naručeno', limit: 500 } });
+    const list = Array.isArray(data.data) ? data.data : [];
+
+    for (const req of list) {
+      const key = `approved:${req.id_purchase_request}`;
+      if (ids.has(key)) continue;
+
+      showNotification({
+        requestId: req.id_purchase_request,
+        icon: 'check_circle',
+        color: 'green-7',
+        message: `Zahtjev ${req.request_number} je odobren`,
+        caption: 'Vaš zahtjev je odobren i upućen na nabavu.',
+      });
+
+      ids.add(key);
+    }
+
+    persistIdSet(ids, 'permanent', userId);
+  };
+
+  /**
+   * SCENARIJ 4c — zahtjev zatvoren (zaposlenik, permanent dedup)
+   */
+  const checkClosed = async (userId) => {
+    const ids = getIdSet('permanent', userId);
+
+    const { data } = await api.get('/requests', { params: { status: 'Zatvoreno', limit: 500 } });
+    const list = Array.isArray(data.data) ? data.data : [];
+
+    for (const req of list) {
+      const key = `closed:${req.id_purchase_request}`;
+      if (ids.has(key)) continue;
+
+      showNotification({
+        requestId: req.id_purchase_request,
+        icon: 'task_alt',
+        color: 'teal-7',
+        message: `Zahtjev ${req.request_number} je zatvoren`,
+        caption: 'Nabava je završena i zahtjev je zatvoren.',
+      });
+
+      ids.add(key);
+    }
+
+    persistIdSet(ids, 'permanent', userId);
+  };
+
+  /**
    * SCENARIJ 4 — naručeni zahtjev bez otpremnice.
    *
    * Za admina: mode='permanent' — jednom ikad po zahtjevu
@@ -210,10 +291,13 @@ export function useActionableRequestsNotifier() {
         await checkPendingReview(userId);
         await checkMissingDeliveryNotes(userId, 'permanent');
       } else {
-        // Zaposlenik: vraćeno na izmjenu (session) + odbijeno (permanent) + fali otpremnica (session)
-        await checkReturnedForRevision(userId);
-        await checkRejected(userId);
-        await checkMissingDeliveryNotes(userId, 'session');
+        // Zaposlenik: sve promjene statusa njegovih zahtjeva
+        await checkUnderReview(userId);        // NA_ODOBRENJU — session
+        await checkReturnedForRevision(userId); // VRACENO     — session
+        await checkApproved(userId);           // NARUCENO    — permanent
+        await checkRejected(userId);           // ODBIJENO    — permanent
+        await checkClosed(userId);             // ZATVORENO   — permanent
+        await checkMissingDeliveryNotes(userId, 'session'); // NARUCENO bez otpremnice — session
       }
     } catch (error) {
       console.error('Greška pri provjeri zahtjeva koji trebaju akciju:', error);
