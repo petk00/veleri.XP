@@ -130,6 +130,7 @@
 <script setup>
 import { computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { api } from 'boot/axios';
 import { getStoredUser } from 'src/utils/authStorage';
 import { useActionableRequestsNotifier } from 'src/composables/useActionableRequestsNotifier';
 
@@ -167,9 +168,9 @@ const isActive = (path) => {
   return route.path === path;
 };
 
-const logout = () => {
+const logout = async () => {
   resetNotifier();
-  localStorage.removeItem('token');
+  try { await api.post('/auth/logout'); } catch { /* ignore */ }
   localStorage.removeItem('user');
   router.replace('/login');
 };

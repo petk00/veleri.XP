@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const testRoutes = require('./routes/testRoutes');
@@ -56,6 +57,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json({ limit: '1mb' }));
+app.use(cookieParser());
 
 app.use('/api/test', testRoutes);
 app.use('/api/auth/login', loginLimiter);
