@@ -9,20 +9,17 @@ API koristi JSON format za većinu zahtjeva i odgovora, osim kod uploada i downl
 |---|---|
 | Backend tehnologija | Node.js, Express |
 | Osnovni URL lokalno | `http://localhost:3000/api` |
-| Autentikacija | JWT Bearer token |
+| Autentikacija | JWT httpOnly cookie |
 | Format podataka | JSON |
 | Upload dokumenata | `multipart/form-data` |
 
 ## Autentikacija
 
-Većina API ruta zaštićena je JWT tokenom.
-Token se šalje u HTTP headeru:
+Većina API ruta zaštićena je JWT tokenom koji se prenosi kao `httpOnly` cookie.
+Cookie postavlja backend pri uspješnoj prijavi; browser ga automatski šalje uz svaki zahtjev.
+Frontend koristi `withCredentials: true` u Axios konfiguraciji — nema ručnog dodavanja tokena u headere.
 
-```http
-Authorization: Bearer <token>
-```
-
-Ako token nedostaje, nije ispravan ili je istekao, API vraća status `401`.
+Ako cookie nedostaje, nije ispravan ili je istekao, API vraća status `401`.
 
 ## Standardni status kodovi
 
@@ -56,10 +53,11 @@ Autentikacija: **nije potrebna**
 
 #### Uspješan odgovor
 
+JWT token se ne vraća u tijelu odgovora — postavlja se kao `httpOnly` cookie (`token`).
+
 ```json
 {
   "message": "Prijava uspješna.",
-  "token": "<jwt-token>",
   "user": {
     "id_user": 2,
     "first_name": "Ivan",

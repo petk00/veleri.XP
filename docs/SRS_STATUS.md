@@ -3,7 +3,7 @@
 Ovaj dokument mapira zahtjeve iz specifikacije na trenutno stanje aplikacije.
 Status je procijenjen prema kodu u repozitoriju, a ne prema potpunom end-to-end testiranju u pregledniku.
 
-Zadnja provjera: **2026-06-04**
+Zadnja provjera: **2026-06-10**
 
 Provjereni izvori:
 
@@ -25,115 +25,89 @@ Provjereni izvori:
 
 | Područje | Procjena | Napomena |
 |---|---:|---|
-| Korisnici i autentikacija | 45% | Prijava radi, ali nema admin kreiranja korisnika ni registracijskog procesa. |
-| Šifrarnici i poslovne godine | 20% | Tablice postoje, ali nema admin upravljanja. |
-| Kreiranje i upravljanje zahtjevom | 70% | Osnovno kreiranje radi, ali nema drafta, storniranja i limita. |
-| Workflow | 65% | Statusni tok postoji, ali nije potpuno usklađen sa SRS-om. |
-| Dokumentacija uz zahtjev | 60% | Postoje ponuda i otpremnica; nema narudžbenice, ostalo i šifrarnika tipova. |
-| Pregled i filtriranje | 55% | Pregled radi, ali filtriranje je uglavnom client-side i nema serverske paginacije. |
+| Korisnici i autentikacija | 95% | Prijava, odjava, invite link, postavljanje lozinke, admin CRUD korisnika. |
+| Šifrarnici i poslovne godine | 90% | Admin upravljanje godinama, odjelima i kategorijama; kopiranje šifrarnika. |
+| Kreiranje i upravljanje zahtjevom | 80% | Kreiranje, pregled, uređivanje, storno implementirani; nedostaje draft status. |
+| Workflow | 90% | Svi statusni prijelazi implementirani uključujući storno i vrati-u-obradu. |
+| Dokumentacija uz zahtjev | 75% | Ponuda i otpremnica s pravilima po statusima; nema narudžbenice i tipa Ostalo. |
+| Pregled i filtriranje | 95% | Serverska paginacija, filteri po godini/kategoriji/statusu/odjelu/korisniku/pretrazi. |
 | Financijsko praćenje | 10% | Limiti postoje u bazi, ali se ne koriste u aplikaciji. |
-| Evidencija i revizija | 75% | Povijest statusa postoji; zadnji izmjenitelj nije posebno evidentiran na zahtjevu. |
-| Notifikacije | 45% | Postoje toast/in-app obavijesti za dio slučajeva, ali ne perzistentni sustav notifikacija. |
+| Evidencija i revizija | 80% | Povijest radnji postoji; zadnji izmjenitelj vidljiv kroz historiju. |
+| Notifikacije | 92% | In-app obavijesti za sve relevantne promjene statusa; email out of scope. |
+| Sigurnost | 90% | httpOnly cookie, CORS whitelist, rate limiting, Helmet, path traversal zaštita. |
 
-Ukupna procjena prema SRS-u: **45-50%**.
+Ukupna procjena prema SRS-u: **~84%**.
 
-Procjena osnovnog MVP workflowa nabave: **70-75%**.
+Procjena MVP workflowa nabave: **~95%**.
 
 ## Najvažnije nedovršene cjeline
 
-1. Administracija korisnika nije implementirana.
-2. Poslovne godine nisu administrativno podržane kroz aplikaciju.
-3. Šifrarnici postoje u bazi, ali nemaju CRUD kroz aplikaciju.
-4. Backend ne provjerava strogo pripadnost odjela i kategorija istoj poslovnoj godini kao zahtjev.
-5. Draft zahtjeva nije implementiran.
-6. Storniranje zahtjeva nije implementirano.
-7. Workflow nije potpuno usklađen sa SRS nazivima i statusima.
-8. Dokumenti su ograničeni na `Ponuda` i `Otpremnica`.
-9. Pregled zahtjeva nema serversku paginaciju i napredne backend filtere.
-10. Financijski limiti, potrošnja i analitika nisu implementirani.
+1. Draft zahtjeva nije implementiran (spremanje bez slanja).
+2. Dokumenti su ograničeni na `Ponuda` i `Otpremnica`; nema `Narudžbenica` ni `Ostalo`.
+3. Financijski limiti, potrošnja i analitika nisu implementirani.
+4. Automatizirani testovi nisu implementirani.
+5. Produkcijski deployment nije dokumentiran (nema Docker ni instalacijske skripte).
 
 ## Detaljna matrica zahtjeva
 
 | ID | Zahtjev | Status | Dokaz / trenutno stanje | Prioritet dorade |
 |---|---|---|---|---|
-| 1.1 | Registracija korisnika | Nije implementirano | Ne postoji admin API/UI za kreiranje korisnika, privremena šifra ni validacija domene `@veleri.hr`. Postoji samo login. | Visoko |
-| 1.2 | Prijava u sustav | Implementirano | `POST /api/auth/login` provjerava email, lozinku, aktivnost korisnika i izdaje JWT token. | Gotovo |
-| 1.3 | Korisničke uloge | Djelomično | Baza ima role `Administrator` i `Zaposlenik`; backend ih koristi za pristup. Nema upravljanja ulogama kroz aplikaciju. | Srednje |
-| 2.1 | Pokretanje poslovne godine | Nije implementirano | Postoji tablica `FiscalYear`, ali nema API/UI za otvaranje nove godine i kopiranje šifrarnika. | Visoko |
-| 2.2 | Uređivanje šifrarnika | Nije implementirano | Postoje samo read-only rute za dohvat aktivnih odjela i kategorija. Nema dodavanja, uređivanja, brisanja ni deaktivacije. | Visoko |
-| 2.3 | Zaključavanje prethodne godine | Nije implementirano | `FiscalYear.is_closed` postoji u bazi, ali nema funkcije za zaključavanje godine. | Visoko |
-| 2.4 | Pregled prethodnih godina | Djelomično | Zahtjevi imaju fiskalnu godinu, ali nema posebnog pregleda zaključanih godina niti read-only arhive. | Srednje |
-| 2.5 | Zabrana brisanja poslovne godine | Djelomično | Aplikacija nema funkciju brisanja poslovne godine, ali nema ni eksplicitno implementirano poslovno pravilo. | Nisko |
-| 2.6 | Godišnji limiti | Djelomično | `Department.department_limit` i `ItemCategory.category_limit` postoje u bazi, ali API ih ne koristi u workflowu. | Odgođeno |
+| 1.1 | Registracija korisnika | Implementirano | Admin kreira korisnika kroz `/api/users`; sustav generira invite token; korisnik postavlja lozinku putem linka `/set-password`. | Gotovo |
+| 1.2 | Prijava u sustav | Implementirano | `POST /api/auth/login` provjerava email, lozinku i aktivnost korisnika; JWT se postavlja kao httpOnly cookie. | Gotovo |
+| 1.3 | Korisničke uloge | Implementirano | Baza ima role `Administrator` i `Zaposlenik`; backend ih koristi za sve provjere pristupa; admin može upravljati ulogama kroz UsersPage. | Gotovo |
+| 2.1 | Pokretanje poslovne godine | Implementirano | `POST /api/fiscal-years` otvara novu godinu i kopira šifrarnike iz prethodne; dostupno kroz FiscalYearPage. | Gotovo |
+| 2.2 | Uređivanje šifrarnika | Implementirano | CRUD za odjele i kategorije po godini dostupan adminu kroz FiscalYearPage i `/api/fiscal-years/:id/departments|categories`. | Gotovo |
+| 2.3 | Zaključavanje prethodne godine | Implementirano | `PATCH /api/fiscal-years/:id/close` zaključava godinu; zaključana godina ne dopušta izmjene šifrarnika. | Gotovo |
+| 2.4 | Pregled prethodnih godina | Implementirano | FiscalYearPage prikazuje sve godine s oznakom otvorena/zatvorena. | Gotovo |
+| 2.5 | Zabrana brisanja poslovne godine | Implementirano | API nema rutu za brisanje poslovne godine; funkcionalno pravilo je prisutno. | Gotovo |
+| 2.6 | Godišnji limiti | Nije implementirano | `department_limit` i `category_limit` postoje u bazi, ali API ih ne koristi u workflowu. | Odgođeno |
 | 3.1 | Kreiranje zahtjeva | Implementirano | Djelatnik može kreirati zahtjev. Backend generira broj u formatu `PR-GGGG-XXXX`. | Gotovo |
-| 3.2 | Odabir poslovne godine | Djelomično | Frontend dohvaća aktivnu poslovnu godinu. Backend ne provjerava strogo da odjel i kategorije pripadaju istoj godini kao zahtjev. | Srednje |
+| 3.2 | Odabir poslovne godine | Djelomično | Frontend dohvaća aktivnu poslovnu godinu. Backend ne provjerava strogo da odjel i kategorije pripadaju istoj godini kao zahtjev. | Nisko |
 | 3.3 | Odabir predmeta nabave | Implementirano | Korisnik bira kategoriju/predmet nabave iz `ItemCategory`. | Gotovo |
 | 3.4 | Odabir mjesta troška | Implementirano | Korisnik bira odjel/mjesto troška iz `Department`. | Gotovo |
 | 3.5 | Unos stavki zahtjeva | Implementirano | Forma omogućuje dinamičko dodavanje stavki s nazivom i količinom. Backend traži barem jednu stavku. | Gotovo |
-| 3.6 | Unos iznosa zahtjeva | Djelomično | Iznos postoji kao `total_amount`/`estimated_amount`, ali nije uvijek obavezan i ne utječe na limite. | Srednje |
+| 3.6 | Unos iznosa zahtjeva | Djelomično | Iznos je obavezan za zatvaranje zahtjeva; ne utječe na limite. | Nisko |
 | 3.7 | Napomena | Djelomično | Postoji `justification`/svrha nabave, ali nema odvojene slobodne napomene. | Nisko |
 | 3.8 | Spremanje nacrta | Nije implementirano | Ne postoji status `Draft` ni spremanje zahtjeva bez slanja. | Srednje |
-| 4.1 | Statusi zahtjeva | Djelomično | Podržani su `Poslano`, `Na odobrenju`, `Vraćeno`, `Odbijeno`, `Naručeno`, `Zatvoreno`. Status `Odobreno` postoji u bazi, ali se ne koristi u trenutnom workflowu. | Srednje |
-| 4.2 | Poslano | Djelomično | Novi zahtjev odmah dobiva status `Poslano`. Ne oduzima se od limita i ponuda nije uvijek obavezna za slanje. | Srednje |
-| 4.3 | Obrada zahtjeva | Djelomično | Admin može preuzeti zahtjev u `Na odobrenju`. Nema statusa `U obradi` kao zasebnog naziva i nema narudžbenice. | Srednje |
-| 4.4 | Vraćanje na dopunu | Implementirano | Admin može vratiti zahtjev na dopunu uz komentar, a djelatnik vidi obavijest/alert. | Gotovo |
-| 4.5 | Zatvaranje zahtjeva | Djelomično | Samo admin može zatvoriti zahtjev. Backend traži iznos, otpremnicu i dodatno ponudu. Zatvoreni zahtjev je zaključan za izmjene. | Srednje |
-| 4.6 | Storniranje zahtjeva | Nije implementirano | Nema statusa ni akcije za storniranje/cancel. | Srednje |
-| 5.1 | Vrste dokumenata | Djelomično | Podržani su `Ponuda` i `Otpremnica`. Nema `Narudžbenica`, `Ostalo` ni šifrarnika tipova dokumenata. | Srednje |
-| 5.2 | Dodavanje ponude | Djelomično | Djelatnik/admin mogu dodati ponudu. Kod kreiranja je ponuda obavezna samo ako korisnik odabere opciju da ima ponudu. | Srednje |
-| 5.3 | Dodavanje narudžbenice | Nije implementirano | Nema tipa dokumenta `Narudžbenica` ni pravila za admin upload u obradi. | Nisko |
+| 4.1 | Statusi zahtjeva | Implementirano | Podržani su `Poslano`, `Na odobrenju`, `Vraćeno`, `Odbijeno`, `Naručeno`, `Zatvoreno`. Status `Odobreno` postoji u bazi kao stari zapis, ali se ne koristi. | Gotovo |
+| 4.2 | Poslano | Implementirano | Novi zahtjev odmah dobiva status `Poslano`; admin prima in-app obavijest. | Gotovo |
+| 4.3 | Obrada zahtjeva | Djelomično | Admin može preuzeti zahtjev u `Na odobrenju` i ponovo ga preuzeti iz `Vraćeno` akcijom `vrati-u-obradu`. Nema tipa dokumenta `Narudžbenica`. | Nisko |
+| 4.4 | Vraćanje na dopunu | Implementirano | Admin može vratiti zahtjev na dopunu uz komentar; djelatnik prima in-app obavijest. | Gotovo |
+| 4.5 | Zatvaranje zahtjeva | Implementirano | Admin zatvara zahtjev; backend traži iznos, ponudu i otpremnicu. Zatvoreni zahtjev je zaključan za izmjene. | Gotovo |
+| 4.6 | Storniranje zahtjeva | Implementirano | Admin može stornirati zahtjev u bilo kojem aktivnom statusu (osim Zatvoreno) kroz akciju `storno`. | Gotovo |
+| 5.1 | Vrste dokumenata | Djelomično | Podržani su `Ponuda` i `Otpremnica` s pravilima po statusima. Nema `Narudžbenica` ni `Ostalo`. | Srednje |
+| 5.2 | Dodavanje ponude | Implementirano | Djelatnik/admin mogu dodati ponudu u statusima Poslano, Na odobrenju, Vraćeno, Naručeno (za edge case). | Gotovo |
+| 5.3 | Dodavanje narudžbenice | Nije implementirano | Nema tipa dokumenta `Narudžbenica`. | Nisko |
 | 5.4 | Dodavanje otpremnice | Implementirano | Otpremnica se može dodati u statusu `Naručeno` i uvjet je za zatvaranje. | Gotovo |
 | 5.5 | Brisanje dokumenata | Implementirano | Dokumenti se mogu brisati prema pravilima role/statusa; zaključani statusi ne dopuštaju brisanje. | Gotovo |
-| 5.6 | Pregled dokumenata | Implementirano | Detalji zahtjeva prikazuju dokumente na jednom mjestu. | Gotovo |
-| 5.7 | Dozvoljeni formati | Djelomično | Limit 10 MB postoji. Dopušteni su i formati širi od SRS-a: Excel, TXT i ZIP. | Nisko |
+| 5.6 | Pregled dokumenata | Implementirano | Detalji zahtjeva prikazuju dokumente s mogućnošću preuzimanja. | Gotovo |
+| 5.7 | Dozvoljeni formati | Djelomično | Limit 10 MB po datoteci. Dopušteni su i formati širi od SRS-a (Excel, TXT, ZIP) — svjesno odstupanje. | Nisko |
 | 6.1 | Pregled vlastitih zahtjeva | Implementirano | Zaposlenik kroz backend vidi samo zahtjeve koje je kreirao. | Gotovo |
 | 6.2 | Pregled svih zahtjeva | Implementirano | Administrator kroz backend vidi sve zahtjeve. | Gotovo |
-| 6.3 | Pretraživanje i filtriranje | Djelomično | Frontend ima pretragu i filtere po statusu, odjelu i korisniku. Nema filtera po poslovnoj godini i predmetu nabave; filtriranje nije serversko. | Srednje |
-| 6.4 | Paginacija | Djelomično | Quasar tablica ima client-side paginaciju. SRS traži serversku paginaciju s 10 zahtjeva po stranici. | Srednje |
+| 6.3 | Pretraživanje i filtriranje | Implementirano | Serverski filteri po statusu, odjelu, korisniku, poslovnoj godini, predmetu nabave i tekstu pretrage. | Gotovo |
+| 6.4 | Paginacija | Implementirano | Serverska paginacija s 10 zahtjeva po stranici. | Gotovo |
 | 7.1 | Praćenje limita | Nije implementirano | Nema evidentiranja potrošnje po predmetu nabave i mjestu troška. | Odgođeno |
 | 7.2 | Pregled potrošnje | Nije implementirano | Nema admin pregleda potrošnje po šifrarnicima. | Odgođeno |
 | 7.3 | Prekoračenje limita | Nije implementirano | Nema upozorenja administratoru kod prekoračenja limita. | Odgođeno |
 | 7.4 | Analitički pregled | Nije implementirano | Postoji osnovni dashboard, ali ne analitički pregled zahtjeva i potrošnje po SRS-u. | Odgođeno |
 | 8.1 | Datum kreiranja | Implementirano | `PurchaseRequest.created_at` automatski bilježi kreiranje. | Gotovo |
-| 8.2 | Datum zadnje izmjene | Djelomično | `updated_at` postoji, ali ne postoji zasebno polje `updated_by_user`. Dio informacija je u povijesti statusa. | Nisko |
+| 8.2 | Datum zadnje izmjene | Djelomično | `updated_at` postoji; zadnji izmjenitelj vidljiv kroz `RequestStatusHistory`. | Nisko |
 | 8.3 | Povijest radnji | Implementirano | `RequestStatusHistory` zapisuje promjene statusa, korisnika, vrijeme i komentar; prikaz postoji na detalju zahtjeva. | Gotovo |
-| 9.1 | Obavijest o potrebi dopune | Djelomično | Djelatnik vidi alert/toast za vraćene zahtjeve. Nema perzistentne tablice notifikacija. | Srednje |
-| 9.2 | Obavijest o promjeni statusa | Djelomično | Postoje obavijesti za neke akcijske statuse, ali ne za svaku promjenu statusa zahtjeva. | Srednje |
+| 9.1 | Obavijest o potrebi dopune | Implementirano | Djelatnik prima in-app obavijest (toast) pri svakom povratku zahtjeva na dopunu. | Gotovo |
+| 9.2 | Obavijest o promjeni statusa | Implementirano | In-app obavijesti implementirane za: Vraćeno, Odbijeno, Na odobrenju, Naručeno, Zatvoreno. | Gotovo |
 
 ## Preporučeni redoslijed dorada
 
-Limiti se namjerno ostavljaju za kraj jer ovise o poslovnim godinama, šifrarnicima, statusima i storniranju.
+Preostale dorade, poredane po prioritetu:
 
-1. Dodati admin upravljanje korisnicima.
-2. Dodati backend rute i frontend stranicu za listanje korisnika.
-3. Dodati kreiranje korisnika s validacijom domene `@veleri.hr`.
-4. Dodati uređivanje korisnika, uloge i aktivnosti računa.
-5. Dodati deaktivaciju korisnika umjesto fizičkog brisanja.
-6. Dodati poslovne godine: listanje, otvaranje i zaključavanje.
-7. Kod otvaranja poslovne godine kopirati odjele i kategorije iz prethodne godine.
-8. Dodati admin CRUD za mjesta troška / odjele.
-9. Dodati admin CRUD za predmete nabave / kategorije.
-10. Dodati deaktivaciju korištenih šifrarnika umjesto brisanja.
-11. Provjeravati da odjel pripada istoj poslovnoj godini kao zahtjev.
-12. Provjeravati da sve kategorije/stavke pripadaju istoj poslovnoj godini kao zahtjev.
-13. Spriječiti kreiranje zahtjeva u zaključanoj poslovnoj godini.
-14. Dodati draft status i spremanje zahtjeva bez slanja.
-15. Dodati nastavak uređivanja draft zahtjeva.
-16. Dodati storniranje zahtjeva.
-17. Uskladiti workflow statuse sa SRS-om ili jasno dokumentirati odstupanje.
-18. Dodati tip dokumenta `Narudžbenica`.
-19. Dodati tip dokumenta `Ostalo`.
-20. Razmotriti šifrarnik tipova dokumenata.
-21. Dodati serversku paginaciju pregleda zahtjeva.
-22. Dodati backend filtere po poslovnoj godini, statusu, odjelu, korisniku i predmetu nabave.
-23. Dodati perzistentne notifikacije.
-24. Dodati obavijesti za svaku važnu promjenu statusa.
-25. Dodati `updated_by_user` ili ekvivalentnu jasnu evidenciju zadnjeg izmjenitelja.
-26. Implementirati praćenje limita po mjestu troška.
-27. Implementirati praćenje limita po predmetu nabave.
-28. Dodati upozorenja kod prekoračenja limita.
-29. Dodati administrativni pregled potrošnje i analitiku.
-30. Uskladiti README i završnu dokumentaciju nakon funkcionalnih dorada.
+1. Dodati draft status (spremanje zahtjeva bez slanja).
+2. Dodati tip dokumenta `Narudžbenica`.
+3. Dodati tip dokumenta `Ostalo`.
+4. Implementirati praćenje limita po mjestu troška i predmetu nabave.
+5. Dodati upozorenja kod prekoračenja limita.
+6. Dodati administrativni pregled potrošnje i analitiku.
+7. Implementirati automatizirane testove (unit + end-user).
+8. Pripremiti produkcijski deployment (instalacijska skripta, SSL).
 
 ## Napomene za dokumentaciju
 
