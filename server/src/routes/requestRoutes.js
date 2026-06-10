@@ -61,6 +61,12 @@ const ACTIONS = {
     adminOnly: true,
     requiresComment: true,
   },
+  storno: {
+    from: [STATUS.POSLANO, STATUS.NA_ODOBRENJU, STATUS.VRACENO, STATUS.NARUCENO],
+    to: STATUS.ODBIJENO,
+    adminOnly: true,
+    requiresComment: true,
+  },
   'vrati-u-obradu': {
     from: STATUS.VRACENO,
     to: STATUS.NA_ODOBRENJU,
