@@ -69,9 +69,15 @@ router.post('/login', async (req, res) => {
       }
     );
 
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
     return res.json({
       message: 'Prijava uspješna.',
-      token,
       user: {
         id_user: user.id_user,
         first_name: user.first_name,
@@ -124,6 +130,15 @@ router.post('/set-password', async (req, res) => {
     console.error('POST /api/auth/set-password error:', err);
     res.status(500).json({ message: 'Greška pri postavljanju lozinke.' });
   }
+});
+
+router.post('/logout', (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  });
+  res.json({ message: 'Odjava uspješna.' });
 });
 
 module.exports = router;

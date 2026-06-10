@@ -21,8 +21,7 @@ export default route(function () {
   });
 
   Router.beforeEach((to, from, next) => {
-    const token = localStorage.getItem('token');
-    const isLoggedIn = !!token;
+    const isLoggedIn = !!localStorage.getItem('user');
     const publicRoutes = ['/login', '/set-password'];
     const isPublic = publicRoutes.some(p => to.path === p || to.path.startsWith(p + '/'));
 
