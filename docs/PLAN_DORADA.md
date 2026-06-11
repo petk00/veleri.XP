@@ -29,7 +29,6 @@ Aplikacija ima implementiran kompletan MVP proces nabave:
 
 Preostale neimplementirane cjeline:
 
-- draft zahtjeva (spremanje bez slanja),
 - proširene vrste dokumenata (Narudžbenica, Ostalo),
 - financijski limiti i analitika,
 - automatizirani testovi,
@@ -162,31 +161,24 @@ Ova faza dodatno učvršćuje zahtjev 3.2 iz SRS-a.
 - Nije moguće poslati zahtjev koji kombinira šifrarnike iz različitih poslovnih godina.
 - Nije moguće kreirati novi zahtjev u zaključanoj godini.
 
-## Faza 6: Draft i storniranje — ⚠️ DJELOMIČNO
+## Faza 6: Storniranje ✅ DOVRŠENO
 
 Prioritet: **Srednje**
 
-Ova faza pokriva zahtjeve 3.8 i 4.6 iz SRS-a.
+Ova faza pokriva zahtjev 4.6 iz SRS-a. Zahtjev 3.8 (draft) je svjesno izostavljen iz opsega projekta.
 
 ### Zadaci
 
 | ID | Zadatak | Napomena |
 |---|---|---|
-| DRAFT-01 | Dodati status `Draft`. | Novi ili postojeći status u bazi. |
-| DRAFT-02 | Omogućiti spremanje zahtjeva bez slanja. | Ne ulazi u obradu. |
-| DRAFT-03 | Omogućiti nastavak uređivanja draft zahtjeva. | Vlasnik zahtjeva. |
-| DRAFT-04 | Dodati akciju slanja drafta u `Poslano`. | Tek tada ulazi u workflow. |
-| STO-01 | Dodati status ili oznaku `Stornirano`. | Potrebno odlučiti model. |
-| STO-02 | Djelatnik može stornirati vlastiti draft. | Prema SRS-u. |
-| STO-03 | Administrator može stornirati zahtjev osim ako je zatvoren. | Prema SRS-u. |
-| STO-04 | Zapisati storniranje u audit log. | Obavezno za reviziju. |
+| STO-01 | Dodati akciju `storno`. | Implementirano kroz `ACTIONS.storno` u requestRoutes.js. |
+| STO-02 | Administrator može stornirati zahtjev osim ako je zatvoren. | Implementirano. |
+| STO-03 | Zapisati storniranje u audit log. | Implementirano kroz RequestStatusHistory. |
 
 ### Kriteriji dovršenosti
 
-- Djelatnik može spremiti nacrt i kasnije ga dovršiti.
-- Draft ne pokreće workflow obrade.
-- Stornirani zahtjev se ne može dalje obrađivati.
-- Storniranje je vidljivo u povijesti aktivnosti.
+- Stornirani zahtjev se ne može dalje obrađivati. ✅
+- Storniranje je vidljivo u povijesti aktivnosti. ✅
 
 ## Faza 7: Proširenje dokumentacije uz zahtjev
 
@@ -297,8 +289,7 @@ Preporučeni praktični redoslijed:
 4. Implementirati poslovne godine.
 5. Implementirati šifrarnike.
 6. Dodati provjeru poslovne godine kod zahtjeva.
-7. Dodati draft i storniranje.
-8. Proširiti dokumente.
+7. Proširiti dokumente (Narudžbenica, Ostalo).
 9. Dodati serversku paginaciju i filtere.
 10. Doraditi notifikacije i audit.
 11. Implementirati limite i analitiku.
@@ -319,6 +310,7 @@ Za potrebe MVP-a dovoljno je da sustav pouzdano podržava:
 
 Funkcionalnosti koje se mogu opisati kao buduće dorade:
 
+- proširene vrste dokumenata (Narudžbenica, Ostalo),
 - napredno financijsko praćenje limita,
 - analitički dashboard,
 - perzistentne notifikacije,

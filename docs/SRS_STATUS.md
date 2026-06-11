@@ -3,7 +3,7 @@
 Ovaj dokument mapira zahtjeve iz specifikacije na trenutno stanje aplikacije.
 Status je procijenjen prema kodu u repozitoriju, a ne prema potpunom end-to-end testiranju u pregledniku.
 
-Zadnja provjera: **2026-06-10**
+Zadnja provjera: **2026-06-11**
 
 Provjereni izvori:
 
@@ -20,6 +20,7 @@ Provjereni izvori:
 | Djelomično | Postoji dio funkcionalnosti, ali ne pokriva cijeli zahtjev iz SRS-a. |
 | Nije implementirano | Funkcionalnost nije pronađena u trenutnoj implementaciji. |
 | Odgođeno | Svjesno se ostavlja za kasniju fazu. |
+| Izvan opsega | Svjesna odluka da se zahtjev ne implementira u ovom projektu. |
 
 ## Sažetak
 
@@ -27,7 +28,7 @@ Provjereni izvori:
 |---|---:|---|
 | Korisnici i autentikacija | 95% | Prijava, odjava, invite link, postavljanje lozinke, admin CRUD korisnika. |
 | Šifrarnici i poslovne godine | 90% | Admin upravljanje godinama, odjelima i kategorijama; kopiranje šifrarnika. |
-| Kreiranje i upravljanje zahtjevom | 80% | Kreiranje, pregled, uređivanje, storno implementirani; nedostaje draft status. |
+| Kreiranje i upravljanje zahtjevom | 85% | Kreiranje, pregled, uređivanje, storno implementirani; draft izvan opsega. |
 | Workflow | 90% | Svi statusni prijelazi implementirani uključujući storno i vrati-u-obradu. |
 | Dokumentacija uz zahtjev | 75% | Ponuda i otpremnica s pravilima po statusima; nema narudžbenice i tipa Ostalo. |
 | Pregled i filtriranje | 95% | Serverska paginacija, filteri po godini/kategoriji/statusu/odjelu/korisniku/pretrazi. |
@@ -36,17 +37,16 @@ Provjereni izvori:
 | Notifikacije | 92% | In-app obavijesti za sve relevantne promjene statusa; email out of scope. |
 | Sigurnost | 90% | httpOnly cookie, CORS whitelist, rate limiting, Helmet, path traversal zaštita. |
 
-Ukupna procjena prema SRS-u: **~84%**.
+Ukupna procjena prema SRS-u: **~87%**.
 
 Procjena MVP workflowa nabave: **~95%**.
 
 ## Najvažnije nedovršene cjeline
 
-1. Draft zahtjeva nije implementiran (spremanje bez slanja).
-2. Dokumenti su ograničeni na `Ponuda` i `Otpremnica`; nema `Narudžbenica` ni `Ostalo`.
-3. Financijski limiti, potrošnja i analitika nisu implementirani.
-4. Automatizirani testovi nisu implementirani.
-5. Produkcijski deployment nije dokumentiran (nema Docker ni instalacijske skripte).
+1. Dokumenti su ograničeni na `Ponuda` i `Otpremnica`; nema `Narudžbenica` ni `Ostalo`.
+2. Financijski limiti, potrošnja i analitika nisu implementirani.
+3. Automatizirani testovi nisu implementirani.
+4. Produkcijski deployment nije dokumentiran (nema Docker ni instalacijske skripte).
 
 ## Detaljna matrica zahtjeva
 
@@ -62,13 +62,13 @@ Procjena MVP workflowa nabave: **~95%**.
 | 2.5 | Zabrana brisanja poslovne godine | Implementirano | API nema rutu za brisanje poslovne godine; funkcionalno pravilo je prisutno. | Gotovo |
 | 2.6 | Godišnji limiti | Nije implementirano | `department_limit` i `category_limit` postoje u bazi, ali API ih ne koristi u workflowu. | Odgođeno |
 | 3.1 | Kreiranje zahtjeva | Implementirano | Djelatnik može kreirati zahtjev. Backend generira broj u formatu `PR-GGGG-XXXX`. | Gotovo |
-| 3.2 | Odabir poslovne godine | Djelomično | Frontend dohvaća aktivnu poslovnu godinu. Backend ne provjerava strogo da odjel i kategorije pripadaju istoj godini kao zahtjev. | Nisko |
+| 3.2 | Odabir poslovne godine | Implementirano | Frontend dohvaća aktivnu poslovnu godinu. Backend provjerava da odabrani odjel i sve kategorije stavki pripadaju poslovnoj godini zahtjeva (transakcijska provjera i kod kreiranja i kod uređivanja). | Gotovo |
 | 3.3 | Odabir predmeta nabave | Implementirano | Korisnik bira kategoriju/predmet nabave iz `ItemCategory`. | Gotovo |
 | 3.4 | Odabir mjesta troška | Implementirano | Korisnik bira odjel/mjesto troška iz `Department`. | Gotovo |
 | 3.5 | Unos stavki zahtjeva | Implementirano | Forma omogućuje dinamičko dodavanje stavki s nazivom i količinom. Backend traži barem jednu stavku. | Gotovo |
 | 3.6 | Unos iznosa zahtjeva | Djelomično | Iznos je obavezan za zatvaranje zahtjeva; ne utječe na limite. | Nisko |
 | 3.7 | Napomena | Djelomično | Postoji `justification`/svrha nabave, ali nema odvojene slobodne napomene. | Nisko |
-| 3.8 | Spremanje nacrta | Nije implementirano | Ne postoji status `Draft` ni spremanje zahtjeva bez slanja. | Srednje |
+| 3.8 | Spremanje nacrta | Izvan opsega | Draft zahtjeva svjesno nije implementiran. Zahtjev se odmah šalje u obradu. | — |
 | 4.1 | Statusi zahtjeva | Implementirano | Podržani su `Poslano`, `Na odobrenju`, `Vraćeno`, `Odbijeno`, `Naručeno`, `Zatvoreno`. Status `Odobreno` postoji u bazi kao stari zapis, ali se ne koristi. | Gotovo |
 | 4.2 | Poslano | Implementirano | Novi zahtjev odmah dobiva status `Poslano`; admin prima in-app obavijest. | Gotovo |
 | 4.3 | Obrada zahtjeva | Djelomično | Admin može preuzeti zahtjev u `Na odobrenju` i ponovo ga preuzeti iz `Vraćeno` akcijom `vrati-u-obradu`. Nema tipa dokumenta `Narudžbenica`. | Nisko |
@@ -100,14 +100,13 @@ Procjena MVP workflowa nabave: **~95%**.
 
 Preostale dorade, poredane po prioritetu:
 
-1. Dodati draft status (spremanje zahtjeva bez slanja).
-2. Dodati tip dokumenta `Narudžbenica`.
-3. Dodati tip dokumenta `Ostalo`.
-4. Implementirati praćenje limita po mjestu troška i predmetu nabave.
-5. Dodati upozorenja kod prekoračenja limita.
-6. Dodati administrativni pregled potrošnje i analitiku.
-7. Implementirati automatizirane testove (unit + end-user).
-8. Pripremiti produkcijski deployment (instalacijska skripta, SSL).
+1. Dodati tip dokumenta `Narudžbenica`.
+2. Dodati tip dokumenta `Ostalo`.
+3. Implementirati praćenje limita po mjestu troška i predmetu nabave.
+4. Dodati upozorenja kod prekoračenja limita.
+5. Dodati administrativni pregled potrošnje i analitiku.
+6. Implementirati automatizirane testove (unit + end-user).
+7. Pripremiti produkcijski deployment (instalacijska skripta, SSL).
 
 ## Napomene za dokumentaciju
 
