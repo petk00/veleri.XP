@@ -314,8 +314,6 @@ Implementirano:
 |---|---|
 | Limiti nisu aktivno korišteni | `department_limit` i `category_limit` postoje u bazi, ali se ne računaju i ne prikazuju u workflowu. |
 | Dokumenti koriste lokalne putanje | U bazi se spremaju lokalne filesystem putanje, što otežava prijenos okruženja. |
-| Nema automatiziranih testova | Test plan postoji, ali testovi još nisu implementirani. |
-| Nema draft statusa | Zahtjev se ne može privremeno spremiti bez slanja. |
 
 ## Zaključak
 

@@ -588,8 +588,7 @@ Status `Odobreno` postoji u bazi kao stariji status, ali ga trenutni workflow ne
 | Nema CRUD API-ja za šifrarnike | Odjeli i kategorije se samo dohvaćaju. |
 | Nema serverske paginacije | `GET /api/requests` vraća sve dostupne zahtjeve. |
 | Nema query filtera | Filtriranje zahtjeva radi frontend. |
-| Nema draft/storno workflowa | Statusi draft i stornirano nisu implementirani. |
-| Nema narudžbenice i ostalih dokumenata | Podržani su samo `Ponuda` i `Otpremnica`. |
+| Nema narudžbenice i ostalih dokumenata | Podržani su samo `Ponuda` i `Otpremnica`; ostali tipovi izvan su opsega projekta. |
 | Limiti se ne koriste u API-ju | Polja limita postoje u bazi, ali API ne računa potrošnju. |
 | Upload putanje su lokalne | U bazi se sprema filesystem putanja dokumenta. |
 

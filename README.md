@@ -1,175 +1,131 @@
 # veleri.XP
 
-> Aplikacija za upravljanje zahtjevima za nabavu na Veleucilistu u Rijeci.
+> Aplikacija za upravljanje zahtjevima za nabavu na Veleučilištu u Rijeci.
 
-veleri.XP je full-stack MVP aplikacija za digitalizaciju procesa nabave: zaposlenik kreira zahtjev, administrator ga preuzima, odobrava ili vraca na izmjenu, a zahtjev se zatvara nakon potrebne dokumentacije.
+veleri.XP je full-stack web aplikacija za digitalizaciju procesa nabave: zaposlenik kreira zahtjev, administrator ga preuzima, odobrava ili vraća na izmjenu, a zahtjev se zatvara nakon dostave potrebne dokumentacije.
 
 ## Status projekta
 
-**Verzija:** 0.2  
-**Faza:** MVP u razvoju / demo sprint
-
-Trenutno je implementiran end-to-end tijek: prijava korisnika, kreiranje zahtjeva, pregled liste, detalji zahtjeva, promjena statusa, upload dokumenata i audit trail.
+**Verzija:** 1.0  
+**Faza:** MVP — funkcionalan end-to-end tijek nabave
 
 ### Implementirano
 
-- Prijava korisnika.
-- Osnovne uloge i role-based pristup.
-- Kreiranje zahtjeva.
-- Automatski broj zahtjeva.
-- Odabir aktivne poslovne godine.
-- Odabir odjela / mjesta troška.
-- Odabir kategorije / predmeta nabave.
-- Unos stavki i količina.
-- Lista, detalji i uređivanje zahtjeva.
-- Workflow statusa zahtjeva.
-- Upload, download i brisanje dokumenata.
-- Audit trail kroz povijest aktivnosti.
-- Osnovne in-app obavijesti.
-- Ispis zahtjeva za administratora.
+- Prijava korisnika (httpOnly JWT cookie).
+- Dvije uloge: `Administrator` i `Zaposlenik`.
+- Kreiranje, pregled, uređivanje i storniranje zahtjeva.
+- Automatski broj zahtjeva u formatu `PR-GGGG-NNNN`.
+- Odabir aktivne poslovne godine, odjela i kategorije nabave.
+- Unos stavki i količina; provjera da stavke i odjel pripadaju istoj godini.
+- Serverska paginacija i filteri (status, odjel, korisnik, godina, kategorija, pretraga).
+- Kompletan workflow statusa s provjerom ovlasti.
+- Upload, download i brisanje dokumenata (`Ponuda`, `Otpremnica`).
+- Audit trail kroz povijest aktivnosti (`RequestStatusHistory`).
+- In-app obavijesti o promjenama statusa.
+- Admin upravljanje korisnicima (CRUD, invite link, deaktivacija).
+- Admin upravljanje poslovnim godinama, odjelima i kategorijama.
+- Kopiranje šifrarnika pri otvaranju nove poslovne godine.
+- Security hardening: CORS whitelist, rate limiting, Helmet, path traversal zaštita.
+- Unit testovi za backend (Jest) — generiranje broja zahtjeva, state machine, upload pravila.
 
-### Nije implementirano ili je djelomično
+### Nije implementirano / izvan opsega
 
-- Administracija korisnika i uloga.
-- Otvaranje i zaključavanje poslovnih godina kroz aplikaciju.
-- Kopiranje šifrarnika u novu poslovnu godinu.
-- Uređivanje šifrarnika kroz aplikaciju.
-- Provjera da odjeli i kategorije pripadaju istoj poslovnoj godini kao zahtjev.
-- Draft i storniranje zahtjeva.
-- Tipovi dokumenata `Narudžbenica` i `Ostalo`.
-- Serverska paginacija i napredni backend filteri.
-- Perzistentne notifikacije.
-- Stvarna validacija godišnjih limita i financijsko praćenje.
+- Financijski limiti po odjelu i kategoriji (polja postoje u bazi, logika nije aktivna).
+- Draft zahtjeva — zahtjev se uvijek šalje odmah.
+- Perzistentne notifikacije — in-app obavijesti ne pamte se između sesija.
+- Email notifikacije.
+- Produkcijski deployment (Docker, instalacijska skripta).
 
 ## Dokumentacija
 
-Detaljniji dokumenti nalaze se u mapi `docs/`:
-
 | Dokument | Opis |
 |---|---|
-| `docs/SRS_STATUS.md` | Status implementacije prema SRS zahtjevima. |
-| `docs/ARHITEKTURA.md` | Arhitektura sustava i opis slojeva. |
-| `docs/API.md` | REST API dokumentacija. |
-| `docs/BAZA_PODATAKA.md` | Dokumentacija baze podataka. |
-| `docs/KORISNICKE_UPUTE.md` | Korisničke upute za zaposlenika i administratora. |
-| `docs/TEST_PLAN.md` | Plan testiranja. |
-| `docs/PLAN_DORADA.md` | Preporučeni redoslijed daljnjih dorada. |
+| `DOCS/SRS_STATUS.md` | Status implementacije prema SRS zahtjevima. |
+| `DOCS/ARHITEKTURA.md` | Arhitektura sustava i opis slojeva. |
+| `DOCS/API.md` | REST API dokumentacija. |
+| `DOCS/BAZA_PODATAKA.md` | Dokumentacija baze podataka. |
+| `DOCS/KORISNICKE_UPUTE.md` | Korisničke upute za zaposlenika i administratora. |
+| `DOCS/TEST_PLAN.md` | Plan testiranja. |
+| `DOCS/PLAN_DORADA.md` | Preporučeni redoslijed daljnjih dorada. |
 
 ## Tech Stack
 
 | Sloj | Tehnologija |
 |---|---|
 | Frontend | Vue 3, Quasar Framework, Composition API |
-| Backend | Node.js, Express |
+| Backend | Node.js, Express 5 |
 | Baza | MySQL / MariaDB |
-| Auth | JWT, bcrypt |
+| Auth | JWT (httpOnly cookie), bcrypt |
 | Upload | Multer |
-| API | REST |
+| Testovi | Jest, Supertest |
 
 ## Struktura projekta
 
 ```text
 veleri.XP/
-├── client/          # Vue 3 + Quasar frontend
+├── client/              # Vue 3 + Quasar frontend
 │   └── src/
-│       ├── pages/   # Stranice aplikacije
-│       ├── router/  # Routing
-│       ├── boot/    # Axios konfiguracija
-│       └── stores/  # Pinia stores
-├── server/          # Node.js + Express backend
-│   └── src/
-│       ├── routes/      # API rute
-│       ├── middleware/  # Auth middleware
-│       └── config/      # DB konfiguracija
-├── database/        # SQL dump i modeli baze
-├── docs/            # Dokumentacija i dijagrami
+│       ├── pages/       # Stranice aplikacije
+│       ├── layouts/     # AuthLayout, MainLayout
+│       ├── router/      # Routing i zaštita ruta
+│       ├── boot/        # Axios konfiguracija
+│       ├── composables/ # useActionableRequestsNotifier
+│       └── stores/      # Pinia
+├── server/              # Node.js + Express backend
+│   ├── src/
+│   │   ├── routes/      # API rute (sva poslovna logika)
+│   │   ├── middleware/  # Auth middleware
+│   │   └── config/      # DB konfiguracija
+│   └── __tests__/       # Jest unit testovi
+├── database/            # SQL dump i modeli baze
+├── DOCS/                # Dokumentacija i dijagrami
 └── README.md
 ```
 
-## Glavne funkcionalnosti
-
-### Autentikacija i role
-
-- Login putem emaila i lozinke.
-- Lozinke su hashirane pomocu bcrypta.
-- JWT autentikacija.
-- Zasticene frontend rute.
-- Dvije role: `Administrator` i `Zaposlenik`.
-- Zaposlenik vidi svoje zahtjeve.
-- Administrator vidi sve zahtjeve i ima akcije obrade.
-
-### Zahtjevi za nabavu
-
-- Kreiranje novog zahtjeva kroz wizard.
-- Odabir odjela/sluzbe/projekta.
-- Unos obrazlozenja nabave.
-- Unos stavki i kolicina.
-- Unos procijenjenog iznosa.
-- Opcionalni upload ponude prilikom kreiranja.
-- Automatsko generiranje broja zahtjeva u formatu `PR-GGGG-XXXX`.
-
-### Pregled i upravljanje
-
-- Lista zahtjeva s pretragom i filtrima.
-- Detaljan prikaz zahtjeva.
-- Prikaz stavki, iznosa, statusa, kreatora i povijesti aktivnosti.
-- Editiranje zahtjeva kada workflow to dopusta.
-- Audit trail kroz tablicu `RequestStatusHistory`.
-
-### Dokumenti
-
-- Upload dokumenata tipa `Ponuda` i `Otpremnica`.
-- Dozvoljeni su PDF, Word, Excel, slike, TXT i ZIP.
-- Limit velicine datoteke: 10 MB.
-- Datoteke se spremaju na server filesystem u `server/uploads/attachments/{id}/`.
-- Download datoteka iz browsera.
-- Brisanje dokumenata prema pravilima role/statusa.
-
 ## Workflow zahtjeva
-
-Stvarni workflow u backendu trenutno je:
 
 ```text
 [Zaposlenik kreira zahtjev]
         |
         v
    [Poslano]
-        |
-        | admin: preuzmi
-        v
- [Na odobrenju]
+    |      |
+    |      | admin: odbij
+    |      v
+    |  [Odbijeno]
+    |
+    | admin: preuzmi
+    v
+[Na odobrenju]
     |          |
     |          | admin: vrati-na-izmjenu
     |          v
-    |     [Vraceno na dopunu/izmjenu]
-    |          |
-    |          | zaposlenik: resubmit
-    |          v
-    |      [Poslano]
+    |    [Vraćeno na dopunu]
+    |      |           |
+    |      | zaposlenik:| admin:
+    |      | resubmit   | vrati-u-obradu
+    |      v           |
+    |   [Poslano] <----+
     |
-    | admin: odobri
+    | admin: odobri (zahtijeva Ponudu)
     v
-  [Naruceno]
+  [Naručeno]
         |
-        | admin: zavrsi
+        | admin: završi (zahtijeva Ponudu + Otpremnicu + iznos)
         v
   [Zatvoreno]
 
-Admin moze odbiti zahtjev iz statusa [Poslano].
+Admin može stornirati zahtjev iz bilo kojeg aktivnog statusa → [Odbijeno].
 ```
-
-Statusi koji se koriste u kodu:
 
 | ID | Status |
 |---:|---|
 | 1 | Poslano |
 | 2 | Na odobrenju |
-| 3 | Vraceno na dopunu/izmjenu |
+| 3 | Vraćeno na dopunu/izmjenu |
 | 5 | Odbijeno |
-| 6 | Naruceno |
+| 6 | Naručeno |
 | 7 | Zatvoreno |
-
-Napomena: status `Odobreno` postoji u bazi kao stariji status, ali ga trenutni workflow ne koristi kao zavrsni operativni status. U aktualnom kodu odobren zahtjev prelazi u `Naruceno`.
 
 ## Lokalno pokretanje
 
@@ -188,13 +144,11 @@ Instalirati MySQL ili MariaDB, zatim kreirati bazu:
 CREATE DATABASE XP CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-Import postojeceg dumpa:
+Import postojećeg dumpa:
 
 ```bash
 mysql -u root -p XP < database/dump-XP-202605061957.sql
 ```
-
-Ako se projekt prenosi na drugi laptop, kod dolazi s GitHuba, ali baza ne. Bazu treba importati iz SQL dumpa ili napraviti novi dump sa starog laptopa.
 
 ### 3. Server konfiguracija
 
@@ -209,6 +163,7 @@ DB_PASSWORD=tvoja_lozinka
 DB_NAME=XP
 JWT_SECRET=promijeni_ovo_u_dugi_random_secret
 JWT_EXPIRES_IN=1d
+CLIENT_URL=http://localhost:9000
 ```
 
 Pokretanje servera:
@@ -219,18 +174,16 @@ npm install
 npm run dev
 ```
 
-Server se pokrece na:
-
-```text
-http://localhost:3000
-```
+Server se pokreće na `http://localhost:3000`.
 
 ### 4. Client konfiguracija
 
-Frontend trenutno koristi API adresu:
+API adresa se konfigurira kroz env varijablu. Zadana vrijednost za razvoj je `http://localhost:3000/api`.
 
-```text
-http://localhost:3000/api
+Za drugačiju adresu, postaviti `API_URL` u `.env` datoteci u `client/` mapi:
+
+```env
+API_URL=http://localhost:3000/api
 ```
 
 Pokretanje clienta:
@@ -241,50 +194,23 @@ npm install
 npm run dev
 ```
 
-Quasar ce ispisati lokalni URL aplikacije, najcesce:
+Quasar će ispisati lokalni URL, najčešće `http://localhost:9000`.
 
-```text
-http://localhost:9000
+## Testiranje
+
+Backend unit testovi pokreću se iz `server/` mape:
+
+```bash
+cd server
+npm test
 ```
 
-## Vazna napomena za uploadane dokumente
+Testovi pokrivaju:
+- generiranje broja zahtjeva (`PR-GGGG-NNNN` format, inkrement, zatvorena godina)
+- state machine promjena statusa (ovlasti, komentari, dokumenti, zaključani statusi)
+- pravila uploada dokumenata (`UPLOAD_RULES` po statusu, zaključani zahtjevi)
 
-SQL dump trenutno moze sadrzavati apsolutne lokalne putanje do datoteka, npr. `/Users/.../server/uploads/...`.
-
-To znaci:
-
-- nakon importa na drugom laptopu stari attachmenti mozda nece raditi,
-- potrebno je prenijeti i `server/uploads` mapu ako se zeli sacuvati dokumente,
-- dugorocno je bolje u bazi spremati relativnu putanju ili storage key umjesto apsolutne putanje.
-
-Za razvoj/demo najjednostavnije je importati bazu, ignorirati stare dokumente i uploadati nove.
-
-## Sigurnosni model
-
-Trenutno implementirano:
-
-- JWT token autentikacija.
-- Auth middleware na zasticenim API rutama.
-- Role-based provjere za administratorske akcije.
-- Parametrizirani SQL upiti.
-- Backend validacija osnovnih inputa.
-- Whitelist tipova datoteka za upload.
-- Transakcije i `FOR UPDATE` lockovi za osjetljive promjene.
-- State machine provjera statusa.
-
-Preporuceno prije produkcije:
-
-- ograniciti CORS na poznate domene,
-- dodati rate limit za login,
-- dodati Helmet,
-- ne vracati `error.message` direktno klijentu u produkciji,
-- provjeriti da `JWT_SECRET` postoji pri startupu servera,
-- razmotriti httpOnly cookie auth umjesto `localStorage`,
-- dodati backend i frontend testove.
-
-## Testiranje i provjere
-
-Trenutno:
+Frontend provjere:
 
 ```bash
 cd client
@@ -292,46 +218,32 @@ npm run lint
 npm run build
 ```
 
-`client` build i lint prolaze. Projekt trenutno nema prave automatizirane testove. `client npm test` je placeholder, a `server` nema test skriptu.
+## Napomena za uploadane dokumente
 
-Preporuceni minimalni testovi:
+SQL dump može sadržavati apsolutne lokalne putanje do datoteka (`/Users/.../server/uploads/...`). Nakon importa na drugom računalu stari attachmenti neće raditi. Potrebno je prenijeti i `server/uploads/` mapu ili uploadati dokumente iznova.
 
-- login uspjesan/neuspjesan,
-- kreiranje zahtjeva,
-- zaposlenik vidi samo svoje zahtjeve,
-- admin vidi sve zahtjeve,
-- dozvoljene i zabranjene statusne tranzicije,
-- upload pravila za `Ponuda` i `Otpremnica`.
+## Sigurnosni model
 
-## Sljedece dorade
-
-Prioriteti:
-
-- Dodati `.env.example`.
-- Odvojiti cisti `schema.sql` i `seed.sql` od velikog razvojnog dumpa.
-- Popraviti spremanje putanja uploadanih dokumenata.
-- Uskladiti sve prikaze statusa u frontendu.
-- Dodati osnovne backend testove za auth i workflow.
-- Dodati security hardening: CORS whitelist, rate limit, Helmet.
-
-Kasnije:
-
-- Registracija korisnika uz `@veleri.hr` whitelist.
-- Password reset putem emaila.
-- Admin panel za korisnike.
-- Email notifikacije za odobrenje, odbijanje i vracanje na izmjenu.
-- Print/PDF obrazac zahtjeva.
-- Docker setup.
-- CI/CD.
-- Backup strategija baze.
+- JWT autentikacija putem `httpOnly` cookie-ja (`sameSite: strict`, `secure` u produkciji).
+- bcrypt hashiranje lozinki.
+- Role-based provjere za sve administratorske akcije.
+- Parametrizirani SQL upiti (zaštita od SQL injekcije).
+- CORS whitelist konfiguriran kroz env varijablu `CLIENT_URL`.
+- Rate limiting: login (20 pokušaja / 15 min), set-password (10 pokušaja / sat).
+- Helmet middleware (sigurnosni HTTP headeri).
+- Provjera postojanja obaveznih env varijabli pri pokretanju servera.
+- Whitelist dozvoljenih MIME tipova za upload.
+- Zaštita od path traversal napada kod preuzimanja dokumenata.
+- Transakcije i `FOR UPDATE` lockovi za osjetljive promjene statusa.
+- API ne vraća `error.message` niti stack trace klijentu.
 
 ## Academic Context
 
 Projekt se razvija u sklopu studija na:
 
-**Veleuciliste u Rijeci**  
-**Strucni diplomski studij Informacijske tehnologije u poslovnim sustavima**  
-**Smjer: Programsko inzenjerstvo**
+**Veleučilište u Rijeci**  
+**Stručni diplomski studij Informacijske tehnologije u poslovnim sustavima**  
+**Smjer: Programsko inženjerstvo**
 
 ## Autor
 
