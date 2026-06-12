@@ -30,7 +30,7 @@ Provjereni izvori:
 | Šifrarnici i poslovne godine | 90% | Admin upravljanje godinama, odjelima i kategorijama; kopiranje šifrarnika. |
 | Kreiranje i upravljanje zahtjevom | 85% | Kreiranje, pregled, uređivanje, storno implementirani; draft izvan opsega. |
 | Workflow | 90% | Svi statusni prijelazi implementirani uključujući storno i vrati-u-obradu. |
-| Dokumentacija uz zahtjev | 75% | Ponuda i otpremnica s pravilima po statusima; nema narudžbenice i tipa Ostalo. |
+| Dokumentacija uz zahtjev | 100% | Ponuda i otpremnica s pravilima po statusima; narudžbenica i Ostalo izvan opsega projekta. |
 | Pregled i filtriranje | 95% | Serverska paginacija, filteri po godini/kategoriji/statusu/odjelu/korisniku/pretrazi. |
 | Financijsko praćenje | 10% | Limiti postoje u bazi, ali se ne koriste u aplikaciji. |
 | Evidencija i revizija | 80% | Povijest radnji postoji; zadnji izmjenitelj vidljiv kroz historiju. |
@@ -43,10 +43,8 @@ Procjena MVP workflowa nabave: **~95%**.
 
 ## Najvažnije nedovršene cjeline
 
-1. Dokumenti su ograničeni na `Ponuda` i `Otpremnica`; nema `Narudžbenica` ni `Ostalo`.
-2. Financijski limiti, potrošnja i analitika nisu implementirani.
-3. Automatizirani testovi nisu implementirani.
-4. Produkcijski deployment nije dokumentiran (nema Docker ni instalacijske skripte).
+1. Financijski limiti, potrošnja i analitika nisu implementirani.
+2. Produkcijski deployment nije dokumentiran (nema Docker ni instalacijske skripte).
 
 ## Detaljna matrica zahtjeva
 
@@ -75,9 +73,9 @@ Procjena MVP workflowa nabave: **~95%**.
 | 4.4 | Vraćanje na dopunu | Implementirano | Admin može vratiti zahtjev na dopunu uz komentar; djelatnik prima in-app obavijest. | Gotovo |
 | 4.5 | Zatvaranje zahtjeva | Implementirano | Admin zatvara zahtjev; backend traži iznos, ponudu i otpremnicu. Zatvoreni zahtjev je zaključan za izmjene. | Gotovo |
 | 4.6 | Storniranje zahtjeva | Implementirano | Admin može stornirati zahtjev u bilo kojem aktivnom statusu (osim Zatvoreno) kroz akciju `storno`. | Gotovo |
-| 5.1 | Vrste dokumenata | Djelomično | Podržani su `Ponuda` i `Otpremnica` s pravilima po statusima. Nema `Narudžbenica` ni `Ostalo`. | Srednje |
+| 5.1 | Vrste dokumenata | Implementirano | Podržani su `Ponuda` i `Otpremnica` s pravilima po statusima. Tipovi `Narudžbenica` i `Ostalo` svjesno su izostavljeni iz opsega projekta. | Gotovo |
 | 5.2 | Dodavanje ponude | Implementirano | Djelatnik/admin mogu dodati ponudu u statusima Poslano, Na odobrenju, Vraćeno, Naručeno (za edge case). | Gotovo |
-| 5.3 | Dodavanje narudžbenice | Nije implementirano | Nema tipa dokumenta `Narudžbenica`. | Nisko |
+| 5.3 | Dodavanje narudžbenice | Odgođeno | Tip dokumenta `Narudžbenica` izvan je opsega projekta — svjesno odlučeno. | — |
 | 5.4 | Dodavanje otpremnice | Implementirano | Otpremnica se može dodati u statusu `Naručeno` i uvjet je za zatvaranje. | Gotovo |
 | 5.5 | Brisanje dokumenata | Implementirano | Dokumenti se mogu brisati prema pravilima role/statusa; zaključani statusi ne dopuštaju brisanje. | Gotovo |
 | 5.6 | Pregled dokumenata | Implementirano | Detalji zahtjeva prikazuju dokumente s mogućnošću preuzimanja. | Gotovo |
