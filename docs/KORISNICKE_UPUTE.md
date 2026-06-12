@@ -395,7 +395,7 @@ U trenutnoj verziji aplikacije nisu dostupne sljedeće funkcionalnosti:
 | Zaključavanje poslovne godine kroz aplikaciju | Nije implementirano. |
 | Uređivanje šifrarnika kroz aplikaciju | Nije implementirano. |
 | Provjera godišnjih limita | Djelomično pripremljeno u bazi, ali nije aktivno u workflowu. |
-| Draft zahtjeva | Nije implementirano. |
+| Draft zahtjeva | Izvan opsega projekta — zahtjev se uvijek šalje odmah. |
 | Storniranje zahtjeva | Nije implementirano. |
 | Perzistentne notifikacije | Nije implementirano. |
 | Serverska paginacija i napredni backend filteri | Nije implementirano; trenutni filteri rade na frontend strani. |

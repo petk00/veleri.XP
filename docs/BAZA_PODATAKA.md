@@ -484,9 +484,8 @@ Sljedeće cjeline postoje u modelu baze, ali nisu potpuno implementirane u aplik
 | Kopiranje šifrarnika u novu godinu | Nije implementirano. |
 | CRUD odjela i kategorija | Tablice postoje, ali nema admin UI/API za održavanje. |
 | Financijski limiti | Polja `department_limit` i `category_limit` postoje, ali se ne provjeravaju u workflowu. |
-| Draft zahtjeva | Ne postoji status/model za nacrt zahtjeva. |
-| Storniranje zahtjeva | Ne postoji poseban status ili oznaka za storniranje. |
-| Dodatni tipovi dokumenata | Trenutno su podržani `Ponuda` i `Otpremnica`; `Narudžbenica` i `Ostalo` su planirane dorade. |
+| Storniranje zahtjeva | Implementirano kroz akciju `storno`; status `Odbijeno` koristi se i za stornirane zahtjeve. |
+| Tipovi dokumenata | Podržani su `Ponuda` i `Otpremnica`; ostali tipovi izvan su opsega projekta. |
 
 ## Napomene za daljnji razvoj
 
@@ -499,4 +498,4 @@ Preporučene dorade modela i aplikacijske logike:
 - provjeravati da `Department` i `ItemCategory` pripadaju istoj poslovnoj godini kao zahtjev,
 - dodati provjere limita po mjestu troška i predmetu nabave,
 - razmotriti zasebnu tablicu za tipove dokumenata ako se broj tipova poveća,
-- dodati status ili oznaku za draft i storniranje.
+- razmotriti implementaciju financijskih limita po odjelu i kategoriji.
