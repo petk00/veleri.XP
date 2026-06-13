@@ -70,8 +70,27 @@ app.use('/api/reference', referenceRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/fiscal-years', fiscalYearRoutes);
 
+app.use((req, res) => {
+  res.status(404).json({ message: 'Ruta nije pronađena.' });
+});
+
+app.use((err, req, res, next) => {
+  console.error('[error]', err);
+  res.status(500).json({ message: 'Interna greška servera.' });
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason);
+  process.exit(1);
 });
