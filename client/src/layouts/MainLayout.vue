@@ -22,7 +22,7 @@
             :class="{ 'nav__item--active': isActive('/dashboard') }"
             @click="$router.push('/dashboard')"
           >
-            Dashboard
+            Nadzorna ploča
           </button>
           <button
             class="nav__item"
@@ -88,7 +88,7 @@
           :class="{ 'mobile-nav__item--active': isActive('/dashboard') }"
           @click="$router.push('/dashboard')"
         >
-          Dashboard
+          Nadzorna ploča
         </button>
         <button
           class="mobile-nav__item"

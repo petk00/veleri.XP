@@ -28,8 +28,9 @@
           </button>
 
           <h1 id="signin-title" class="signin-title">
-            {{ step === 'email' ? 'Prijavite se u aplikaciju nabave' : 'Unesite lozinku' }}
+            {{ step === 'email' ? 'Dobrodošli u sustav veleri.XP' : 'Unesite lozinku' }}
           </h1>
+          <p v-if="step === 'email'" class="signin-subtitle">Aplikacija za upravljanje zahtjevima za nabavu</p>
 
           <div v-if="step === 'email'" class="field">
             <label class="field-label" for="login-email">E-mail adresa</label>
@@ -318,12 +319,19 @@ const handleLogin = async () => {
 }
 
 .signin-title {
-  margin: 0 0 24px;
+  margin: 0 0 4px;
   color: #111827;
-  font-size: 1.375rem;
+  font-size: 1.25rem;
   font-weight: 600;
   letter-spacing: -0.015em;
   line-height: 1.2;
+}
+
+.signin-subtitle {
+  margin: 0 0 24px;
+  color: #6b7280;
+  font-size: 0.8125rem;
+  font-weight: 400;
 }
 
 /* ── Fields ────────────────────────────────────── */

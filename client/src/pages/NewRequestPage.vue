@@ -37,7 +37,7 @@
           Obratite se administratoru da otvori novu poslovnu godinu.
         </div>
         <button class="btn btn--secondary" @click="$router.push('/dashboard')">
-          Povratak na dashboard
+          Povratak na nadzornu ploču
         </button>
       </div>
 
@@ -83,15 +83,12 @@
               <div v-if="step === 1" key="1" class="step">
                 <div class="step__head">
                   <div class="step__caption">Korak 1 od {{ currentSteps.length }}</div>
-                  <h2 class="step__title">Odabir odjela, službe ili projekta</h2>
-                  <p class="step__desc">
-                    Odaberite odjel, službu ili projekt za koji otvarate zahtjev
-                  </p>
+                  <h2 class="step__title">Odabir odjela, službe ili projekta kojem pripadate</h2>
                 </div>
 
                 <div class="step__body">
                   <div class="field">
-                    <label class="field__label">Odaberite odjel, službu ili projekt</label>
+                    <label class="field__label">Odjel / Služba / Projekt</label>
                     <q-select
                       v-model="form.department"
                       :options="departmentOptions"
