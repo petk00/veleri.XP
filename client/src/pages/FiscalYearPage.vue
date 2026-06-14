@@ -4,8 +4,7 @@
 
       <header class="page-header">
         <div class="page-header__main">
-          <div class="page-header__eyebrow">Administracija</div>
-          <h1 class="page-header__title">Poslovne godine</h1>
+          <h1 class="page-header__title">Administracija poslovnih godina</h1>
         </div>
         <div class="page-header__actions">
           <button class="btn btn--cta" :disabled="hasOpenYear" @click="openCreateDialog">
