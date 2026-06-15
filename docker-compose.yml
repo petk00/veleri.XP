@@ -1,0 +1,60 @@
+services:
+
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: XP
+      MYSQL_USER: veleri
+      MYSQL_PASSWORD: veleripassword
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./db/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -prootpassword --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+
+  backend:
+    build: ./server
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: veleri
+      DB_PASSWORD: veleripassword
+      DB_NAME: XP
+      JWT_SECRET: zamijeni-s-dugackim-random-stringom-minimalno-32-znaka
+      JWT_EXPIRES_IN: 1d
+      CLIENT_URL: http://localhost
+      UPLOADS_DIR: /app/uploads
+      # SMTP_HOST: smtp.office365.com
+      # SMTP_PORT: 587
+      # SMTP_USER: your-email@veleri.hr
+      # SMTP_PASS: your-password
+      # SMTP_FROM: "veleri.XP <your-email@veleri.hr>"
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build: ./client
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  mysql_data:
+  uploads:

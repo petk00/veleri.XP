@@ -5,7 +5,7 @@ const path = require('path');
 const db = require('../config/db');
 const authenticateToken = require('../middleware/authMiddleware');
 
-const UPLOADS_DIR = path.resolve(__dirname, '../../uploads');
+const UPLOADS_DIR = process.env.UPLOADS_DIR || path.resolve(__dirname, '../../uploads');
 
 const LOCKED_STATUSES = [5, 7]; // Odbijeno, Zatvoreno
 

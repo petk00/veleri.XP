@@ -81,9 +81,11 @@ const lockRequestForWrite = async (connection, requestId, user) => {
   return rows[0] || null;
 };
 
+const UPLOADS_DIR = process.env.UPLOADS_DIR || path.resolve(__dirname, '../../uploads');
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '../../uploads/attachments', String(req.params.id));
+    const dir = path.join(UPLOADS_DIR, 'attachments', String(req.params.id));
     fs.mkdirSync(dir, { recursive: true });
     cb(null, dir);
   },
