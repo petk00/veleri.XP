@@ -575,7 +575,7 @@ const ORG = {
   mb: '01387332',
   rkp: '22494',
   iban: 'HR6824020061100451485',
-  logoPath: '/logo33.svg', // Veleri službeni logo za ispis
+  logoPath: '/logo.png',
 };
 
 const STATUS = {
@@ -923,18 +923,33 @@ const confirmAction = async () => {
 const editRequest = () => router.push(`/requests/${route.params.id}/edit`);
 const goBack = () => router.push('/requests');
 
-const svgToPng = (src, size = 128) =>
+const loadImage = (src) =>
   new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
       const c = document.createElement('canvas');
-      c.width = size; c.height = size;
-      c.getContext('2d').drawImage(img, 0, 0, size, size);
-      resolve(c.toDataURL('image/png'));
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.getContext('2d').drawImage(img, 0, 0);
+      resolve({ data: c.toDataURL('image/png'), w: img.naturalWidth, h: img.naturalHeight });
     };
     img.onerror = () => resolve(null);
     img.src = src;
   });
+
+const embedFont = async (pdf, url, name, style = 'normal') => {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return false;
+    const buf = await res.arrayBuffer();
+    const b64 = btoa(new Uint8Array(buf).reduce((s, b) => s + String.fromCharCode(b), ''));
+    const filename = `${name}-${style}.ttf`;
+    pdf.addFileToVFS(filename, b64);
+    pdf.addFont(filename, name, style);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const downloadPdf = async () => {
   if (!request.value) return;
@@ -946,28 +961,38 @@ const downloadPdf = async () => {
     const CW  = PW - 2 * M;  // širina sadržaja
     let y = M;
 
+    // ── Fontovi (podržavaju hrvatske znakove) ──
+    const fontLoaded = await embedFont(pdf, '/fonts/Times New Roman.ttf', 'TimesNewRoman', 'normal');
+    await embedFont(pdf, '/fonts/Times New Roman Bold.ttf', 'TimesNewRoman', 'bold');
+    const F = fontLoaded ? 'TimesNewRoman' : 'helvetica';
+
     // ── Logo ──
-    const logoPng = await svgToPng(ORG.logoPath, 128);
-    const LOGO_SIZE = 13;
-    if (logoPng) pdf.addImage(logoPng, 'PNG', M, y - 1, LOGO_SIZE, LOGO_SIZE);
+    const logo = await loadImage(ORG.logoPath);
+    const LOGO_H = 18;
+    const LOGO_W = logo ? (LOGO_H * logo.w / logo.h) : 0;
+    if (logo) pdf.addImage(logo.data, 'PNG', M, y, LOGO_W, LOGO_H);
 
-    // ── Naziv institucije ──
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(11);
+    // ── Naziv institucije lijevo, uz logo, vertikalno centrirano ──
+    pdf.setFont(F, 'bold');
+    pdf.setFontSize(14);
     pdf.setTextColor(31, 56, 100);
-    pdf.text(ORG.name, M + (logoPng ? LOGO_SIZE + 3 : 0), y + 5);
+    pdf.text(ORG.name, M + (logo ? LOGO_W + 4 : 0), y + 7);
 
-    pdf.setFontSize(8);
-    pdf.text(ORG.nameLatin, PW - M, y + 2, { align: 'right' });
-    pdf.setFont('helvetica', 'italic');
-    pdf.text(ORG.nameEnglish, PW - M, y + 7, { align: 'right' });
+    // ── Latinski i engleski naziv desno ──
+    const TX = PW - M;
+    pdf.setFont(F, 'bold');
+    pdf.setFontSize(11);
+    pdf.setTextColor(0, 139, 185);
+    pdf.text(ORG.nameLatin, TX, y + 2, { align: 'right' });
+    pdf.setTextColor(31, 56, 100);
+    pdf.text(ORG.nameEnglish, TX, y + 7, { align: 'right' });
 
-    y += LOGO_SIZE + 2;
+    y += 13;
 
-    // ── Kontakt linija ──
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(7.5);
-    pdf.setTextColor(85, 85, 85);
+    // ── Kontakt info centrirano ispod ──
+    pdf.setFont(F, 'normal');
+    pdf.setFontSize(7);
+    pdf.setTextColor(31, 56, 100);
     pdf.text(
       `${ORG.address} · Telefon ${ORG.phone} · E-mail: ${ORG.email} · ${ORG.web}`,
       PW / 2, y, { align: 'center' }
@@ -977,22 +1002,16 @@ const downloadPdf = async () => {
       `OIB: ${ORG.oib} · MB: ${ORG.mb} · RKP: ${ORG.rkp} · IBAN: ${ORG.iban}`,
       PW / 2, y, { align: 'center' }
     );
-    y += 5;
-
-    // ── Horizontalna crta ──
-    pdf.setDrawColor(0);
-    pdf.setLineWidth(0.5);
-    pdf.line(M, y, PW - M, y);
     y += 8;
 
     // ── Naslov u okviru ──
     pdf.setLineWidth(0.3);
-    pdf.rect(M, y, CW, 10);
+    pdf.rect(M, y, CW, 13);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(13);
     pdf.setTextColor(0);
-    pdf.text('ZAHTJEV ZA NABAVU', PW / 2, y + 7, { align: 'center' });
-    y += 16;
+    pdf.text('ZAHTJEV ZA NABAVU', PW / 2, y + 9, { align: 'center' });
+    y += 19;
 
     // ── Polja ──
     const LABEL_W = 58;
@@ -1000,9 +1019,9 @@ const downloadPdf = async () => {
     const fields = [
       { label: 'Broj zahtjeva:',                              value: request.value.request_number },
       { label: 'Datum:',                                      value: formatDateOnly(request.value.created_at) },
-      { label: 'Zahtjev podnio\n(ime i prezime djelatnika):', value: request.value.created_by },
+      { label: 'Zahtjev podnio:', subtitle: '(ime i prezime djelatnika)', value: request.value.created_by },
       { label: 'Odjel / Služba:',                            value: request.value.department_name },
-      { label: 'Predmet nabave\n(kategorija):',               value: predmetNabave.value },
+      { label: 'Predmet nabave:', subtitle: '(naziv robe/usluge)', value: predmetNabave.value },
     ];
 
     pdf.setFontSize(10);
@@ -1011,34 +1030,31 @@ const downloadPdf = async () => {
       pdf.setTextColor(0);
       const labelLines = pdf.splitTextToSize(f.label, LABEL_W);
       pdf.text(labelLines, M, y);
-      pdf.setFont('helvetica', 'bold');
+      if (f.subtitle) {
+        pdf.setFont('helvetica', 'italic');
+        pdf.text(f.subtitle, M, y + labelLines.length * 5);
+        pdf.setFont('helvetica', 'normal');
+      }
       pdf.text(String(f.value || '—'), VALUE_X, y);
-      y += labelLines.length * 5 + 3;
+      y += (labelLines.length + (f.subtitle ? 1 : 0)) * 5 + 3;
     }
     y += 3;
 
     // ── Svrha nabave (okvir) ──
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
-    pdf.setTextColor(0);
-    pdf.text('Svrha nabave (obrazloženje):', M, y);
-    y += 4;
-
     const justLines = pdf.splitTextToSize(request.value.justification || '—', CW - 8);
-    const boxH = Math.max(34, justLines.length * 5 + 8);
+    const boxH = Math.max(34, justLines.length * 5 + 18);
     pdf.setLineWidth(0.3);
     pdf.rect(M, y, CW, boxH);
-    pdf.text(justLines, M + 4, y + 6);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    pdf.setTextColor(0);
+    pdf.text('Svrha nabave (obrazloženje):', M + 4, y + 6);
+    pdf.text(justLines, M + 4, y + 13);
     y += boxH + 8;
 
     // ── Stavke ──
     if (items.value.length > 0) {
-      pdf.setFont('helvetica', 'italic');
-      pdf.setFontSize(9);
-      pdf.setTextColor(85, 85, 85);
-      pdf.text('Specifikacija stavki:', M, y);
-      y += 5;
-
       const cols  = [CW * 0.55, CW * 0.30, CW * 0.15];
       const ROW_H = 7;
 
@@ -1079,19 +1095,10 @@ const downloadPdf = async () => {
     pdf.setFontSize(10.5);
     pdf.setTextColor(0);
     pdf.text(
-      `Ukupna nabava se procjenjuje na iznos od ${formatCurrency(request.value.total_amount)}.`,
+      `Ukupna nabava se procjenjuje na iznos od ${formatCurrency(request.value.total_amount).replace('€', 'eur')}.`,
       M, y
     );
     y += 14;
-
-    // ── Status + datum ──
-    pdf.setLineWidth(0.4);
-    pdf.line(M, y, PW - M, y);
-    y += 5;
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(8.5);
-    pdf.text(`Status: ${request.value.status_name}`, M, y);
-    pdf.text(`Ispisano: ${todayDate.value}`, PW - M, y, { align: 'right' });
 
     pdf.save(`${request.value.request_number}.pdf`);
   } finally {
