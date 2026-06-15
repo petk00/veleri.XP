@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import { getStoredUser } from '../utils/authStorage';
 // localStorage reset is handled by setup.js via localStorageMock._reset() in beforeEach
 
