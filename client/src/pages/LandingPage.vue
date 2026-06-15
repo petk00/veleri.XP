@@ -7,15 +7,12 @@
       </div>
 
       <div class="modules">
-        <button class="module-card" @click="$router.push('/dashboard')">
-          <div class="module-card__icon">
-            <q-icon name="shopping_cart" size="22px" />
-          </div>
-          <div class="module-card__action">
-            <span>Otvori aplikaciju nabave</span>
-            <q-icon name="arrow_forward" size="15px" />
-          </div>
-        </button>
+        <div class="module-tile">
+          <button class="module-card" @click="$router.push('/dashboard')">
+            <q-icon name="shopping_cart" size="28px" />
+          </button>
+          <div class="module-card__name">Modul nabava</div>
+        </div>
       </div>
     </main>
 
@@ -71,49 +68,42 @@ const user = getStoredUser();
   justify-content: center;
 }
 
+.module-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
 .module-card {
   all: unset;
-  width: 340px;
-  padding: 22px 24px;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.06),
-    0 8px 32px rgba(0, 67, 150, 0.10);
-  box-sizing: border-box;
-  cursor: pointer;
   display: flex;
-  flex-direction: row;
   align-items: center;
-  gap: 16px;
-  font: inherit;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  background: #0067b8;
+  color: #fff;
+  border-radius: 18px;
+  cursor: pointer;
+  box-shadow:
+    0 2px 8px rgba(0, 67, 150, 0.18),
+    0 8px 24px rgba(0, 67, 150, 0.18);
+  transition: box-shadow 0.18s, transform 0.18s;
 }
 
 .module-card:hover {
   box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.08),
-    0 16px 48px rgba(0, 67, 150, 0.15);
+    0 4px 14px rgba(0, 67, 150, 0.28),
+    0 12px 32px rgba(0, 67, 150, 0.22);
+  transform: translateY(-2px);
 }
 
-.module-card__icon {
-  display: flex;
-  width: 48px;
-  height: 48px;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 103, 184, 0.10);
-  color: #0067b8;
-  border-radius: 12px;
-  flex-shrink: 0;
-}
-
-.module-card__action {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: #0067b8;
+.module-card__name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #374151;
+  text-align: center;
 }
 
 /* ── Responsive ── */
@@ -123,8 +113,8 @@ const user = getStoredUser();
   }
 
   .module-card {
-    width: 100%;
-    max-width: 360px;
+    width: 64px;
+    height: 64px;
   }
 }
 </style>

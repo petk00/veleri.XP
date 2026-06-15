@@ -31,11 +31,23 @@
             </div>
           </div>
           <div class="page-header__actions">
-            <button v-if="isAdmin" class="btn btn--ghost" :disabled="pdfGenerating" @click="downloadPdf">
+            <button
+              v-if="canDownloadPdf"
+              class="btn btn--ghost"
+              :disabled="pdfGenerating"
+              @click="downloadPdf"
+            >
               <q-spinner v-if="pdfGenerating" size="14px" />
               <q-icon v-else name="download" size="16px" />
               <span>{{ pdfGenerating ? 'Generiranje...' : 'Preuzmi PDF' }}</span>
             </button>
+            <span v-else-if="isAdmin" class="pdf-locked">
+              <q-icon name="lock" size="14px" />
+              <span>Preuzmi PDF</span>
+              <q-tooltip anchor="bottom middle" self="top middle">
+                PDF je dostupan tek nakon odobrenja zahtjeva.
+              </q-tooltip>
+            </span>
             <button v-if="canEdit" class="btn btn--ghost" @click="editRequest">
               <q-icon name="edit" size="16px" />
               <span>Uredi</span>
@@ -636,6 +648,10 @@ const canTakeOver = computed(() => isAdmin.value && status.value === STATUS.POSL
 const canDecide = computed(() => isAdmin.value && status.value === STATUS.NA_ODOBRENJU);
 const canResubmit = computed(() => !isAdmin.value && status.value === STATUS.VRACENO);
 const canFinish = computed(() => isAdmin.value && status.value === STATUS.NARUCENO);
+
+const canDownloadPdf = computed(() =>
+  isAdmin.value && [STATUS.NARUCENO, STATUS.ZATVORENO].includes(status.value),
+);
 
 const lastReturnComment = computed(() => {
   const entries = history.value.filter((h) => h.fk_request_status === STATUS.VRACENO);
@@ -1271,6 +1287,21 @@ onMounted(() => {
   border-color: #d1d5db;
 }
 .btn--ghost:hover:not(:disabled) { background: #f9fafb; border-color: #6b7280; }
+.pdf-locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 3px;
+  background: white;
+  color: #9ca3af;
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: default;
+  user-select: none;
+}
 .btn--danger {
   background: white;
   color: #c50f1f;
