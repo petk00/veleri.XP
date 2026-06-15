@@ -49,9 +49,9 @@
           </button>
         </nav>
 
-        <!-- Hamburger -->
-        <button v-if="user" class="hamburger-btn">
-          <q-icon name="menu" size="22px" />
+        <!-- Avatar -->
+        <button v-if="user" class="avatar-btn">
+          <div class="avatar" :style="{ background: avatarColor }">{{ initials }}</div>
 
           <q-menu
             anchor="bottom right"
@@ -123,6 +123,10 @@
         </transition>
       </router-view>
     </q-page-container>
+
+    <footer class="app-footer no-print">
+      <span>© 2026 Veleučilište u Rijeci. Sva prava pridržana.</span>
+    </footer>
 
   </q-layout>
 </template>
@@ -302,24 +306,21 @@ onMounted(() => {
 }
 
 /* ─────────────────────────────────────
-   Hamburger button
+   Avatar button
    ───────────────────────────────────── */
-.hamburger-btn {
+.avatar-btn {
   all: unset;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 3px;
-  color: #424242;
+  border-radius: 50%;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition: opacity 0.12s, box-shadow 0.12s;
 }
 
-.hamburger-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: #111827;
+.avatar-btn:hover {
+  opacity: 0.88;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
 }
 
 /* ─────────────────────────────────────
@@ -455,12 +456,30 @@ onMounted(() => {
   line-height: 1.4;
 }
 
+/* ─────────────────────────────────────
+   Footer
+   ───────────────────────────────────── */
+.app-footer {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 14px 32px;
+  border-top: 1px solid rgba(155, 200, 240, 0.5);
+  color: rgba(17, 24, 39, 0.38);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 600px) {
+  .app-footer { padding: 12px 16px; }
+}
+
 /* PRINT — sakrij sve UI elemente Layout-a */
 @media print {
   .app-header,
   .q-header,
   .toolbar,
-  .mobile-nav {
+  .mobile-nav,
+  .app-footer {
     display: none !important;
   }
 

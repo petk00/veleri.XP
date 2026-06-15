@@ -196,6 +196,15 @@ npm run dev
 
 Quasar će ispisati lokalni URL, najčešće `http://localhost:9000`.
 
+## Početni korisnički računi
+
+SQL dump uključuje dva testna korisnika dostupna odmah nakon importa baze:
+
+| Uloga | E-mail | Lozinka |
+|---|---|---|
+| Administrator | `admin@veleri.hr` | `12345678` |
+| Zaposlenik | `zaposlenik@veleri.hr` | `12345678` |
+
 ## Testiranje
 
 Backend unit testovi pokreću se iz `server/` mape:
