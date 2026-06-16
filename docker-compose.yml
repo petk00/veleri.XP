@@ -48,7 +48,12 @@ services:
       - "3000:3000"
 
   frontend:
-    build: ./client
+    build:
+      context: ./client
+      args:
+        # OBAVEZNO promijeniti na IP/domenu servera prije produkcijskog deploya
+        # Primjer: http://192.168.1.100:3000/api ili https://api.veleri.hr/api
+        API_URL: http://localhost:3000/api
     restart: unless-stopped
     depends_on:
       - backend
