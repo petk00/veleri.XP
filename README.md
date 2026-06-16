@@ -26,7 +26,9 @@ veleri.XP je full-stack web aplikacija za digitalizaciju procesa nabave: zaposle
 - Admin upravljanje poslovnim godinama, odjelima i kategorijama.
 - Kopiranje šifrarnika pri otvaranju nove poslovne godine.
 - Security hardening: CORS whitelist, rate limiting, Helmet, path traversal zaštita.
-- Unit testovi za backend (Jest) — generiranje broja zahtjeva, state machine, upload pravila.
+- Generiranje PDF dokumenta zahtjeva (samo za admin, status Naručeno/Zatvoreno).
+- Unit testovi za backend (Jest) i frontend (Vitest).
+- Docker deployment (MySQL + Express backend + Quasar/nginx frontend).
 
 ### Nije implementirano / izvan opsega
 
@@ -34,7 +36,6 @@ veleri.XP je full-stack web aplikacija za digitalizaciju procesa nabave: zaposle
 - Draft zahtjeva — zahtjev se uvijek šalje odmah.
 - Perzistentne notifikacije — in-app obavijesti ne pamte se između sesija.
 - Email notifikacije.
-- Produkcijski deployment (Docker, instalacijska skripta).
 
 ## Dokumentacija
 
@@ -54,31 +55,41 @@ veleri.XP je full-stack web aplikacija za digitalizaciju procesa nabave: zaposle
 |---|---|
 | Frontend | Vue 3, Quasar Framework, Composition API |
 | Backend | Node.js, Express 5 |
-| Baza | MySQL / MariaDB |
+| Baza | MySQL 8.0 |
 | Auth | JWT (httpOnly cookie), bcrypt |
 | Upload | Multer |
-| Testovi | Jest, Supertest |
+| PDF | jsPDF (client-side) |
+| Testovi | Jest, Supertest (backend) · Vitest, jsdom (frontend) |
+| Deployment | Docker, Docker Compose, nginx |
 
 ## Struktura projekta
 
 ```text
 veleri.XP/
 ├── client/              # Vue 3 + Quasar frontend
-│   └── src/
-│       ├── pages/       # Stranice aplikacije
-│       ├── layouts/     # AuthLayout, MainLayout
-│       ├── router/      # Routing i zaštita ruta
-│       ├── boot/        # Axios konfiguracija
-│       ├── composables/ # useActionableRequestsNotifier
-│       └── stores/      # Pinia
+│   ├── src/
+│   │   ├── pages/       # Stranice aplikacije
+│   │   ├── layouts/     # AuthLayout, MainLayout
+│   │   ├── router/      # Routing i zaštita ruta
+│   │   ├── boot/        # Axios konfiguracija
+│   │   ├── composables/ # useActionableRequestsNotifier
+│   │   └── __tests__/   # Vitest unit testovi
+│   ├── public/          # Statički resursi (logo, fontovi)
+│   ├── Dockerfile
+│   └── nginx.conf
 ├── server/              # Node.js + Express backend
 │   ├── src/
 │   │   ├── routes/      # API rute (sva poslovna logika)
 │   │   ├── middleware/  # Auth middleware
 │   │   └── config/      # DB konfiguracija
-│   └── __tests__/       # Jest unit testovi
-├── database/            # SQL dump i modeli baze
-├── DOCS/                # Dokumentacija i dijagrami
+│   ├── __tests__/       # Jest unit testovi
+│   └── Dockerfile
+├── db/                  # SQL init skripte za Docker MySQL
+│   ├── 01_schema.sql
+│   └── 02_seed.sql
+├── database/            # Originalni SQL dump i dokumentacija
+├── docker-compose.yml
+├── DOCS/
 └── README.md
 ```
 
@@ -127,66 +138,73 @@ Admin može stornirati zahtjev iz bilo kojeg aktivnog statusa → [Odbijeno].
 | 6 | Naručeno |
 | 7 | Zatvoreno |
 
-## Lokalno pokretanje
+## Pokretanje putem Dockera (preporučeno)
 
-### 1. Kloniranje projekta
+### Postupak instalacije i pokretanja sustava
+
+1. Instalirati [Docker Desktop](https://docs.docker.com/get-started/get-docker/) i pokrenuti ga.
+
+2. Klonirati repozitorij aplikacije na lokalno računalo ili server:
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/petk00/veleri.XP
 cd veleri.XP
 ```
 
-### 2. Baza podataka
+3. Po potrebi prilagoditi varijable okoline u datoteci `docker-compose.yml` (lozinke, JWT tajni ključ, `API_URL`) — zadane vrijednosti funkcioniraju za lokalno pokretanje bez izmjena.
 
-Instalirati MySQL ili MariaDB, zatim kreirati bazu:
-
-```sql
-CREATE DATABASE XP CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-Import postojećeg dumpa:
+4. Izgraditi i pokrenuti sve kontejnere:
 
 ```bash
-mysql -u root -p XP < database/dump-XP-202605061957.sql
+docker compose up --build
 ```
 
-### 3. Server konfiguracija
+5. Nakon što sva tri kontejnera budu pokrenuta (poruka `Server running on http://localhost:3000` u logu), aplikacija je dostupna u web pregledniku na adresi:
 
-U `server/` napraviti `.env` datoteku:
-
-```env
-PORT=3000
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=tvoja_lozinka
-DB_NAME=XP
-JWT_SECRET=promijeni_ovo_u_dugi_random_secret
-JWT_EXPIRES_IN=1d
-CLIENT_URL=http://localhost:9000
+```
+http://localhost
 ```
 
-Pokretanje servera:
+6. Za prijavu u aplikaciju koristiti inicijalne korisničke račune iz seed podataka:
+
+```
+Administrator:  admin@veleri.hr
+Zaposlenik:     zaposlenik@veleri.hr
+
+Lozinka za oba računa: 12345678
+```
+
+### Napomene za produkcijski deploy
+
+- U `docker-compose.yml` obavezno promijeniti `MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD`, `JWT_SECRET` i `API_URL` na stvarne vrijednosti.
+- `API_URL` mora biti javna IP adresa ili domena servera (npr. `http://192.168.1.100:3000/api`).
+- MySQL init skripte (`db/`) se izvršavaju samo pri prvom pokretanju. Za čisti reinit: `docker compose down -v && docker compose up --build`.
+- Uploadani dokumenti čuvaju se u named volumenu `uploads` i ostaju perzistentni između restartova.
+
+## Lokalno pokretanje (bez Dockera)
+
+### 1. Baza podataka
+
+Instalirati MySQL 8.0, zatim kreirati bazu i importati init skripte:
+
+```bash
+mysql -u root -p -e "CREATE DATABASE XP CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root -p XP < db/01_schema.sql
+mysql -u root -p XP < db/02_seed.sql
+```
+
+### 2. Backend
 
 ```bash
 cd server
+cp .env.example .env   # prilagoditi lozinke i JWT_SECRET
 npm install
 npm run dev
 ```
 
 Server se pokreće na `http://localhost:3000`.
 
-### 4. Client konfiguracija
-
-API adresa se konfigurira kroz env varijablu. Zadana vrijednost za razvoj je `http://localhost:3000/api`.
-
-Za drugačiju adresu, postaviti `API_URL` u `.env` datoteci u `client/` mapi:
-
-```env
-API_URL=http://localhost:3000/api
-```
-
-Pokretanje clienta:
+### 3. Frontend
 
 ```bash
 cd client
@@ -198,8 +216,6 @@ Quasar će ispisati lokalni URL, najčešće `http://localhost:9000`.
 
 ## Početni korisnički računi
 
-SQL dump uključuje dva testna korisnika dostupna odmah nakon importa baze:
-
 | Uloga | E-mail | Lozinka |
 |---|---|---|
 | Administrator | `admin@veleri.hr` | `12345678` |
@@ -207,29 +223,29 @@ SQL dump uključuje dva testna korisnika dostupna odmah nakon importa baze:
 
 ## Testiranje
 
-Backend unit testovi pokreću se iz `server/` mape:
+**Backend** (iz `server/` mape):
 
 ```bash
-cd server
 npm test
 ```
 
-Testovi pokrivaju:
-- generiranje broja zahtjeva (`PR-GGGG-NNNN` format, inkrement, zatvorena godina)
-- state machine promjena statusa (ovlasti, komentari, dokumenti, zaključani statusi)
-- pravila uploada dokumenata (`UPLOAD_RULES` po statusu, zaključani zahtjevi)
+Pokriva: generiranje broja zahtjeva, state machine promjena statusa, pravila uploada dokumenata.
 
-Frontend provjere:
+**Frontend** (iz `client/` mape):
+
+```bash
+npm test
+```
+
+Pokriva: `authStorage` (parsiranje korisnika iz localStorage), `useActionableRequestsNotifier` (API pozivi, deduplikacija notifikacija).
+
+**Lint i build provjera:**
 
 ```bash
 cd client
 npm run lint
 npm run build
 ```
-
-## Napomena za uploadane dokumente
-
-SQL dump može sadržavati apsolutne lokalne putanje do datoteka (`/Users/.../server/uploads/...`). Nakon importa na drugom računalu stari attachmenti neće raditi. Potrebno je prenijeti i `server/uploads/` mapu ili uploadati dokumente iznova.
 
 ## Sigurnosni model
 

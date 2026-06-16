@@ -1,43 +1,46 @@
-# Quasar App (client)
+# veleri.XP — Frontend
 
-veleriXP
+Vue 3 + Quasar Framework (SPA, Composition API, `<script setup>`)
 
-## Install the dependencies
+## Razvoj
 
 ```bash
-yarn
-# or
 npm install
+npm run dev
 ```
 
-### Start the app in development mode (hot-code reloading, error reporting, etc.)
+Quasar dev server pokreće se na `http://localhost:9000`.
 
-```bash
-quasar dev
+API adresa konfigurira se kroz env varijablu `API_URL` (zadano: `http://localhost:3000/api`).  
+Za drugačiju adresu postaviti u `client/.env`:
+
+```env
+API_URL=http://localhost:3000/api
 ```
 
-### Lint the files
+## Testovi
 
 ```bash
-yarn lint
-# or
+npm test
+```
+
+Pokreće Vitest unit testove iz `src/__tests__/`.
+
+## Lint
+
+```bash
 npm run lint
 ```
 
-### Format the files
+## Production build
 
 ```bash
-yarn format
-# or
-npm run format
+npm run build
 ```
 
-### Build the app for production
+Output: `dist/spa/` — servira se putem nginx-a u Docker setupu.
 
-```bash
-quasar build
-```
+## Docker
 
-### Customize the configuration
-
-See [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-vite/quasar-config-js).
+Nije potrebno ručno buildati — `docker compose up --build` iz root direktorija projekta pokreće sve.  
+`API_URL` se prosljeđuje kao Docker build argument i bakeuje u SPA bundle.
