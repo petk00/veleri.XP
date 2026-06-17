@@ -1,58 +1,19 @@
 <template>
-  <q-layout view="lHh Lpr lFf" class="app-layout">
+  <q-layout view="lHh LPr lFf" class="app-layout">
 
-    <q-header class="app-header">
+    <!-- ── Mobile header (logo kao toggle + avatar) ── -->
+    <q-header v-if="$q.screen.lt.md" class="app-header">
       <q-toolbar class="toolbar">
-
-        <!-- Logo -->
-        <button class="brand" @click="$router.push('/home')">
+        <button class="brand" @click="drawerOpen = !drawerOpen">
           <img
-            src="/veleri-logo-horizontal.png"
+            src="/veleri_logo_solo.svg"
             alt="Veleučilište u Rijeci"
             class="brand__logo"
           />
         </button>
-
         <q-space />
-
-        <!-- Nav (samo u aplikaciji nabave) -->
-        <nav v-if="!isHome" class="nav gt-sm">
-          <button
-            class="nav__item"
-            :class="{ 'nav__item--active': isActive('/dashboard') }"
-            @click="$router.push('/dashboard')"
-          >
-            Nadzorna ploča
-          </button>
-          <button
-            class="nav__item"
-            :class="{ 'nav__item--active': isActive('/requests') }"
-            @click="$router.push('/requests')"
-          >
-            Zahtjevi
-          </button>
-          <button
-            v-if="isAdmin"
-            class="nav__item"
-            :class="{ 'nav__item--active': isActive('/users') }"
-            @click="$router.push('/users')"
-          >
-            Korisnici
-          </button>
-          <button
-            v-if="isAdmin"
-            class="nav__item"
-            :class="{ 'nav__item--active': isActive('/fiscal-years') }"
-            @click="$router.push('/fiscal-years')"
-          >
-            Poslovne godine
-          </button>
-        </nav>
-
-        <!-- Avatar -->
         <button v-if="user" class="avatar-btn">
           <div class="avatar" :style="{ background: avatarColor }">{{ initials }}</div>
-
           <q-menu
             anchor="bottom right"
             self="top right"
@@ -78,44 +39,110 @@
             </q-list>
           </q-menu>
         </button>
-
       </q-toolbar>
-
-      <!-- Mobile nav (samo u aplikaciji nabave) -->
-      <div v-if="!isHome" class="mobile-nav lt-md">
-        <button
-          class="mobile-nav__item"
-          :class="{ 'mobile-nav__item--active': isActive('/dashboard') }"
-          @click="$router.push('/dashboard')"
-        >
-          Nadzorna ploča
-        </button>
-        <button
-          class="mobile-nav__item"
-          :class="{ 'mobile-nav__item--active': isActive('/requests') }"
-          @click="$router.push('/requests')"
-        >
-          Zahtjevi
-        </button>
-        <button
-          v-if="isAdmin"
-          class="mobile-nav__item"
-          :class="{ 'mobile-nav__item--active': isActive('/users') }"
-          @click="$router.push('/users')"
-        >
-          Korisnici
-        </button>
-        <button
-          v-if="isAdmin"
-          class="mobile-nav__item"
-          :class="{ 'mobile-nav__item--active': isActive('/fiscal-years') }"
-          @click="$router.push('/fiscal-years')"
-        >
-          Posl. godine
-        </button>
-      </div>
     </q-header>
 
+    <!-- ── Sidebar ── -->
+    <q-drawer
+      v-model="drawerOpen"
+      show-if-above
+      side="left"
+      :width="220"
+      :breakpoint="768"
+      class="app-sidebar"
+    >
+      <div class="sidebar-inner">
+
+        <!-- Brand -->
+        <div class="sidebar-brand">
+          <button class="brand" @click="navigate('/home')">
+            <img
+              src="/veleri_logo_solo.svg"
+              alt="Veleučilište u Rijeci"
+              class="brand__logo"
+            />
+          </button>
+        </div>
+
+        <!-- Navigation -->
+        <nav v-if="!isHome" class="sidebar-nav">
+          <button
+            class="sidebar-nav__item"
+            :class="{ 'sidebar-nav__item--active': isActive('/dashboard') }"
+            @click="navigate('/dashboard')"
+          >
+            <q-icon name="space_dashboard" size="18px" />
+            <span>Nadzorna ploča</span>
+          </button>
+          <button
+            class="sidebar-nav__item"
+            :class="{ 'sidebar-nav__item--active': isActive('/requests') }"
+            @click="navigate('/requests')"
+          >
+            <q-icon name="description" size="18px" />
+            <span>Zahtjevi</span>
+          </button>
+          <button
+            v-if="isAdmin"
+            class="sidebar-nav__item"
+            :class="{ 'sidebar-nav__item--active': isActive('/users') }"
+            @click="navigate('/users')"
+          >
+            <q-icon name="group" size="18px" />
+            <span>Korisnici</span>
+          </button>
+          <button
+            v-if="isAdmin"
+            class="sidebar-nav__item"
+            :class="{ 'sidebar-nav__item--active': isActive('/fiscal-years') }"
+            @click="navigate('/fiscal-years')"
+          >
+            <q-icon name="calendar_month" size="18px" />
+            <span>Poslovne godine</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-spacer" />
+
+        <!-- User profile -->
+        <div class="sidebar-footer" v-if="user">
+          <button class="sidebar-user">
+            <div class="avatar" :style="{ background: avatarColor }">{{ initials }}</div>
+            <div class="sidebar-user__info">
+              <div class="sidebar-user__name">{{ fullName }}</div>
+              <div class="sidebar-user__role">{{ user.role_name }}</div>
+            </div>
+            <q-menu
+              anchor="top left"
+              self="bottom left"
+              :offset="[0, 8]"
+              class="user-menu"
+              transition-show="jump-up"
+              transition-hide="jump-down"
+            >
+              <div class="user-menu__header">
+                <div class="avatar avatar--lg" :style="{ background: avatarColor }">{{ initials }}</div>
+                <div>
+                  <div class="user-menu__name">{{ fullName }}</div>
+                  <div class="user-menu__email">{{ user.email || user.role_name }}</div>
+                </div>
+              </div>
+              <q-list class="user-menu__list">
+                <q-item clickable v-close-popup @click="logout" class="user-menu__item">
+                  <q-item-section avatar>
+                    <q-icon name="logout" size="18px" />
+                  </q-item-section>
+                  <q-item-section>Odjava</q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
+          </button>
+        </div>
+
+      </div>
+    </q-drawer>
+
+    <!-- ── Page content ── -->
     <q-page-container>
       <router-view v-slot="{ Component }">
         <transition name="page" mode="out-in">
@@ -132,14 +159,18 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 import { getStoredUser } from 'src/utils/authStorage';
 import { useActionableRequestsNotifier } from 'src/composables/useActionableRequestsNotifier';
 
+const $q = useQuasar();
 const router = useRouter();
 const route = useRoute();
+
+const drawerOpen = ref(false);
 
 const { checkActionableRequests, resetNotifier } = useActionableRequestsNotifier();
 
@@ -172,6 +203,11 @@ const isActive = (path) => {
   return route.path === path;
 };
 
+const navigate = (path) => {
+  router.push(path);
+  if ($q.screen.lt.md) drawerOpen.value = false;
+};
+
 const logout = async () => {
   resetNotifier();
   try { await api.post('/auth/logout'); } catch { /* ignore */ }
@@ -186,7 +222,7 @@ onMounted(() => {
 
 <style scoped>
 /* ─────────────────────────────────────
-   Layout & header
+   App layout background
    ───────────────────────────────────── */
 .app-layout {
   background:
@@ -208,21 +244,25 @@ onMounted(() => {
 }
 
 .app-layout::before {
-  width: 560px;
-  height: 470px;
-  left: -190px;
-  bottom: -210px;
+  width: 560px; height: 470px;
+  left: -190px; bottom: -210px;
   transform: rotate(-42deg);
 }
 
 .app-layout::after {
-  width: 620px;
-  height: 360px;
-  right: -180px;
-  top: 92px;
+  width: 620px; height: 360px;
+  right: -180px; top: 92px;
   transform: rotate(-14deg);
 }
 
+:deep(.q-page-container) {
+  position: relative;
+  z-index: 1;
+}
+
+/* ─────────────────────────────────────
+   Mobile header
+   ───────────────────────────────────── */
 .app-header {
   background: linear-gradient(90deg,
     rgba(180, 218, 255, 0.85) 0%,
@@ -233,23 +273,14 @@ onMounted(() => {
   color: #1a1a1a;
   box-shadow: none;
   border-bottom: 1px solid rgba(155, 200, 240, 0.75);
-  z-index: 10;
-}
-
-:deep(.q-page-container) {
-  position: relative;
-  z-index: 1;
 }
 
 .toolbar {
   min-height: 52px;
-  padding: 0 32px;
-  gap: 0;
+  padding: 0 16px;
+  gap: 8px;
 }
 
-/* ─────────────────────────────────────
-   Brand
-   ───────────────────────────────────── */
 .brand {
   all: unset;
   display: flex;
@@ -259,60 +290,21 @@ onMounted(() => {
 
 .brand__logo {
   display: block;
-  width: 136px;
+  width: 128px;
   height: auto;
   object-fit: contain;
 }
 
-/* ─────────────────────────────────────
-   Primary nav (desktop)
-   ───────────────────────────────────── */
-.nav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-right: 16px;
+.toolbar .brand__logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
 }
 
-.nav__item {
-  all: unset;
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 11px;
-  border-radius: 3px;
-  font-size: 0.8125rem;
-  font-weight: 400;
-  color: #424242;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.12s, color 0.12s;
-}
-
-.nav__item:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: #111827;
-}
-
-.nav__item--active {
-  background: #111827;
-  color: #fff;
-  font-weight: 500;
-}
-
-.nav__item--active:hover {
-  background: #000;
-  color: #fff;
-}
-
-/* ─────────────────────────────────────
-   Avatar button
-   ───────────────────────────────────── */
 .avatar-btn {
   all: unset;
   display: flex;
   align-items: center;
-  justify-content: center;
   border-radius: 50%;
   cursor: pointer;
   transition: opacity 0.12s, box-shadow 0.12s;
@@ -324,51 +316,120 @@ onMounted(() => {
 }
 
 /* ─────────────────────────────────────
-   Mobile nav (visible <md)
+   Sidebar
    ───────────────────────────────────── */
-.mobile-nav {
-  display: flex;
-  align-items: stretch;
-  background: #fff;
-  border-top: 1px solid #edebe9;
+.app-sidebar {
+  border-right: 1px solid rgba(155, 200, 240, 0.75) !important;
 }
 
-.mobile-nav__item {
+.app-sidebar :deep(.q-drawer__content) {
+  background: white;
+}
+
+.sidebar-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.sidebar-brand {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(155, 200, 240, 0.4);
+  flex-shrink: 0;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+  flex-shrink: 0;
+}
+
+.sidebar-nav__item {
   all: unset;
-  flex: 1;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 11px 8px;
-  font-size: 0.75rem;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.8125rem;
   font-weight: 400;
   color: #424242;
   cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: background 0.12s;
+  white-space: nowrap;
+  box-sizing: border-box;
+  width: 100%;
+  transition: background 0.12s, color 0.12s;
 }
 
-.mobile-nav__item:hover { background: rgba(0,0,0,0.04); color: #111827; }
-
-.mobile-nav__item--active {
+.sidebar-nav__item:hover {
+  background: rgba(0, 0, 0, 0.06);
   color: #111827;
-  border-bottom-color: #0067b8;
+}
+
+.sidebar-nav__item--active {
+  background: #111827;
+  color: #fff;
   font-weight: 500;
 }
 
-/* ─────────────────────────────────────
-   Responsive tweaks
-   ───────────────────────────────────── */
-@media (max-width: 600px) {
-  .toolbar { padding: 0 16px; }
-  .brand__logo { width: 112px; }
+.sidebar-nav__item--active:hover {
+  background: #000;
+  color: #fff;
+}
+
+.sidebar-spacer {
+  flex: 1;
+}
+
+.sidebar-footer {
+  padding: 8px;
+  border-top: 1px solid rgba(155, 200, 240, 0.4);
+  flex-shrink: 0;
+}
+
+.sidebar-user {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+  transition: background 0.12s;
+}
+
+.sidebar-user:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.sidebar-user__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-user__name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #201F1E;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user__role {
+  font-size: 11px;
+  color: #605E5C;
+  margin-top: 1px;
 }
 </style>
 
 <style>
-/* ── Globalni stilovi (ne-scoped) ────────────── */
+/* ── Globalni stilovi (ne-scoped) ── */
 
-/* Avatar (koristi se unutar q-menu portala) */
 .avatar {
   width: 36px;
   height: 36px;
@@ -387,7 +448,6 @@ onMounted(() => {
   font-size: 14px;
 }
 
-/* Dropdown menu */
 .user-menu {
   background: white;
   border: 1px solid #E1DFDD;
@@ -428,13 +488,11 @@ onMounted(() => {
 .user-menu__item:hover { background: #F3F2F1; }
 .user-menu__item .q-icon { color: #605E5C; }
 
-/* Page transitions */
 .page-enter-active { transition: opacity 0.18s ease, transform 0.18s ease; }
 .page-leave-active { transition: opacity 0.1s ease, transform 0.1s ease; }
 .page-enter-from   { opacity: 0; transform: translateY(8px); }
 .page-leave-to     { opacity: 0; transform: translateY(-4px); }
 
-/* Notify stilovi */
 .actionable-request-notify {
   min-width: 320px;
   max-width: 420px;
@@ -456,9 +514,6 @@ onMounted(() => {
   line-height: 1.4;
 }
 
-/* ─────────────────────────────────────
-   Footer
-   ───────────────────────────────────── */
 .app-footer {
   position: relative;
   z-index: 1;
@@ -473,18 +528,18 @@ onMounted(() => {
   .app-footer { padding: 12px 16px; }
 }
 
-/* PRINT — sakrij sve UI elemente Layout-a */
 @media print {
   .app-header,
   .q-header,
-  .toolbar,
-  .mobile-nav,
+  .app-sidebar,
+  .q-drawer,
   .app-footer {
     display: none !important;
   }
 
   .q-page-container {
     padding-top: 0 !important;
+    padding-left: 0 !important;
     min-height: 0 !important;
   }
 
