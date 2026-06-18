@@ -10,7 +10,7 @@
 
           <div class="brand-row">
             <img
-              src="/logo.svg"
+              src="/veleri_logo_solo.svg"
               alt="Veleučilište u Rijeci"
               class="brand-logo"
             />
@@ -181,7 +181,7 @@ const handleLogin = async () => {
 
     localStorage.setItem('user', JSON.stringify(response.data.user));
 
-    router.replace('/home');
+    router.replace('/requests');
   } catch (error) {
     errorMessage.value =
       error?.response?.data?.message || 'Prijava nije uspjela. Provjerite unesene podatke.';
