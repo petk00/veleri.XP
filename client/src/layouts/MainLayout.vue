@@ -76,18 +76,26 @@
           <!-- Nabava -->
           <div class="nav-group">
             <button class="nav-group__header" @click="toggleGroup('nabava')">
-              <img src="/nabava.svg" width="30" height="30" class="nav-group__icon" />
+              <img src="/solarlinear_NABAVA.svg" width="30" height="30" class="nav-group__icon" />
               <span class="nav-group__label">Nabava</span>
               <q-icon :name="openGroups.nabava ? 'expand_less' : 'expand_more'" size="15px" class="nav-group__chevron" />
             </button>
             <div v-show="miniMode || openGroups.nabava" class="nav-group__items">
               <button
                 class="sidebar-nav__item"
+                :class="{ 'sidebar-nav__item--active': isActive('/requests/new') }"
+                @click="navigate('/requests/new')"
+              >
+                <img src="/solarlinear_NOVIZAHTJEV.svg" width="30" height="30" />
+                <span>Novi zahtjev</span>
+              </button>
+              <button
+                class="sidebar-nav__item"
                 :class="{ 'sidebar-nav__item--active': isActive('/requests') }"
                 @click="navigate('/requests')"
               >
-                <q-icon name="description" size="18px" />
-                <span>Zahtjevi za nabavom</span>
+                <img src="/solarlinear_MOJIZAHTJEVI.svg" width="30" height="30" />
+                <span>Moji zahtjevi</span>
               </button>
               <button
                 v-if="isAdmin"
@@ -95,23 +103,19 @@
                 :class="{ 'sidebar-nav__item--active': isActive('/fiscal-years') }"
                 @click="navigate('/fiscal-years')"
               >
-                <q-icon name="calendar_month" size="18px" />
+                <img src="/solarlinear_POSLOVNEGODINE.svg" width="30" height="30" />
                 <span>Poslovne godine</span>
               </button>
-            </div>
-          </div>
-
-          <!-- Placeholders -->
-          <div class="nav-group nav-group--soon">
-            <div class="nav-group__header nav-group__header--soon">
-              <q-icon name="receipt_long" size="30px" class="nav-group__icon" />
-              <span class="nav-group__label">Financiranje</span>
-              <span class="nav-soon-badge">uskoro</span>
+              <div v-if="isAdmin" class="sidebar-nav__item sidebar-nav__item--soon">
+                <img src="/solarlinear_FINANCIRANJE.svg" width="30" height="30" />
+                <span>Financiranje</span>
+                <span class="nav-soon-badge">uskoro</span>
+              </div>
             </div>
           </div>
           <div class="nav-group nav-group--soon">
             <div class="nav-group__header nav-group__header--soon">
-              <q-icon name="directions_car" size="30px" class="nav-group__icon" />
+              <img src="/solarlinear_PUTNINALOG.svg" width="30" height="30" class="nav-group__icon" />
               <span class="nav-group__label">Putni nalozi</span>
               <span class="nav-soon-badge">uskoro</span>
             </div>
@@ -120,24 +124,16 @@
           <!-- Separator -->
           <div v-if="isAdmin" class="nav-separator" />
 
-          <!-- Administracija (admin only) -->
-          <div v-if="isAdmin" class="nav-group">
-            <button class="nav-group__header" @click="toggleGroup('admin')">
-              <q-icon name="admin_panel_settings" size="30px" class="nav-group__icon" />
-              <span class="nav-group__label">Administracija</span>
-              <q-icon :name="openGroups.admin ? 'expand_less' : 'expand_more'" size="15px" class="nav-group__chevron" />
-            </button>
-            <div v-show="miniMode || openGroups.admin" class="nav-group__items">
-              <button
-                class="sidebar-nav__item"
-                :class="{ 'sidebar-nav__item--active': isActive('/users') }"
-                @click="navigate('/users')"
-              >
-                <q-icon name="group" size="18px" />
-                <span>Korisnici</span>
-              </button>
-            </div>
-          </div>
+          <!-- Admin stavke -->
+          <button
+            v-if="isAdmin"
+            class="sidebar-nav__item"
+            :class="{ 'sidebar-nav__item--active': isActive('/users') }"
+            @click="navigate('/users')"
+          >
+            <img src="/solarlinear_KORISNICI.svg" width="30" height="30" />
+            <span>Korisnici</span>
+          </button>
 
         </nav>
 
@@ -212,7 +208,7 @@ const route = useRoute();
 
 const drawerOpen = ref(false);
 const miniMode = ref(false);
-const openGroups = ref({ nabava: true, admin: true });
+const openGroups = ref({ nabava: true });
 
 const toggleGroup = (name) => { openGroups.value[name] = !openGroups.value[name]; };
 
@@ -250,7 +246,7 @@ const avatarColor = computed(() => {
 const isAdmin = computed(() => user.value?.role_name === 'Administrator');
 
 const isActive = (path) => {
-  if (path === '/requests') return route.path.startsWith('/requests');
+  if (path === '/requests') return route.path.startsWith('/requests') && !route.path.startsWith('/requests/new');
   return route.path === path;
 };
 
@@ -437,7 +433,7 @@ onMounted(() => {
   box-sizing: border-box;
   font-size: 0.6875rem;
   font-weight: 600;
-  color: #6b7280;
+  color: #1b2d59;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   cursor: pointer;
@@ -447,7 +443,7 @@ onMounted(() => {
 }
 
 .nav-group__header:hover {
-  color: #374151;
+  color: #14bae4;
 }
 
 .nav-group__label {
@@ -471,6 +467,12 @@ onMounted(() => {
 
 .nav-group__header--soon:hover {
   color: #6b7280;
+}
+
+.sidebar-nav__item--soon {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
 }
 
 .nav-soon-badge {
@@ -500,7 +502,7 @@ onMounted(() => {
   border-radius: 4px;
   font-size: 0.8125rem;
   font-weight: 400;
-  color: #424242;
+  color: #1b2d59;
   cursor: pointer;
   white-space: nowrap;
   box-sizing: border-box;
@@ -548,18 +550,20 @@ onMounted(() => {
 
 .sidebar-nav__item:hover {
   background: rgba(0, 0, 0, 0.06);
-  color: #111827;
+  color: #14bae4;
 }
 
 .sidebar-nav__item--active {
-  background: #111827;
-  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  color: #14bae4;
   font-weight: 500;
 }
 
 .sidebar-nav__item--active:hover {
-  background: #000;
-  color: #fff;
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .sidebar-spacer {
@@ -614,8 +618,12 @@ onMounted(() => {
 /* ── Globalni stilovi (ne-scoped) ── */
 
 .app-sidebar {
-  background: linear-gradient(160deg, #eef1fb 0%, #ece8f8 52%, #f0ecfa 100%) !important;
-  border-right: 1px solid rgba(180, 170, 220, 0.3) !important;
+  background: linear-gradient(170deg,
+    #e8edf8 0%,
+    #daf0f9 60%,
+    #cdf2fb 100%
+  ) !important;
+  border-right: 1px solid rgba(20, 186, 228, 0.2) !important;
 }
 
 .avatar {
