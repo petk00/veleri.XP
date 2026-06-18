@@ -575,7 +575,7 @@ const ORG = {
   mb: '01387332',
   rkp: '22494',
   iban: 'HR6824020061100451485',
-  logoPath: '/logo.png',
+  logoPath: '/veleri_logo_solo.svg',
 };
 
 const STATUS = {

@@ -19,6 +19,7 @@
             self="top right"
             :offset="[0, 6]"
             class="user-menu"
+            style="background: transparent"
             transition-show="jump-down"
             transition-hide="jump-up"
           >
@@ -48,58 +49,96 @@
       show-if-above
       side="left"
       :width="220"
+      :mini="miniMode"
+      :mini-width="56"
       :breakpoint="768"
       class="app-sidebar"
     >
       <div class="sidebar-inner">
 
         <!-- Brand -->
-        <div class="sidebar-brand">
-          <button class="brand" @click="navigate('/home')">
+        <div class="sidebar-brand" :class="{ 'sidebar-brand--mini': miniMode }">
+          <button class="brand brand--toggle" @click="toggleMini">
             <img
               src="/veleri_logo_solo.svg"
               alt="Veleučilište u Rijeci"
               class="brand__logo"
             />
+            <span v-if="!miniMode" class="brand__name">
+              <span style="color: #1b2d59">veleri</span><span style="color: #14bae4">.XP</span>
+            </span>
           </button>
         </div>
 
         <!-- Navigation -->
-        <nav v-if="!isHome" class="sidebar-nav">
-          <button
-            class="sidebar-nav__item"
-            :class="{ 'sidebar-nav__item--active': isActive('/dashboard') }"
-            @click="navigate('/dashboard')"
-          >
-            <q-icon name="space_dashboard" size="18px" />
-            <span>Nadzorna ploča</span>
-          </button>
-          <button
-            class="sidebar-nav__item"
-            :class="{ 'sidebar-nav__item--active': isActive('/requests') }"
-            @click="navigate('/requests')"
-          >
-            <q-icon name="description" size="18px" />
-            <span>Zahtjevi</span>
-          </button>
-          <button
-            v-if="isAdmin"
-            class="sidebar-nav__item"
-            :class="{ 'sidebar-nav__item--active': isActive('/users') }"
-            @click="navigate('/users')"
-          >
-            <q-icon name="group" size="18px" />
-            <span>Korisnici</span>
-          </button>
-          <button
-            v-if="isAdmin"
-            class="sidebar-nav__item"
-            :class="{ 'sidebar-nav__item--active': isActive('/fiscal-years') }"
-            @click="navigate('/fiscal-years')"
-          >
-            <q-icon name="calendar_month" size="18px" />
-            <span>Poslovne godine</span>
-          </button>
+        <nav class="sidebar-nav">
+
+          <!-- Nabava -->
+          <div class="nav-group">
+            <button class="nav-group__header" @click="toggleGroup('nabava')">
+              <img src="/nabava.svg" width="30" height="30" class="nav-group__icon" />
+              <span class="nav-group__label">Nabava</span>
+              <q-icon :name="openGroups.nabava ? 'expand_less' : 'expand_more'" size="15px" class="nav-group__chevron" />
+            </button>
+            <div v-show="miniMode || openGroups.nabava" class="nav-group__items">
+              <button
+                class="sidebar-nav__item"
+                :class="{ 'sidebar-nav__item--active': isActive('/requests') }"
+                @click="navigate('/requests')"
+              >
+                <q-icon name="description" size="18px" />
+                <span>Zahtjevi za nabavom</span>
+              </button>
+              <button
+                v-if="isAdmin"
+                class="sidebar-nav__item"
+                :class="{ 'sidebar-nav__item--active': isActive('/fiscal-years') }"
+                @click="navigate('/fiscal-years')"
+              >
+                <q-icon name="calendar_month" size="18px" />
+                <span>Poslovne godine</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Placeholders -->
+          <div class="nav-group nav-group--soon">
+            <div class="nav-group__header nav-group__header--soon">
+              <q-icon name="receipt_long" size="30px" class="nav-group__icon" />
+              <span class="nav-group__label">Financiranje</span>
+              <span class="nav-soon-badge">uskoro</span>
+            </div>
+          </div>
+          <div class="nav-group nav-group--soon">
+            <div class="nav-group__header nav-group__header--soon">
+              <q-icon name="directions_car" size="30px" class="nav-group__icon" />
+              <span class="nav-group__label">Putni nalozi</span>
+              <span class="nav-soon-badge">uskoro</span>
+            </div>
+          </div>
+
+          <!-- Separator -->
+          <div v-if="isAdmin" class="nav-separator" />
+
+          <!-- Administracija (admin only) -->
+          <div v-if="isAdmin" class="nav-group">
+            <button class="nav-group__header" @click="toggleGroup('admin')">
+              <q-icon name="admin_panel_settings" size="30px" class="nav-group__icon" />
+              <span class="nav-group__label">Administracija</span>
+              <q-icon :name="openGroups.admin ? 'expand_less' : 'expand_more'" size="15px" class="nav-group__chevron" />
+            </button>
+            <div v-show="miniMode || openGroups.admin" class="nav-group__items">
+              <button
+                class="sidebar-nav__item"
+                :class="{ 'sidebar-nav__item--active': isActive('/users') }"
+                @click="navigate('/users')"
+              >
+                <q-icon name="group" size="18px" />
+                <span>Korisnici</span>
+              </button>
+            </div>
+          </div>
+
         </nav>
 
         <div class="sidebar-spacer" />
@@ -117,6 +156,7 @@
               self="bottom left"
               :offset="[0, 8]"
               class="user-menu"
+              style="background: transparent"
               transition-show="jump-up"
               transition-hide="jump-down"
             >
@@ -171,6 +211,18 @@ const router = useRouter();
 const route = useRoute();
 
 const drawerOpen = ref(false);
+const miniMode = ref(false);
+const openGroups = ref({ nabava: true, admin: true });
+
+const toggleGroup = (name) => { openGroups.value[name] = !openGroups.value[name]; };
+
+const toggleMini = () => {
+  if ($q.screen.lt.md) {
+    drawerOpen.value = false;
+  } else {
+    miniMode.value = !miniMode.value;
+  }
+};
 
 const { checkActionableRequests, resetNotifier } = useActionableRequestsNotifier();
 
@@ -196,7 +248,6 @@ const avatarColor = computed(() => {
 });
 
 const isAdmin = computed(() => user.value?.role_name === 'Administrator');
-const isHome = computed(() => route.path === '/home');
 
 const isActive = (path) => {
   if (path === '/requests') return route.path.startsWith('/requests');
@@ -295,6 +346,12 @@ onMounted(() => {
   object-fit: contain;
 }
 
+.sidebar-brand .brand__logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
 .toolbar .brand__logo {
   width: 36px;
   height: 36px;
@@ -318,13 +375,6 @@ onMounted(() => {
 /* ─────────────────────────────────────
    Sidebar
    ───────────────────────────────────── */
-.app-sidebar {
-  border-right: 1px solid rgba(155, 200, 240, 0.75) !important;
-}
-
-.app-sidebar :deep(.q-drawer__content) {
-  background: white;
-}
 
 .sidebar-inner {
   display: flex;
@@ -336,6 +386,32 @@ onMounted(() => {
   padding: 14px 16px 12px;
   border-bottom: 1px solid rgba(155, 200, 240, 0.4);
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-brand--mini {
+  justify-content: center;
+  padding: 14px 8px 12px;
+}
+
+.brand--toggle {
+  cursor: pointer;
+  transition: opacity 0.12s;
+  gap: 8px;
+}
+
+.brand__name {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #1e1b4b;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  line-height: 22px;
+}
+
+.brand--toggle:hover {
+  opacity: 0.7;
 }
 
 .sidebar-nav {
@@ -344,6 +420,75 @@ onMounted(() => {
   gap: 2px;
   padding: 10px 8px;
   flex-shrink: 0;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-group__header {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.12s;
+  white-space: nowrap;
+}
+
+.nav-group__header:hover {
+  color: #374151;
+}
+
+.nav-group__label {
+  flex: 1;
+}
+
+.nav-group__icon {
+  flex-shrink: 0;
+  opacity: 0.55;
+}
+
+.nav-group__chevron {
+  flex-shrink: 0;
+  opacity: 0.4;
+}
+
+.nav-group__header--soon {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.nav-group__header--soon:hover {
+  color: #6b7280;
+}
+
+.nav-soon-badge {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #9ca3af;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 3px;
+  padding: 1px 5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.nav-separator {
+  height: 1px;
+  background: rgba(155, 200, 240, 0.45);
+  margin: 6px 12px;
 }
 
 .sidebar-nav__item {
@@ -361,6 +506,44 @@ onMounted(() => {
   box-sizing: border-box;
   width: 100%;
   transition: background 0.12s, color 0.12s;
+}
+
+:deep(.q-drawer--mini) .sidebar-nav {
+  padding: 10px 4px;
+}
+
+:deep(.q-drawer--mini) .sidebar-nav__item {
+  justify-content: center;
+  padding: 10px 0;
+  width: 100%;
+}
+
+:deep(.q-drawer--mini) .sidebar-nav__item span {
+  display: none;
+}
+
+:deep(.q-drawer--mini) .nav-group__header {
+  justify-content: center;
+  padding: 6px 0;
+}
+
+:deep(.q-drawer--mini) .nav-group__label,
+:deep(.q-drawer--mini) .nav-group__chevron,
+:deep(.q-drawer--mini) .nav-soon-badge {
+  display: none;
+}
+
+:deep(.q-drawer--mini) .nav-separator {
+  margin: 6px 4px;
+}
+
+:deep(.q-drawer--mini) .sidebar-user__info {
+  display: none;
+}
+
+:deep(.q-drawer--mini) .sidebar-user {
+  justify-content: center;
+  padding: 8px 0;
 }
 
 .sidebar-nav__item:hover {
@@ -430,6 +613,11 @@ onMounted(() => {
 <style>
 /* ── Globalni stilovi (ne-scoped) ── */
 
+.app-sidebar {
+  background: linear-gradient(160deg, #eef1fb 0%, #ece8f8 52%, #f0ecfa 100%) !important;
+  border-right: 1px solid rgba(180, 170, 220, 0.3) !important;
+}
+
 .avatar {
   width: 36px;
   height: 36px;
@@ -448,8 +636,9 @@ onMounted(() => {
   font-size: 14px;
 }
 
-.user-menu {
-  background: white;
+.user-menu,
+.user-menu.q-menu {
+  background: transparent !important;
   border: 1px solid #E1DFDD;
   border-radius: 6px;
   box-shadow:
@@ -464,7 +653,7 @@ onMounted(() => {
   gap: 12px;
   padding: 14px 16px 12px;
   border-bottom: 1px solid #EDEBE9;
-  background: #FAFAFA;
+  background: transparent !important;
 }
 .user-menu__name {
   font-size: 13px;
