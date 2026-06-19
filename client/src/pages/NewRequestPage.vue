@@ -338,7 +338,7 @@
 
                     <div class="field__hint field__hint--info" style="margin-top: 10px;">
                       <q-icon name="info_outline" size="14px" />
-                      Cijena će biti određena nakon što nabava pronađe dobavljača.
+                      Cijena će biti određena nakon što dobavljač dostavi ponudu.
                     </div>
                   </div>
                 </div>
@@ -913,12 +913,11 @@ onMounted(() => fetchReferenceData());
    Sidebar — step list
    ───────────────────────────────── */
 .wizard__sidebar {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
   padding: 12px;
   position: sticky;
   top: 72px;
@@ -1012,10 +1011,8 @@ onMounted(() => fetchReferenceData());
    Content card
    ───────────────────────────────── */
 .wizard__content {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   overflow: hidden;

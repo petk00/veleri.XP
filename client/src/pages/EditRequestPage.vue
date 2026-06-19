@@ -97,8 +97,144 @@
           </div>
         </div>
 
-        <!-- ───── Card: Items ───── -->
-        <div class="card">
+        <!-- ───── Card: Ponuda pregled (samo za "imam ponudu" tok) ───── -->
+        <div v-if="hasPonuda" class="card">
+          <div class="card__header">
+            <h2 class="card__title">
+              <q-icon name="folder" size="16px" />
+              <span>Priložena ponuda</span>
+            </h2>
+            <span class="card__count">{{ ponudaAttachments.length }}</span>
+          </div>
+          <div class="card__body card__body--flush">
+            <ul class="ponuda-list">
+              <li v-for="att in ponudaAttachments" :key="att.id_attachment" class="ponuda-row">
+                <div class="ponuda-icon">
+                  <q-icon :name="fileIcon(att.file_type)" size="18px" />
+                </div>
+                <div class="ponuda-info">
+                  <div class="ponuda-name">{{ att.file_name }}</div>
+                  <div class="ponuda-meta">{{ att.uploaded_by }} · {{ new Date(att.uploaded_at).toLocaleDateString('hr-HR') }}</div>
+                </div>
+                <div class="ponuda-actions">
+                  <button v-if="canPreview(att)" class="icon-btn" @click="previewAttachment(att)">
+                    <q-icon name="visibility" size="16px" />
+                    <q-tooltip>Prikaži</q-tooltip>
+                  </button>
+                  <button class="icon-btn" @click="downloadAttachment(att)">
+                    <q-icon name="download" size="16px" />
+                    <q-tooltip>Preuzmi</q-tooltip>
+                  </button>
+                  <button class="icon-btn icon-btn--danger" @click="deleteAttachment(att)">
+                    <q-icon name="delete_outline" size="16px" />
+                    <q-tooltip>Obriši</q-tooltip>
+                  </button>
+                </div>
+              </li>
+            </ul>
+            <div class="ponuda-hint">
+              <q-icon name="info_outline" size="14px" />
+              Pregledajte ponudu i upišite procijenjeni iznos u polje iznad.
+            </div>
+          </div>
+        </div>
+
+        <!-- ───── Card: Upload ponude (prikazuje se kad nema Ponude) ───── -->
+        <div v-if="!hasPonuda" class="card">
+          <div class="card__header">
+            <h2 class="card__title">
+              <q-icon name="upload_file" size="16px" />
+              <span>Dodaj ponudu</span>
+            </h2>
+          </div>
+          <div class="card__body">
+            <label class="upload-zone">
+              <q-icon :name="uploadFilePonuda ? 'insert_drive_file' : 'upload_file'" size="26px" class="upload-zone__icon" />
+              <span class="upload-zone__text">{{ uploadFilePonuda ? uploadFilePonuda.name : 'Klikni ili povuci datoteku ovdje' }}</span>
+              <span v-if="!uploadFilePonuda" class="upload-zone__hint">PDF, Word, Excel, slike — najviše 5 MB</span>
+              <q-file v-model="uploadFilePonuda" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt" style="display: none" />
+            </label>
+            <div class="upload-actions">
+              <button v-if="uploadFilePonuda" class="btn btn--ghost" type="button" @click="uploadFilePonuda = null">
+                <q-icon name="close" size="14px" /><span>Ukloni</span>
+              </button>
+              <button class="btn btn--primary" :disabled="!uploadFilePonuda || uploading" @click="uploadPonuda">
+                <q-spinner v-if="uploading" size="14px" color="white" />
+                <q-icon v-else name="upload" size="16px" />
+                <span>Učitaj ponudu</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ───── Card: Priložena otpremnica ───── -->
+        <div v-if="hasOtpremnica" class="card">
+          <div class="card__header">
+            <h2 class="card__title">
+              <q-icon name="local_shipping" size="16px" />
+              <span>Priložena otpremnica</span>
+            </h2>
+            <span class="card__count">{{ otpremnicaAttachments.length }}</span>
+          </div>
+          <div class="card__body card__body--flush">
+            <ul class="ponuda-list">
+              <li v-for="att in otpremnicaAttachments" :key="att.id_attachment" class="ponuda-row">
+                <div class="ponuda-icon">
+                  <q-icon :name="fileIcon(att.file_type)" size="18px" />
+                </div>
+                <div class="ponuda-info">
+                  <div class="ponuda-name">{{ att.file_name }}</div>
+                  <div class="ponuda-meta">{{ att.uploaded_by }} · {{ new Date(att.uploaded_at).toLocaleDateString('hr-HR') }}</div>
+                </div>
+                <div class="ponuda-actions">
+                  <button v-if="canPreview(att)" class="icon-btn" @click="previewAttachment(att)">
+                    <q-icon name="visibility" size="16px" />
+                    <q-tooltip>Prikaži</q-tooltip>
+                  </button>
+                  <button class="icon-btn" @click="downloadAttachment(att)">
+                    <q-icon name="download" size="16px" />
+                    <q-tooltip>Preuzmi</q-tooltip>
+                  </button>
+                  <button class="icon-btn icon-btn--danger" @click="deleteAttachment(att)">
+                    <q-icon name="delete_outline" size="16px" />
+                    <q-tooltip>Obriši</q-tooltip>
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- ───── Card: Upload otpremnice (prikazuje se kad nema Otpremnice) ───── -->
+        <div v-if="!hasOtpremnica" class="card">
+          <div class="card__header">
+            <h2 class="card__title">
+              <q-icon name="upload_file" size="16px" />
+              <span>Dodaj otpremnicu</span>
+            </h2>
+          </div>
+          <div class="card__body">
+            <label class="upload-zone">
+              <q-icon :name="uploadFileOtpremnica ? 'insert_drive_file' : 'upload_file'" size="26px" class="upload-zone__icon" />
+              <span class="upload-zone__text">{{ uploadFileOtpremnica ? uploadFileOtpremnica.name : 'Klikni ili povuci datoteku ovdje' }}</span>
+              <span v-if="!uploadFileOtpremnica" class="upload-zone__hint">PDF, Word, Excel, slike — najviše 5 MB</span>
+              <q-file v-model="uploadFileOtpremnica" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt" style="display: none" />
+            </label>
+            <div class="upload-actions">
+              <button v-if="uploadFileOtpremnica" class="btn btn--ghost" type="button" @click="uploadFileOtpremnica = null">
+                <q-icon name="close" size="14px" /><span>Ukloni</span>
+              </button>
+              <button class="btn btn--primary" :disabled="!uploadFileOtpremnica || uploading" @click="uploadOtpremnica">
+                <q-spinner v-if="uploading" size="14px" color="white" />
+                <q-icon v-else name="upload" size="16px" />
+                <span>Učitaj otpremnicu</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ───── Card: Items (samo za "nemam ponudu" tok) ───── -->
+        <div v-if="!hasPonuda" class="card">
           <div class="card__header">
             <h2 class="card__title">
               <q-icon name="inventory_2" size="16px" />
@@ -113,25 +249,30 @@
             <!-- Add item form -->
             <div class="add-item">
               <div class="add-item__label">Dodaj stavku</div>
+              <div class="add-item__field-labels">
+                <span>Kategorija</span>
+                <span>Naziv artikla / usluge</span>
+                <span>Količina</span>
+              </div>
               <div class="add-item__row">
                 <q-select
                   v-model="itemForm.category"
                   :options="categoryOptions"
-                  placeholder="Kategorija"
+                  placeholder="Odaberi..."
                   outlined dense
                   emit-value map-options
                   class="add-item__category"
                 />
                 <q-input
                   v-model="itemForm.item_name"
-                  placeholder="Naziv artikla / usluge"
+                  placeholder="Unesite naziv..."
                   outlined dense
                   class="add-item__name"
                   @keyup.enter="addItem"
                 />
                 <q-input
                   v-model.number="itemForm.quantity"
-                  placeholder="Kol."
+                  placeholder="1"
                   type="number" min="1"
                   outlined dense
                   class="add-item__qty"
@@ -192,7 +333,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
@@ -205,6 +346,120 @@ const loading = ref(false);
 const saving = ref(false);
 const requestNumber = ref('');
 const fiscalYear = ref('');
+const attachments = ref([]);
+const uploading = ref(false);
+const uploadFilePonuda = ref(null);
+const uploadFileOtpremnica = ref(null);
+
+const hasPonuda = computed(() =>
+  attachments.value.some((a) => a.document_type === 'Ponuda')
+);
+const hasOtpremnica = computed(() =>
+  attachments.value.some((a) => a.document_type === 'Otpremnica')
+);
+
+const ponudaAttachments = computed(() =>
+  attachments.value.filter((a) => a.document_type === 'Ponuda')
+);
+const otpremnicaAttachments = computed(() =>
+  attachments.value.filter((a) => a.document_type === 'Otpremnica')
+);
+
+const refreshAttachments = async () => {
+  const res = await api.get(`/requests/${route.params.id}/attachments`);
+  attachments.value = Array.isArray(res.data) ? res.data : [];
+};
+
+const uploadDoc = async (file, docType, clearFn) => {
+  if (!file) return;
+  uploading.value = true;
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('document_type', docType);
+  try {
+    await api.post(`/requests/${route.params.id}/attachments`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    $q.notify({ type: 'positive', message: `${docType} uspješno dodana.` });
+    clearFn();
+    await refreshAttachments();
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: error.response?.data?.message || 'Greška pri uploadu.',
+    });
+  } finally {
+    uploading.value = false;
+  }
+};
+
+const uploadPonuda = () => uploadDoc(uploadFilePonuda.value, 'Ponuda', () => { uploadFilePonuda.value = null; });
+const uploadOtpremnica = () => uploadDoc(uploadFileOtpremnica.value, 'Otpremnica', () => { uploadFileOtpremnica.value = null; });
+
+const deleteAttachment = (att) => {
+  $q.dialog({
+    title: 'Brisanje dokumenta',
+    message: `Obrisati "${att.file_name}"?`,
+    cancel: { flat: true, label: 'Odustani' },
+    ok: { color: 'negative', label: 'Obriši', unelevated: true },
+  }).onOk(async () => {
+    try {
+      await api.delete(`/attachments/delete/${att.id_attachment}`);
+      $q.notify({ type: 'positive', message: 'Dokument obrisan.' });
+      await refreshAttachments();
+    } catch (error) {
+      $q.notify({
+        type: 'negative',
+        message: error.response?.data?.message || 'Greška pri brisanju.',
+      });
+    }
+  });
+};
+
+const canPreview = (att) => {
+  const t = att.file_type || '';
+  return t.includes('pdf') || t.startsWith('image/') || t.startsWith('text/');
+};
+
+const previewAttachment = async (att) => {
+  try {
+    const response = await api.get(`/attachments/download/${att.id_attachment}`, {
+      responseType: 'blob',
+    });
+    const blob = new Blob([response.data], { type: att.file_type });
+    const url = window.URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  } catch {
+    $q.notify({ type: 'negative', message: 'Greška pri otvaranju datoteke.' });
+  }
+};
+
+const downloadAttachment = async (att) => {
+  try {
+    const response = await api.get(`/attachments/download/${att.id_attachment}`, {
+      responseType: 'blob',
+    });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', att.file_name);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch {
+    $q.notify({ type: 'negative', message: 'Greška pri preuzimanju datoteke.' });
+  }
+};
+
+const fileIcon = (mimeType) => {
+  if (!mimeType) return 'insert_drive_file';
+  if (mimeType.includes('pdf')) return 'picture_as_pdf';
+  if (mimeType.includes('image')) return 'image';
+  if (mimeType.includes('word') || mimeType.includes('document')) return 'description';
+  if (mimeType.includes('excel') || mimeType.includes('sheet')) return 'table_chart';
+  return 'insert_drive_file';
+};
 
 const departmentOptions = ref([]);
 const categoryOptions = ref([]);
@@ -216,14 +471,16 @@ const itemForm = ref({ category: null, item_name: '', quantity: 1 });
 const fetchData = async () => {
   loading.value = true;
   try {
-    const [detailsRes, departmentsRes, categoriesRes] = await Promise.all([
+    const [detailsRes, departmentsRes, categoriesRes, attachmentsRes] = await Promise.all([
       api.get(`/requests/${route.params.id}`),
       api.get('/reference/departments'),
       api.get('/reference/item-categories'),
+      api.get(`/requests/${route.params.id}/attachments`),
     ]);
 
     const request = detailsRes.data.request;
     const items = detailsRes.data.items;
+    attachments.value = Array.isArray(attachmentsRes.data) ? attachmentsRes.data : [];
 
     requestNumber.value = request.request_number;
     fiscalYear.value = String(request.fiscal_year || '');
@@ -254,11 +511,17 @@ const fetchData = async () => {
       })),
     };
   } catch (error) {
+    const status = error.response?.status;
+    const message = error.response?.data?.message || 'Greška pri učitavanju zahtjeva.';
+
+    if (status === 403 || status === 404) {
+      $q.notify({ type: 'negative', message });
+      router.replace(`/requests/${route.params.id}`);
+      return;
+    }
+
     console.error('Greška pri dohvaćanju:', error);
-    $q.notify({
-      type: 'negative',
-      message: error.response?.data?.message || 'Greška pri učitavanju zahtjeva.',
-    });
+    $q.notify({ type: 'negative', message });
     form.value = null;
   } finally {
     loading.value = false;
@@ -557,6 +820,80 @@ onMounted(() => fetchData());
   line-height: 1.5;
 }
 
+.card__body--flush { padding: 0; }
+
+.ponuda-list { list-style: none; margin: 0; padding: 0; }
+.ponuda-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 18px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.ponuda-row:last-child { border-bottom: none; }
+
+.ponuda-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid #e5e7eb;
+  background: #fafafa;
+  color: #00afdb;
+  border-radius: 4px;
+}
+.ponuda-info { flex: 1; min-width: 0; }
+.ponuda-name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ponuda-meta { font-size: 0.6875rem; color: #6b7280; margin-top: 2px; }
+.ponuda-actions { display: flex; gap: 2px; flex-shrink: 0; }
+
+.ponuda-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  font-size: 0.75rem;
+  color: #0e7490;
+  background: #f0fbfe;
+  border-top: 1px solid #e0f6fd;
+}
+
+.upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 20px 16px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: center;
+  margin-bottom: 12px;
+}
+.upload-zone:hover { border-color: #00afdb; background: #f0fbfe; }
+.upload-zone__icon { color: #9ca3af; transition: color 0.15s; }
+.upload-zone:hover .upload-zone__icon { color: #00afdb; }
+.upload-zone__text { font-size: 0.875rem; font-weight: 500; color: #374151; word-break: break-all; }
+.upload-zone__hint { font-size: 0.75rem; color: #9ca3af; }
+
+.upload-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .add-item {
   margin-bottom: 14px;
   padding: 14px;
@@ -570,6 +907,18 @@ onMounted(() => fetchData());
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.add-item__field-labels {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 80px;
+  gap: 10px;
+  margin-bottom: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #6b7280;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 

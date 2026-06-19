@@ -806,7 +806,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     const [requestRows] = await connection.query(
       `
-      SELECT fk_request_status, fk_created_by_user, fk_fiscal_year
+      SELECT fk_request_status, fk_created_by_user, fk_fiscal_year,
+             fk_department, justification, total_amount
       FROM PurchaseRequest
       WHERE id_purchase_request = ?
       FOR UPDATE
@@ -910,7 +911,16 @@ router.put('/:id', authenticateToken, async (req, res) => {
         (fk_purchase_request, fk_request_status, fk_changed_by_user, comment)
       VALUES (?, ?, ?, ?)
       `,
-      [id, currentStatus, userId, 'Zahtjev izmijenjen.']
+      [id, currentStatus, userId, (() => {
+        const prev = requestRows[0];
+        const newAmt = (estimated_amount === '' || estimated_amount == null) ? null : Number(estimated_amount);
+        const oldAmt = prev.total_amount == null ? null : Number(prev.total_amount);
+        const onlyAmountChanged =
+          newAmt !== oldAmt &&
+          fk_department === prev.fk_department &&
+          justification.trim() === (prev.justification || '').trim();
+        return onlyAmountChanged ? 'Dodan procijenjeni iznos.' : 'Zahtjev izmijenjen.';
+      })()]
     );
 
     await connection.commit();
