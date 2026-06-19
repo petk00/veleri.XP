@@ -1,8 +1,8 @@
 <template>
   <q-page class="login-page">
-    <div class="background-shape background-shape--one" aria-hidden="true" />
-    <div class="background-shape background-shape--two" aria-hidden="true" />
-    <div class="background-shape background-shape--three" aria-hidden="true" />
+    <div class="blob blob--1" aria-hidden="true" />
+    <div class="blob blob--2" aria-hidden="true" />
+    <div class="blob blob--3" aria-hidden="true" />
 
     <main class="login-shell">
       <section class="signin-card" aria-labelledby="signin-title">
@@ -10,7 +10,7 @@
 
           <div class="brand-row">
             <img
-              src="/veleri_logo_solo.svg"
+              src="/veleri-logo-horizontal.svg"
               alt="Veleučilište u Rijeci"
               class="brand-logo"
             />
@@ -30,7 +30,7 @@
           <h1 id="signin-title" class="signin-title">
             {{ step === 'email' ? 'Dobrodošli u sustav veleri.XP' : 'Unesite lozinku' }}
           </h1>
-          <p v-if="step === 'email'" class="signin-subtitle">Aplikacija za upravljanje zahtjevima za nabavu</p>
+          <p v-if="step === 'email'" class="signin-subtitle">Platforma za digitalizaciju poslovnih procesa</p>
 
           <div v-if="step === 'email'" class="field">
             <label class="field-label" for="login-email">E-mail adresa</label>
@@ -82,26 +82,15 @@
             </button>
           </div>
 
-          <div v-if="step === 'email'" class="help-section">
+          <div class="help-section">
+            <p class="help-title">Trebate pomoć?</p>
+            <p class="help-desc">Nemate korisnički račun ili imate problem s prijavom (zaboravljena lozinka, greška pri pristupu)?</p>
             <a
-              href="mailto:ipetkovic@veleri.hr?subject=Zahtjev%20za%20korisnički%20račun"
-              class="help-item"
+              href="mailto:ipetkovic@veleri.hr?subject=Upit%20vezan%20uz%20pristup%20sustavu%20veleri.XP"
+              class="help-cta"
             >
-              <div class="help-item__body">
-                <span class="help-item__question">Nemate korisnički račun?</span>
-                <span class="help-item__action">Zatražite pristup</span>
-              </div>
-              <q-icon name="chevron_right" size="16px" class="help-item__arrow" />
-            </a>
-            <a
-              href="mailto:ipetkovic@veleri.hr?subject=Problem%20s%20pristupom%20ili%20zaboravljena%20lozinka"
-              class="help-item"
-            >
-              <div class="help-item__body">
-                <span class="help-item__question">Zaboravili ste lozinku ili imate problem s pristupom?</span>
-                <span class="help-item__action">Zatražite podršku</span>
-              </div>
-              <q-icon name="chevron_right" size="16px" class="help-item__arrow" />
+              Kontaktirajte administratora sustava
+              <q-icon name="arrow_forward" size="14px" />
             </a>
           </div>
 
@@ -136,6 +125,8 @@ const focusPassword = async () => {
   document.getElementById('login-password')?.focus();
 };
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const continueToPassword = async () => {
   errorMessage.value = '';
 
@@ -144,8 +135,23 @@ const continueToPassword = async () => {
     return;
   }
 
-  step.value = 'password';
-  await focusPassword();
+  if (!emailRegex.test(email.value.trim())) {
+    errorMessage.value = 'Unesite ispravnu e-mail adresu (npr. ime.prezime@veleri.hr).';
+    return;
+  }
+
+  loading.value = true;
+
+  try {
+    await api.post('/auth/check-email', { email: email.value.trim() });
+    step.value = 'password';
+    await focusPassword();
+  } catch (error) {
+    errorMessage.value =
+      error?.response?.data?.message || 'Greška pri provjeri e-maila.';
+  } finally {
+    loading.value = false;
+  }
 };
 
 const goBackToEmail = async () => {
@@ -192,7 +198,39 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-/* ── Page & background ─────────────────────────── */
+
+/* ── Animations ────────────────────────────────── */
+
+@keyframes blob1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25%       { transform: translate(40px, -30px) scale(1.08); }
+  50%       { transform: translate(-20px, 40px) scale(0.95); }
+  75%       { transform: translate(30px, 20px) scale(1.03); }
+}
+
+@keyframes blob2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(-50px, 30px) scale(1.06); }
+  66%       { transform: translate(30px, -40px) scale(0.97); }
+}
+
+@keyframes blob3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40%       { transform: translate(25px, 50px) scale(1.04); }
+  80%       { transform: translate(-35px, -20px) scale(0.96); }
+}
+
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes logo-fade {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Page & blobs ──────────────────────────────── */
 
 .login-page {
   position: relative;
@@ -201,53 +239,47 @@ const handleLogin = async () => {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 18% 20%, rgba(219, 243, 255, 0.78), transparent 30%),
-    radial-gradient(circle at 70% 62%, rgba(255, 244, 249, 0.85), transparent 34%),
-    linear-gradient(135deg, #f8fbff 0%, #f5f2fb 50%, #fffdfb 100%);
+  background: transparent;
   color: #111827;
   font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   padding: 48px 24px;
 }
 
-.login-page::before {
-  content: '';
+.blob {
   position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(112deg, transparent 13%, rgba(180, 220, 255, 0.22) 13.2%, transparent 13.9%),
-    linear-gradient(24deg, transparent 42%, rgba(255, 220, 215, 0.24) 42.2%, transparent 43%),
-    radial-gradient(circle, rgba(255, 255, 255, 0.9) 0 1px, transparent 1.3px);
-  background-size: auto, auto, 68px 68px;
-  opacity: 0.7;
-}
-
-.background-shape {
-  position: absolute;
-  border: 2px solid rgba(188, 222, 255, 0.5);
-  border-radius: 26px;
-  background: rgba(255, 255, 255, 0.2);
-  box-shadow: inset 0 0 80px rgba(217, 239, 255, 0.34);
+  border-radius: 50%;
+  filter: blur(90px);
   pointer-events: none;
 }
 
-.background-shape--one {
-  width: 680px; height: 620px;
-  left: -160px; bottom: -240px;
-  transform: rotate(-42deg);
+.blob--1 {
+  width: 560px;
+  height: 560px;
+  background: #16294e;
+  opacity: 0.65;
+  top: -140px;
+  left: -180px;
+  animation: blob1 18s ease-in-out infinite;
 }
 
-.background-shape--two {
-  width: 700px; height: 520px;
-  right: -150px; top: -260px;
-  transform: rotate(-12deg);
+.blob--2 {
+  width: 520px;
+  height: 520px;
+  background: #00afdb;
+  opacity: 0.55;
+  bottom: -120px;
+  right: -140px;
+  animation: blob2 20s ease-in-out infinite;
 }
 
-.background-shape--three {
-  width: 680px; height: 360px;
-  right: 145px; bottom: -150px;
-  border-color: rgba(238, 220, 214, 0.42);
-  transform: rotate(17deg);
+.blob--3 {
+  width: 400px;
+  height: 400px;
+  background: #00afdb;
+  opacity: 0.35;
+  top: 38%;
+  left: 45%;
+  animation: blob3 15s ease-in-out infinite;
 }
 
 /* ── Card ──────────────────────────────────────── */
@@ -260,14 +292,15 @@ const handleLogin = async () => {
 
 .signin-card {
   width: 100%;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-top: 2px solid #0067b8;
-  box-shadow:
-    0 4px 6px rgba(0, 0, 0, 0.04),
-    0 1px 3px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 16px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
   padding: 36px 40px 32px;
   box-sizing: border-box;
+  animation: card-enter 0.5s ease forwards;
 }
 
 /* ── Form layout ───────────────────────────────── */
@@ -280,16 +313,17 @@ const handleLogin = async () => {
 /* ── Logo ──────────────────────────────────────── */
 
 .brand-row {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
   display: flex;
   justify-content: center;
 }
 
 .brand-logo {
   display: block;
-  width: 120px;
-  height: 120px;
+  width: 270px;
+  height: auto;
   object-fit: contain;
+  animation: logo-fade 0.6s ease 0.1s both;
 }
 
 /* ── Back button ───────────────────────────────── */
@@ -318,13 +352,16 @@ const handleLogin = async () => {
   white-space: nowrap;
 }
 
+/* ── Typography ────────────────────────────────── */
+
 .signin-title {
   margin: 0 0 4px;
-  color: #111827;
+  color: #16294e;
   font-size: 1.25rem;
   font-weight: 600;
-  letter-spacing: -0.015em;
+  letter-spacing: 0.01em;
   line-height: 1.2;
+  text-align: center;
 }
 
 .signin-subtitle {
@@ -332,6 +369,7 @@ const handleLogin = async () => {
   color: #6b7280;
   font-size: 0.8125rem;
   font-weight: 400;
+  text-align: center;
 }
 
 /* ── Fields ────────────────────────────────────── */
@@ -348,18 +386,19 @@ const handleLogin = async () => {
   font-weight: 500;
 }
 
+
 .text-input {
   width: 100%;
   height: 38px;
   padding: 0 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 3px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
   outline: none;
   background: #fff;
   color: #111827;
   font: inherit;
   font-size: 0.9375rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
 }
 
@@ -372,8 +411,8 @@ const handleLogin = async () => {
 }
 
 .text-input:focus {
-  border-color: #0067b8;
-  box-shadow: 0 0 0 2px rgba(0, 103, 184, 0.14);
+  border-color: #00afdb;
+  box-shadow: 0 0 0 3px rgba(0, 175, 219, 0.3);
 }
 
 .text-input:disabled {
@@ -400,7 +439,7 @@ const handleLogin = async () => {
   align-items: center;
   justify-content: center;
   border: 0;
-  border-radius: 0 2px 2px 0;
+  border-radius: 0 7px 7px 0;
   background: transparent;
   color: #9ca3af;
   cursor: pointer;
@@ -415,6 +454,7 @@ const handleLogin = async () => {
   margin-bottom: 14px;
   padding: 9px 12px;
   border-left: 3px solid #c50f1f;
+  border-radius: 0 6px 6px 0;
   background: #fef2f2;
   color: #991b1b;
   font-size: 0.8125rem;
@@ -431,22 +471,25 @@ const handleLogin = async () => {
 .primary-btn {
   display: inline-flex;
   width: 100%;
-  height: 38px;
+  height: 40px;
   align-items: center;
   justify-content: center;
   gap: 8px;
   border: none;
-  border-radius: 3px;
-  background: #0067b8;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #16294e 0%, #00afdb 100%);
   color: #fff;
   font: inherit;
   font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.primary-btn:hover:not(:disabled) { background: #005a9e; }
+.primary-btn:hover:not(:disabled) {
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(0, 175, 219, 0.35);
+}
 
 .primary-btn:disabled {
   opacity: 0.55;
@@ -457,63 +500,40 @@ const handleLogin = async () => {
 
 .help-section {
   margin-top: 20px;
-  border: 1px solid #e5e7eb;
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.help-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   padding: 12px 14px;
-  text-decoration: none;
-  color: inherit;
-  background: #fff;
-  transition: background 0.12s;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.5);
 }
 
-.help-item:not(:last-child) {
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.help-item:hover {
-  background: #f9fafb;
-}
-
-.help-item:hover .help-item__action {
-  text-decoration: underline;
-}
-
-.help-item__body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.help-item__question {
-  color: #6b7280;
-  font-size: 0.75rem;
-  line-height: 1.4;
-}
-
-.help-item__action {
-  color: #0067b8;
+.help-title {
+  margin: 0 0 4px;
+  color: #374151;
   font-size: 0.8125rem;
   font-weight: 600;
 }
 
-.help-item__arrow {
-  color: #d1d5db;
-  flex-shrink: 0;
-  transition: color 0.12s, transform 0.12s;
+.help-desc {
+  margin: 0 0 10px;
+  color: #6b7280;
+  font-size: 0.75rem;
+  line-height: 1.5;
 }
 
-.help-item:hover .help-item__arrow {
-  color: #0067b8;
-  transform: translateX(2px);
+.help-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #00afdb;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: gap 0.15s;
+}
+
+.help-cta:hover {
+  text-decoration: underline;
+  gap: 6px;
 }
 
 /* ── Footer ────────────────────────────────────── */
@@ -523,7 +543,7 @@ const handleLogin = async () => {
   right: 20px;
   bottom: 14px;
   z-index: 1;
-  color: rgba(17, 24, 39, 0.4);
+  color: rgba(255, 255, 255, 0.5);
   font-size: 0.75rem;
 }
 
@@ -533,11 +553,9 @@ const handleLogin = async () => {
   .login-page {
     align-items: flex-start;
     padding: 0;
-    background: #fff;
   }
 
-  .login-page::before,
-  .background-shape {
+  .blob {
     display: none;
   }
 
@@ -546,10 +564,12 @@ const handleLogin = async () => {
   }
 
   .signin-card {
+    border-radius: 0;
     border: none;
-    border-top: 2px solid #0067b8;
     box-shadow: none;
     padding: 32px 24px 36px;
+    min-height: 100vh;
+    background: rgba(255, 255, 255, 0.95);
   }
 
   .login-footer {

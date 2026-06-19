@@ -519,8 +519,12 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   padding: 18px 20px 16px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
 

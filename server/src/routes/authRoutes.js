@@ -132,6 +132,34 @@ router.post('/set-password', async (req, res) => {
   }
 });
 
+router.post('/check-email', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: 'E-mail adresa je obavezna.' });
+  }
+
+  try {
+    const [rows] = await db.query(
+      `SELECT is_active FROM AppUser WHERE email = ? LIMIT 1`,
+      [email]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Taj e-mail nije registriran u sustavu.' });
+    }
+
+    if (!rows[0].is_active) {
+      return res.status(403).json({ message: 'Korisnički račun nije aktivan.' });
+    }
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('POST /api/auth/check-email error:', error);
+    return res.status(500).json({ message: 'Greška pri provjeri e-maila.' });
+  }
+});
+
 router.post('/logout', (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,

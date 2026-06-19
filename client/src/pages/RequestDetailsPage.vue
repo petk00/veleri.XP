@@ -1449,8 +1449,12 @@ onMounted(() => {
 
 /* Cards */
 .card {
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
 .card__header {
@@ -1758,11 +1762,12 @@ onMounted(() => {
   min-width: 460px;
   max-width: 90vw;
   overflow: hidden;
-  background: white;
-  border: 1px solid #e5e7eb;
-  box-shadow:
-    0 6.4px 14.4px rgba(0, 0, 0, 0.13),
-    0 1.2px 3.6px rgba(0, 0, 0, 0.10);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 .dialog-header { padding: 18px 20px 10px; }
 .dialog-title {

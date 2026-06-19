@@ -1,6 +1,10 @@
 <template>
   <q-layout view="lHh LPr lFf" class="app-layout">
 
+    <div class="app-blob app-blob--1" aria-hidden="true" />
+    <div class="app-blob app-blob--2" aria-hidden="true" />
+    <div class="app-blob app-blob--3" aria-hidden="true" />
+
     <!-- ── Mobile header (logo kao toggle + avatar) ── -->
     <q-header v-if="$q.screen.lt.md" class="app-header">
       <q-toolbar class="toolbar">
@@ -95,7 +99,7 @@
                 @click="navigate('/requests')"
               >
                 <img src="/solarlinear_MOJIZAHTJEVI.svg" width="30" height="30" />
-                <span>Moji zahtjevi</span>
+                <span>{{ isAdmin ? 'Zahtjevi' : 'Moji zahtjevi' }}</span>
               </button>
               <button
                 v-if="isAdmin"
@@ -272,34 +276,64 @@ onMounted(() => {
    App layout background
    ───────────────────────────────────── */
 .app-layout {
-  background:
-    radial-gradient(circle at 10% 12%, rgba(219, 243, 255, 0.58), transparent 28%),
-    radial-gradient(circle at 88% 34%, rgba(255, 244, 249, 0.72), transparent 30%),
-    linear-gradient(135deg, #fbfdff 0%, #f7f5fb 52%, #fffdfb 100%);
+  background: transparent;
 }
 
-.app-layout::before,
-.app-layout::after {
-  content: '';
+@keyframes app-blob1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25%       { transform: translate(50px, -40px) scale(1.08); }
+  50%       { transform: translate(-30px, 50px) scale(0.94); }
+  75%       { transform: translate(40px, 25px) scale(1.04); }
+}
+
+@keyframes app-blob2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(-60px, 40px) scale(1.06); }
+  66%       { transform: translate(40px, -50px) scale(0.96); }
+}
+
+@keyframes app-blob3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40%       { transform: translate(30px, 60px) scale(1.05); }
+  80%       { transform: translate(-40px, -25px) scale(0.95); }
+}
+
+.app-blob {
   position: fixed;
+  border-radius: 50%;
+  filter: blur(100px);
   pointer-events: none;
   z-index: 0;
-  border: 1px solid rgba(188, 222, 255, 0.42);
-  border-radius: 26px;
-  background: rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 0 70px rgba(217, 239, 255, 0.24);
 }
 
-.app-layout::before {
-  width: 560px; height: 470px;
-  left: -190px; bottom: -210px;
-  transform: rotate(-42deg);
+.app-blob--1 {
+  width: 600px;
+  height: 600px;
+  background: #16294e;
+  opacity: 0.3;
+  top: -150px;
+  left: -180px;
+  animation: app-blob1 20s ease-in-out infinite;
 }
 
-.app-layout::after {
-  width: 620px; height: 360px;
-  right: -180px; top: 92px;
-  transform: rotate(-14deg);
+.app-blob--2 {
+  width: 550px;
+  height: 550px;
+  background: #00afdb;
+  opacity: 0.25;
+  bottom: -120px;
+  right: -140px;
+  animation: app-blob2 22s ease-in-out infinite;
+}
+
+.app-blob--3 {
+  width: 400px;
+  height: 400px;
+  background: #00afdb;
+  opacity: 0.15;
+  top: 40%;
+  left: 40%;
+  animation: app-blob3 17s ease-in-out infinite;
 }
 
 :deep(.q-page-container) {

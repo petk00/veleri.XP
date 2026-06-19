@@ -14,9 +14,12 @@
 </script>
 
 <style>
-.auth-layout {
+.auth-layout,
+.auth-layout .q-layout,
+.auth-layout .q-page-container,
+.auth-layout .q-page {
   min-height: 100vh;
-  background: #F5F5F5;
+  background: transparent !important;
 }
 
 .page-enter-active { transition: opacity 0.18s ease, transform 0.18s ease; }
