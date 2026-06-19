@@ -474,9 +474,9 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useQuasar } from 'quasar';
-import { useRouter } from 'vue-router';
+import { onBeforeRouteLeave, useRouter } from 'vue-router';
 import { api } from 'boot/axios';
 
 const $q = useQuasar();
@@ -498,6 +498,39 @@ const ALLOWED_OFFER_MIME_TYPES = [
 const step = ref(1);
 const loadingReferenceData = ref(false);
 const submitting = ref(false);
+const submitted = ref(false);
+
+const isDirty = computed(() => {
+  if (submitted.value) return false;
+  const f = form.value;
+  return (
+    step.value > 1 ||
+    !!f.department ||
+    f.hasOffer !== null ||
+    !!f.reasonName ||
+    f.items.length > 0 ||
+    f.offerFiles.length > 0
+  );
+});
+
+const handleBeforeUnload = (e) => {
+  if (isDirty.value) { e.preventDefault(); e.returnValue = ''; }
+};
+onMounted(() => window.addEventListener('beforeunload', handleBeforeUnload));
+onUnmounted(() => window.removeEventListener('beforeunload', handleBeforeUnload));
+
+onBeforeRouteLeave(() => {
+  if (!isDirty.value) return true;
+  return new Promise((resolve) => {
+    $q.dialog({
+      title: 'Napuštanje stranice',
+      message: 'Imate nespremljene podatke. Jeste li sigurni da želite napustiti stranicu?',
+      cancel: { label: 'Ostani', flat: true, color: 'primary' },
+      ok: { label: 'Napusti', color: 'negative', flat: true },
+      persistent: true,
+    }).onOk(() => resolve(true)).onCancel(() => resolve(false));
+  });
+});
 
 const activeFiscalYearId = ref(null);
 const noActiveFiscalYear = ref(false);
@@ -770,6 +803,7 @@ const submitWizard = async () => {
       message: `Zahtjev ${data.request_number} uspješno poslan na obradu.`,
       timeout: 2500,
     });
+    submitted.value = true;
     router.push('/requests');
   } catch (error) {
     console.error('Greška:', error);

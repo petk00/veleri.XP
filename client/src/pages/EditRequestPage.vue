@@ -333,8 +333,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 
@@ -344,12 +344,44 @@ const $q = useQuasar();
 
 const loading = ref(false);
 const saving = ref(false);
+const submitted = ref(false);
+const originalForm = ref(null);
 const requestNumber = ref('');
 const fiscalYear = ref('');
 const attachments = ref([]);
 const uploading = ref(false);
 const uploadFilePonuda = ref(null);
 const uploadFileOtpremnica = ref(null);
+
+const isDirty = computed(() => {
+  if (submitted.value || !form.value || !originalForm.value) return false;
+  const f = form.value;
+  const o = originalForm.value;
+  return (
+    f.fk_department !== o.fk_department ||
+    f.justification.trim() !== o.justification.trim() ||
+    String(f.estimated_amount ?? '') !== String(o.estimated_amount ?? '')
+  );
+});
+
+const handleBeforeUnload = (e) => {
+  if (isDirty.value) { e.preventDefault(); e.returnValue = ''; }
+};
+onMounted(() => window.addEventListener('beforeunload', handleBeforeUnload));
+onUnmounted(() => window.removeEventListener('beforeunload', handleBeforeUnload));
+
+onBeforeRouteLeave(() => {
+  if (!isDirty.value) return true;
+  return new Promise((resolve) => {
+    $q.dialog({
+      title: 'Napuštanje stranice',
+      message: 'Imate nespremljene izmjene. Jeste li sigurni da želite napustiti stranicu?',
+      cancel: { label: 'Ostani', flat: true, color: 'primary' },
+      ok: { label: 'Napusti', color: 'negative', flat: true },
+      persistent: true,
+    }).onOk(() => resolve(true)).onCancel(() => resolve(false));
+  });
+});
 
 const hasPonuda = computed(() =>
   attachments.value.some((a) => a.document_type === 'Ponuda')
@@ -510,6 +542,11 @@ const fetchData = async () => {
         quantity: it.quantity,
       })),
     };
+    originalForm.value = {
+      fk_department: form.value.fk_department,
+      justification: form.value.justification,
+      estimated_amount: form.value.estimated_amount,
+    };
   } catch (error) {
     const status = error.response?.status;
     const message = error.response?.data?.message || 'Greška pri učitavanju zahtjeva.';
@@ -588,6 +625,7 @@ const saveChanges = async () => {
   try {
     await api.put(`/requests/${route.params.id}`, payload);
     $q.notify({ type: 'positive', message: 'Zahtjev uspješno ažuriran.' });
+    submitted.value = true;
     router.push(`/requests/${route.params.id}`);
   } catch (error) {
     console.error('Greška pri spremanju:', error);
