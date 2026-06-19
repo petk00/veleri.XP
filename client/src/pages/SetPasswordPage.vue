@@ -3,7 +3,7 @@
     <div class="sp-card">
 
       <div class="sp-card__top">
-        <img src="/logo.svg" alt="veleri.XP" class="sp-logo" />
+        <img src="/veleri_logo_solo.svg" alt="veleri.XP" class="sp-logo" />
       </div>
 
       <template v-if="state === 'form'">

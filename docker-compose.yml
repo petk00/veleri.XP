@@ -35,7 +35,7 @@ services:
       DB_NAME: XP
       JWT_SECRET: zamijeni-s-dugackim-random-stringom-minimalno-32-znaka
       JWT_EXPIRES_IN: 1d
-      CLIENT_URL: http://localhost
+      CLIENT_URL: https://localhost
       UPLOADS_DIR: /app/uploads
       # SMTP_HOST: smtp.office365.com
       # SMTP_PORT: 587
@@ -59,6 +59,7 @@ services:
       - backend
     ports:
       - "80:80"
+      - "443:443"
 
 volumes:
   mysql_data:

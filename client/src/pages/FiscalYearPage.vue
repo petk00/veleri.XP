@@ -545,9 +545,13 @@ onMounted(loadYears);
 
 /* Dialog */
 .dialog-card {
-  width: 400px; max-width: 95vw; background: #fff;
-  border-top: 2px solid #0067b8;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+  width: 400px; max-width: 95vw;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 .dialog-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
 .dialog-title { margin: 0; font-size: 1rem; font-weight: 600; color: #111827; }
@@ -566,7 +570,7 @@ onMounted(loadYears);
   background: #fff; color: #111827; font: inherit; font-size: 0.9375rem;
   box-sizing: border-box; transition: border-color 0.15s, box-shadow 0.15s;
 }
-.text-input:focus { border-color: #0067b8; box-shadow: 0 0 0 2px rgba(0,103,184,0.14); }
+.text-input:focus { border-color: #00afdb; box-shadow: 0 0 0 3px rgba(0, 175, 219, 0.3); }
 
 .dialog-hint { margin: 0; font-size: 0.8125rem; color: #6b7280; line-height: 1.5; }
 

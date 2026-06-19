@@ -70,6 +70,10 @@ app.use('/api/reference', referenceRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/fiscal-years', fiscalYearRoutes);
 
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', uptime: Math.floor(process.uptime()) });
+});
+
 app.use((req, res) => {
   res.status(404).json({ message: 'Ruta nije pronađena.' });
 });

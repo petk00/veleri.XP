@@ -35,7 +35,6 @@ veleri.XP je full-stack web aplikacija za digitalizaciju procesa nabave: zaposle
 - Financijski limiti po odjelu i kategoriji (polja postoje u bazi, logika nije aktivna).
 - Draft zahtjeva — zahtjev se uvijek šalje odmah.
 - Perzistentne notifikacije — in-app obavijesti ne pamte se između sesija.
-- Email notifikacije.
 
 ## Dokumentacija
 

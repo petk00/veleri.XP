@@ -57,6 +57,9 @@ export default [
 
       // allow debugger during development only
       'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
+
+      // Vue <script setup> vars are used in templates — handled by vue/no-unused-vars
+      'no-unused-vars': 'off',
     },
   },
 

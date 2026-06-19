@@ -4,7 +4,6 @@
 
       <header class="page-header">
         <div class="page-header__main">
-          <div class="page-header__eyebrow">Administracija</div>
           <h1 class="page-header__title">Korisnici</h1>
         </div>
         <div class="page-header__actions">
@@ -22,18 +21,29 @@
       <section v-else class="list-surface">
 
         <div class="surface-header">
-          <h2 class="surface-title">Svi korisnici</h2>
-          <span class="surface-count">{{ users.length }}</span>
+          <div class="surface-header__left">
+            <h2 class="surface-title">Svi korisnici</h2>
+            <span class="surface-count">{{ filteredUsers.length }}</span>
+          </div>
+          <div class="toolbar">
+            <q-icon name="search" size="15px" class="toolbar__search-icon" />
+            <input
+              v-model="searchQuery"
+              type="search"
+              class="toolbar__search"
+              placeholder="Pretraži po imenu, emailu ili ulozi..."
+            />
+          </div>
         </div>
 
-        <div v-if="users.length === 0" class="empty-state">
+        <div v-if="filteredUsers.length === 0" class="empty-state">
           <div class="empty-state__icon"><q-icon name="group" size="28px" /></div>
-          <div class="empty-state__title">Nema korisnika</div>
-          <div class="empty-state__hint">Dodajte prvog korisnika klikom na "Novi korisnik".</div>
+          <div class="empty-state__title">{{ users.length === 0 ? 'Nema korisnika' : 'Nema rezultata' }}</div>
+          <div class="empty-state__hint">{{ users.length === 0 ? 'Dodajte prvog korisnika klikom na "Novi korisnik".' : 'Pokušajte s drugim pojmom.' }}</div>
         </div>
 
         <ul v-else class="user-list">
-          <li v-for="u in users" :key="u.id_user" class="user-row">
+          <li v-for="u in filteredUsers" :key="u.id_user" class="user-row">
             <div class="user-avatar" :style="{ background: avatarColor(u) }">
               {{ initials(u) }}
             </div>
@@ -59,7 +69,7 @@
               >
                 <q-icon :name="u.is_active ? 'person_off' : 'person'" size="16px" />
               </button>
-              <button class="action-btn action-btn--danger" title="Obriši" @click="deleteUser(u)">
+              <button class="action-btn action-btn--danger" title="Obriši korisnika" @click="deleteUser(u)" style="margin-left: 6px;">
                 <q-icon name="delete_outline" size="16px" />
               </button>
             </div>
@@ -155,7 +165,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 
@@ -164,12 +174,23 @@ const $q = useQuasar();
 const loading = ref(true);
 const users = ref([]);
 const roles = ref([]);
+const searchQuery = ref('');
+
+const filteredUsers = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return users.value;
+  return users.value.filter(u =>
+    `${u.first_name} ${u.last_name}`.toLowerCase().includes(q) ||
+    (u.email || '').toLowerCase().includes(q) ||
+    (u.role_name || '').toLowerCase().includes(q)
+  );
+});
 
 const dialog = ref({ open: false, isEdit: false, editId: null, error: '', saving: false });
 const form = ref({ first_name: '', last_name: '', email: '', role_id: '' });
 const inviteDialog = ref({ open: false, link: '', name: '', copied: false, isReset: false });
 
-const avatarPalette = ['#0067b8', '#7c3aed', '#059669', '#d97706', '#dc2626', '#0891b2', '#9333ea', '#be185d'];
+const avatarPalette = ['#1b2d59', '#00afdb', '#0e7490', '#1d4ed8', '#0369a1', '#0891b2', '#16294e', '#2563eb'];
 
 const avatarColor = (u) => {
   const str = (u.first_name || '') + (u.last_name || '');
@@ -329,7 +350,7 @@ onMounted(async () => {
 
 .page-header__eyebrow {
   margin-bottom: 8px;
-  color: #0067b8;
+  color: #00afdb;
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -352,8 +373,8 @@ onMounted(async () => {
   min-height: 38px;
   padding: 0 20px;
   border: none;
-  border-radius: 3px;
-  background: #0067b8;
+  border-radius: 8px;
+  background: #1b2d59;
   color: #fff;
   font: inherit;
   font-size: 0.9375rem;
@@ -361,7 +382,7 @@ onMounted(async () => {
   cursor: pointer;
   transition: background 0.15s;
 }
-.btn--cta:hover:not(:disabled) { background: #005a9e; }
+.btn--cta:hover:not(:disabled) { background: #16294e; }
 .btn--cta:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .btn--secondary {
@@ -385,19 +406,56 @@ onMounted(async () => {
 .loading-block { display: flex; justify-content: center; padding: 64px 0; }
 
 /* ── List surface ── */
-.list-surface { border: 1px solid #e5e7eb; background: #fff; overflow: hidden; }
+.list-surface {
+  border: 1px solid #e5e7eb;
+  border-top: 2px solid #00afdb;
+  background: #fff;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
 
 .surface-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 20px;
+  padding: 10px 20px;
   border-bottom: 1px solid #e5e7eb;
+}
+
+.surface-header__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .surface-title { margin: 0; font-size: 0.8125rem; font-weight: 600; color: #111827; }
 .surface-count { color: #6b7280; font-size: 0.75rem; }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  max-width: 320px;
+}
+
+.toolbar__search-icon { color: #9ca3af; flex-shrink: 0; }
+
+.toolbar__search {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: #111827;
+  min-width: 0;
+}
+
+.toolbar__search::placeholder { color: #9ca3af; }
 
 /* ── User list ── */
 .user-list { list-style: none; margin: 0; padding: 0; }
@@ -504,9 +562,12 @@ onMounted(async () => {
 .dialog-card {
   width: 480px;
   max-width: 95vw;
-  background: #fff;
-  border-top: 2px solid #0067b8;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 
 .dialog-header {
@@ -554,7 +615,7 @@ onMounted(async () => {
   box-sizing: border-box;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-.text-input:focus { border-color: #0067b8; box-shadow: 0 0 0 2px rgba(0,103,184,0.14); }
+.text-input:focus { border-color: #00afdb; box-shadow: 0 0 0 3px rgba(0, 175, 219, 0.3); }
 
 .form-error {
   padding: 9px 12px;

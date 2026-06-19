@@ -1,63 +1,25 @@
 <template>
-  <q-layout view="lHh Lpr lFf" class="app-layout">
+  <q-layout view="lHh LPr lFf" class="app-layout">
 
-    <q-header class="app-header">
+    <!-- ── Mobile header (logo kao toggle + avatar) ── -->
+    <q-header v-if="$q.screen.lt.md" class="app-header">
       <q-toolbar class="toolbar">
-
-        <!-- Logo -->
-        <button class="brand" @click="$router.push('/home')">
+        <button class="brand" @click="drawerOpen = !drawerOpen">
           <img
-            src="/veleri-logo-horizontal.png"
+            src="/veleri_logo_solo.svg"
             alt="Veleučilište u Rijeci"
             class="brand__logo"
           />
         </button>
-
         <q-space />
-
-        <!-- Nav (samo u aplikaciji nabave) -->
-        <nav v-if="!isHome" class="nav gt-sm">
-          <button
-            class="nav__item"
-            :class="{ 'nav__item--active': isActive('/dashboard') }"
-            @click="$router.push('/dashboard')"
-          >
-            Nadzorna ploča
-          </button>
-          <button
-            class="nav__item"
-            :class="{ 'nav__item--active': isActive('/requests') }"
-            @click="$router.push('/requests')"
-          >
-            Zahtjevi
-          </button>
-          <button
-            v-if="isAdmin"
-            class="nav__item"
-            :class="{ 'nav__item--active': isActive('/users') }"
-            @click="$router.push('/users')"
-          >
-            Korisnici
-          </button>
-          <button
-            v-if="isAdmin"
-            class="nav__item"
-            :class="{ 'nav__item--active': isActive('/fiscal-years') }"
-            @click="$router.push('/fiscal-years')"
-          >
-            Poslovne godine
-          </button>
-        </nav>
-
-        <!-- Avatar -->
         <button v-if="user" class="avatar-btn">
           <div class="avatar" :style="{ background: avatarColor }">{{ initials }}</div>
-
           <q-menu
             anchor="bottom right"
             self="top right"
             :offset="[0, 6]"
             class="user-menu"
+            style="background: transparent"
             transition-show="jump-down"
             transition-hide="jump-up"
           >
@@ -78,44 +40,145 @@
             </q-list>
           </q-menu>
         </button>
-
       </q-toolbar>
-
-      <!-- Mobile nav (samo u aplikaciji nabave) -->
-      <div v-if="!isHome" class="mobile-nav lt-md">
-        <button
-          class="mobile-nav__item"
-          :class="{ 'mobile-nav__item--active': isActive('/dashboard') }"
-          @click="$router.push('/dashboard')"
-        >
-          Nadzorna ploča
-        </button>
-        <button
-          class="mobile-nav__item"
-          :class="{ 'mobile-nav__item--active': isActive('/requests') }"
-          @click="$router.push('/requests')"
-        >
-          Zahtjevi
-        </button>
-        <button
-          v-if="isAdmin"
-          class="mobile-nav__item"
-          :class="{ 'mobile-nav__item--active': isActive('/users') }"
-          @click="$router.push('/users')"
-        >
-          Korisnici
-        </button>
-        <button
-          v-if="isAdmin"
-          class="mobile-nav__item"
-          :class="{ 'mobile-nav__item--active': isActive('/fiscal-years') }"
-          @click="$router.push('/fiscal-years')"
-        >
-          Posl. godine
-        </button>
-      </div>
     </q-header>
 
+    <!-- ── Sidebar ── -->
+    <q-drawer
+      v-model="drawerOpen"
+      show-if-above
+      side="left"
+      :width="220"
+      :mini="miniMode"
+      :mini-width="56"
+      :breakpoint="768"
+      class="app-sidebar"
+    >
+      <div class="sidebar-inner">
+
+        <!-- Brand -->
+        <div class="sidebar-brand" :class="{ 'sidebar-brand--mini': miniMode }">
+          <button class="brand brand--toggle" @click="toggleMini">
+            <img
+              src="/veleri_logo_solo.svg"
+              alt="Veleučilište u Rijeci"
+              class="brand__logo"
+            />
+            <span v-if="!miniMode" class="brand__name">
+              <span style="color: #1b2d59">veleri</span><span style="color: #14bae4">.XP</span>
+            </span>
+          </button>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="sidebar-nav">
+
+          <!-- Nabava -->
+          <div class="nav-group">
+            <button class="nav-group__header" @click="toggleGroup('nabava')">
+              <img src="/solarlinear_NABAVA.svg" width="30" height="30" class="nav-group__icon" />
+              <span class="nav-group__label">Nabava</span>
+              <q-icon :name="openGroups.nabava ? 'expand_less' : 'expand_more'" size="15px" class="nav-group__chevron" />
+            </button>
+            <div v-show="miniMode || openGroups.nabava" class="nav-group__items">
+              <button
+                class="sidebar-nav__item"
+                :class="{ 'sidebar-nav__item--active': isActive('/requests/new') }"
+                @click="navigate('/requests/new')"
+              >
+                <img src="/solarlinear_NOVIZAHTJEV.svg" width="30" height="30" />
+                <span>Novi zahtjev</span>
+              </button>
+              <button
+                class="sidebar-nav__item"
+                :class="{ 'sidebar-nav__item--active': isActive('/requests') }"
+                @click="navigate('/requests')"
+              >
+                <img src="/solarlinear_MOJIZAHTJEVI.svg" width="30" height="30" />
+                <span>{{ isAdmin ? 'Zahtjevi' : 'Moji zahtjevi' }}</span>
+              </button>
+              <button
+                v-if="isAdmin"
+                class="sidebar-nav__item"
+                :class="{ 'sidebar-nav__item--active': isActive('/fiscal-years') }"
+                @click="navigate('/fiscal-years')"
+              >
+                <img src="/solarlinear_POSLOVNEGODINE.svg" width="30" height="30" />
+                <span>Poslovne godine</span>
+              </button>
+              <div v-if="isAdmin" class="sidebar-nav__item sidebar-nav__item--soon">
+                <img src="/solarlinear_FINANCIRANJE.svg" width="30" height="30" />
+                <span>Financiranje</span>
+                <span class="nav-soon-badge">uskoro</span>
+              </div>
+            </div>
+          </div>
+          <div class="nav-group nav-group--soon">
+            <div class="nav-group__header nav-group__header--soon">
+              <img src="/solarlinear_PUTNINALOG.svg" width="30" height="30" class="nav-group__icon" />
+              <span class="nav-group__label">Putni nalozi</span>
+              <span class="nav-soon-badge">uskoro</span>
+            </div>
+          </div>
+
+          <!-- Separator -->
+          <div v-if="isAdmin" class="nav-separator" />
+
+          <!-- Admin stavke -->
+          <button
+            v-if="isAdmin"
+            class="sidebar-nav__item"
+            :class="{ 'sidebar-nav__item--active': isActive('/users') }"
+            @click="navigate('/users')"
+          >
+            <img src="/solarlinear_KORISNICI.svg" width="30" height="30" />
+            <span>Korisnici</span>
+          </button>
+
+        </nav>
+
+        <div class="sidebar-spacer" />
+
+        <!-- User profile -->
+        <div class="sidebar-footer" v-if="user">
+          <button class="sidebar-user">
+            <div class="avatar" :style="{ background: avatarColor }">{{ initials }}</div>
+            <div class="sidebar-user__info">
+              <div class="sidebar-user__name">{{ fullName }}</div>
+              <div class="sidebar-user__role">{{ user.role_name }}</div>
+            </div>
+            <q-menu
+              anchor="top left"
+              self="bottom left"
+              :offset="[0, 8]"
+              class="user-menu"
+              style="background: transparent"
+              transition-show="jump-up"
+              transition-hide="jump-down"
+            >
+              <div class="user-menu__header">
+                <div class="avatar avatar--lg" :style="{ background: avatarColor }">{{ initials }}</div>
+                <div>
+                  <div class="user-menu__name">{{ fullName }}</div>
+                  <div class="user-menu__email">{{ user.email || user.role_name }}</div>
+                </div>
+              </div>
+              <q-list class="user-menu__list">
+                <q-item clickable v-close-popup @click="logout" class="user-menu__item">
+                  <q-item-section avatar>
+                    <q-icon name="logout" size="18px" />
+                  </q-item-section>
+                  <q-item-section>Odjava</q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
+          </button>
+        </div>
+
+      </div>
+    </q-drawer>
+
+    <!-- ── Page content ── -->
     <q-page-container>
       <router-view v-slot="{ Component }">
         <transition name="page" mode="out-in">
@@ -132,14 +195,30 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 import { getStoredUser } from 'src/utils/authStorage';
 import { useActionableRequestsNotifier } from 'src/composables/useActionableRequestsNotifier';
 
+const $q = useQuasar();
 const router = useRouter();
 const route = useRoute();
+
+const drawerOpen = ref(false);
+const miniMode = ref(false);
+const openGroups = ref({ nabava: true });
+
+const toggleGroup = (name) => { openGroups.value[name] = !openGroups.value[name]; };
+
+const toggleMini = () => {
+  if ($q.screen.lt.md) {
+    drawerOpen.value = false;
+  } else {
+    miniMode.value = !miniMode.value;
+  }
+};
 
 const { checkActionableRequests, resetNotifier } = useActionableRequestsNotifier();
 
@@ -158,18 +237,22 @@ const initials = computed(() => {
 });
 
 const avatarColor = computed(() => {
-  const palette = ['#0067b8', '#7c3aed', '#059669', '#d97706', '#dc2626', '#0891b2', '#9333ea', '#be185d'];
+  const palette = ['#1b2d59', '#00afdb', '#0e7490', '#1d4ed8', '#2563eb', '#0891b2', '#16294e', '#0369a1'];
   const str = (user.value?.first_name || '') + (user.value?.last_name || '');
   const idx = [...str].reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % palette.length;
   return palette[idx];
 });
 
 const isAdmin = computed(() => user.value?.role_name === 'Administrator');
-const isHome = computed(() => route.path === '/home');
 
 const isActive = (path) => {
-  if (path === '/requests') return route.path.startsWith('/requests');
+  if (path === '/requests') return route.path.startsWith('/requests') && !route.path.startsWith('/requests/new');
   return route.path === path;
+};
+
+const navigate = (path) => {
+  router.push(path);
+  if ($q.screen.lt.md) drawerOpen.value = false;
 };
 
 const logout = async () => {
@@ -186,70 +269,28 @@ onMounted(() => {
 
 <style scoped>
 /* ─────────────────────────────────────
-   Layout & header
+   App layout background
    ───────────────────────────────────── */
 .app-layout {
-  background:
-    radial-gradient(circle at 10% 12%, rgba(219, 243, 255, 0.58), transparent 28%),
-    radial-gradient(circle at 88% 34%, rgba(255, 244, 249, 0.72), transparent 30%),
-    linear-gradient(135deg, #fbfdff 0%, #f7f5fb 52%, #fffdfb 100%);
+  background: #f8f9fa;
 }
 
-.app-layout::before,
-.app-layout::after {
-  content: '';
-  position: fixed;
-  pointer-events: none;
-  z-index: 0;
-  border: 1px solid rgba(188, 222, 255, 0.42);
-  border-radius: 26px;
-  background: rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 0 70px rgba(217, 239, 255, 0.24);
-}
-
-.app-layout::before {
-  width: 560px;
-  height: 470px;
-  left: -190px;
-  bottom: -210px;
-  transform: rotate(-42deg);
-}
-
-.app-layout::after {
-  width: 620px;
-  height: 360px;
-  right: -180px;
-  top: 92px;
-  transform: rotate(-14deg);
-}
-
+/* ─────────────────────────────────────
+   Mobile header
+   ───────────────────────────────────── */
 .app-header {
-  background: linear-gradient(90deg,
-    rgba(180, 218, 255, 0.85) 0%,
-    rgba(235, 247, 255, 0.98) 28%,
-    rgba(245, 245, 252, 0.98) 72%,
-    rgba(255, 210, 232, 0.75) 100%
-  ) !important;
+  background: #ffffff !important;
   color: #1a1a1a;
   box-shadow: none;
-  border-bottom: 1px solid rgba(155, 200, 240, 0.75);
-  z-index: 10;
-}
-
-:deep(.q-page-container) {
-  position: relative;
-  z-index: 1;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .toolbar {
   min-height: 52px;
-  padding: 0 32px;
-  gap: 0;
+  padding: 0 16px;
+  gap: 8px;
 }
 
-/* ─────────────────────────────────────
-   Brand
-   ───────────────────────────────────── */
 .brand {
   all: unset;
   display: flex;
@@ -259,60 +300,27 @@ onMounted(() => {
 
 .brand__logo {
   display: block;
-  width: 136px;
+  width: 128px;
   height: auto;
   object-fit: contain;
 }
 
-/* ─────────────────────────────────────
-   Primary nav (desktop)
-   ───────────────────────────────────── */
-.nav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-right: 16px;
-}
-
-.nav__item {
-  all: unset;
-  display: inline-flex;
-  align-items: center;
+.sidebar-brand .brand__logo {
+  width: 28px;
   height: 28px;
-  padding: 0 11px;
-  border-radius: 3px;
-  font-size: 0.8125rem;
-  font-weight: 400;
-  color: #424242;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.12s, color 0.12s;
+  object-fit: contain;
 }
 
-.nav__item:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: #111827;
+.toolbar .brand__logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
 }
 
-.nav__item--active {
-  background: #111827;
-  color: #fff;
-  font-weight: 500;
-}
-
-.nav__item--active:hover {
-  background: #000;
-  color: #fff;
-}
-
-/* ─────────────────────────────────────
-   Avatar button
-   ───────────────────────────────────── */
 .avatar-btn {
   all: unset;
   display: flex;
   align-items: center;
-  justify-content: center;
   border-radius: 50%;
   cursor: pointer;
   transition: opacity 0.12s, box-shadow 0.12s;
@@ -324,51 +332,259 @@ onMounted(() => {
 }
 
 /* ─────────────────────────────────────
-   Mobile nav (visible <md)
+   Sidebar
    ───────────────────────────────────── */
-.mobile-nav {
+
+.sidebar-inner {
   display: flex;
-  align-items: stretch;
-  background: #fff;
-  border-top: 1px solid #edebe9;
+  flex-direction: column;
+  height: 100%;
 }
 
-.mobile-nav__item {
-  all: unset;
-  flex: 1;
-  display: inline-flex;
+.sidebar-brand {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+  display: flex;
   align-items: center;
+}
+
+.sidebar-brand--mini {
   justify-content: center;
-  padding: 11px 8px;
-  font-size: 0.75rem;
-  font-weight: 400;
-  color: #424242;
+  padding: 14px 8px 12px;
+}
+
+.brand--toggle {
   cursor: pointer;
-  border-bottom: 2px solid transparent;
+  transition: opacity 0.12s;
+  gap: 8px;
+}
+
+.brand__name {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #1e1b4b;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  line-height: 22px;
+}
+
+.brand--toggle:hover {
+  opacity: 0.7;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+  flex-shrink: 0;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-group__header {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #1b2d59;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.12s;
+  white-space: nowrap;
+}
+
+.nav-group__header:hover {
+  color: #14bae4;
+}
+
+.nav-group__label {
+  flex: 1;
+}
+
+.nav-group__icon {
+  flex-shrink: 0;
+  opacity: 0.55;
+}
+
+.nav-group__chevron {
+  flex-shrink: 0;
+  opacity: 0.4;
+}
+
+.nav-group__header--soon {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.nav-group__header--soon:hover {
+  color: #6b7280;
+}
+
+.sidebar-nav__item--soon {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+
+.nav-soon-badge {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 2px 6px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.nav-separator {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 6px 12px;
+}
+
+.sidebar-nav__item {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: #1b2d59;
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+  width: 100%;
+  transition: background 0.12s, color 0.12s;
+}
+
+:deep(.q-drawer--mini) .sidebar-nav {
+  padding: 10px 4px;
+}
+
+:deep(.q-drawer--mini) .sidebar-nav__item {
+  justify-content: center;
+  padding: 10px 0;
+  width: 100%;
+}
+
+:deep(.q-drawer--mini) .sidebar-nav__item span {
+  display: none;
+}
+
+:deep(.q-drawer--mini) .nav-group__header {
+  justify-content: center;
+  padding: 6px 0;
+}
+
+:deep(.q-drawer--mini) .nav-group__label,
+:deep(.q-drawer--mini) .nav-group__chevron,
+:deep(.q-drawer--mini) .nav-soon-badge {
+  display: none;
+}
+
+:deep(.q-drawer--mini) .nav-separator {
+  margin: 6px 4px;
+}
+
+:deep(.q-drawer--mini) .sidebar-user__info {
+  display: none;
+}
+
+:deep(.q-drawer--mini) .sidebar-user {
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.sidebar-nav__item:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #14bae4;
+}
+
+.sidebar-nav__item--active {
+  background: #e8f8fd;
+  border-left: 3px solid #00afdb;
+  padding-left: 9px;
+  color: #00afdb;
+  font-weight: 600;
+}
+
+.sidebar-nav__item--active:hover {
+  background: #d8f3fb;
+}
+
+.sidebar-spacer {
+  flex: 1;
+}
+
+.sidebar-footer {
+  padding: 8px;
+  border-top: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.sidebar-user {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
   transition: background 0.12s;
 }
 
-.mobile-nav__item:hover { background: rgba(0,0,0,0.04); color: #111827; }
-
-.mobile-nav__item--active {
-  color: #111827;
-  border-bottom-color: #0067b8;
-  font-weight: 500;
+.sidebar-user:hover {
+  background: rgba(0, 0, 0, 0.06);
 }
 
-/* ─────────────────────────────────────
-   Responsive tweaks
-   ───────────────────────────────────── */
-@media (max-width: 600px) {
-  .toolbar { padding: 0 16px; }
-  .brand__logo { width: 112px; }
+.sidebar-user__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-user__name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #201F1E;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user__role {
+  font-size: 11px;
+  color: #605E5C;
+  margin-top: 1px;
 }
 </style>
 
 <style>
-/* ── Globalni stilovi (ne-scoped) ────────────── */
+/* ── Globalni stilovi (ne-scoped) ── */
 
-/* Avatar (koristi se unutar q-menu portala) */
+.app-sidebar {
+  background: #ffffff !important;
+  border-right: 1px solid #e5e7eb !important;
+}
+
 .avatar {
   width: 36px;
   height: 36px;
@@ -387,9 +603,9 @@ onMounted(() => {
   font-size: 14px;
 }
 
-/* Dropdown menu */
-.user-menu {
-  background: white;
+.user-menu,
+.user-menu.q-menu {
+  background: transparent !important;
   border: 1px solid #E1DFDD;
   border-radius: 6px;
   box-shadow:
@@ -404,7 +620,7 @@ onMounted(() => {
   gap: 12px;
   padding: 14px 16px 12px;
   border-bottom: 1px solid #EDEBE9;
-  background: #FAFAFA;
+  background: transparent !important;
 }
 .user-menu__name {
   font-size: 13px;
@@ -428,13 +644,11 @@ onMounted(() => {
 .user-menu__item:hover { background: #F3F2F1; }
 .user-menu__item .q-icon { color: #605E5C; }
 
-/* Page transitions */
 .page-enter-active { transition: opacity 0.18s ease, transform 0.18s ease; }
 .page-leave-active { transition: opacity 0.1s ease, transform 0.1s ease; }
 .page-enter-from   { opacity: 0; transform: translateY(8px); }
 .page-leave-to     { opacity: 0; transform: translateY(-4px); }
 
-/* Notify stilovi */
 .actionable-request-notify {
   min-width: 320px;
   max-width: 420px;
@@ -456,9 +670,6 @@ onMounted(() => {
   line-height: 1.4;
 }
 
-/* ─────────────────────────────────────
-   Footer
-   ───────────────────────────────────── */
 .app-footer {
   position: relative;
   z-index: 1;
@@ -473,18 +684,18 @@ onMounted(() => {
   .app-footer { padding: 12px 16px; }
 }
 
-/* PRINT — sakrij sve UI elemente Layout-a */
 @media print {
   .app-header,
   .q-header,
-  .toolbar,
-  .mobile-nav,
+  .app-sidebar,
+  .q-drawer,
   .app-footer {
     display: none !important;
   }
 
   .q-page-container {
     padding-top: 0 !important;
+    padding-left: 0 !important;
     min-height: 0 !important;
   }
 
