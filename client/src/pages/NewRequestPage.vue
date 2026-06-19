@@ -170,21 +170,17 @@
                   <!-- Offer files -->
                   <div class="field">
                     <label class="field__label">Ponude / računi *</label>
-                    <q-file
-                      v-model="newOfferFile"
-                      accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt,.zip"
-                      outlined dense
-                      placeholder="Odaberite datoteku..."
-                      class="field__input"
-                      @update:model-value="onAddOffer"
-                    >
-                      <template #prepend>
-                        <q-icon name="attach_file" size="16px" />
-                      </template>
-                    </q-file>
-                    <div class="field__hint">
-                      PDF, Word, Excel, slike — najviše 10 MB po datoteci.
-                    </div>
+                    <label class="upload-zone">
+                      <q-icon name="upload_file" size="28px" class="upload-zone__icon" />
+                      <span class="upload-zone__text">Klikni ili povuci datoteku ovdje</span>
+                      <span class="upload-zone__hint">PDF, Word, Excel, slike — najviše 10 MB po datoteci</span>
+                      <q-file
+                        v-model="newOfferFile"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt,.zip"
+                        style="display: none"
+                        @update:model-value="onAddOffer"
+                      />
+                    </label>
 
                     <ul v-if="form.offerFiles.length > 0" class="file-list">
                       <li v-for="(file, index) in form.offerFiles" :key="index" class="file-list__item">
@@ -281,25 +277,30 @@
                     <label class="field__label">Stavke zahtjeva *</label>
 
                     <div class="add-item">
+                      <div class="add-item__labels">
+                        <span class="add-item__label add-item__label--category">Kategorija</span>
+                        <span class="add-item__label add-item__label--name">Naziv artikla / usluge</span>
+                        <span class="add-item__label add-item__label--qty">Količina</span>
+                      </div>
                       <div class="add-item__row">
                         <q-select
                           v-model="itemForm.category"
                           :options="categoryOptions"
-                          placeholder="Kategorija"
+                          placeholder="Odaberi..."
                           outlined dense
                           emit-value map-options
                           class="add-item__category"
                         />
                         <q-input
                           v-model="itemForm.item_name"
-                          placeholder="Naziv artikla / usluge"
+                          placeholder="Unesite naziv..."
                           outlined dense
                           class="add-item__name"
                           @keyup.enter="addItem"
                         />
                         <q-input
                           v-model.number="itemForm.quantity"
-                          placeholder="Kol."
+                          placeholder="1"
                           type="number" min="1"
                           outlined dense
                           class="add-item__qty"
@@ -334,6 +335,11 @@
                     <div v-if="form.items.length > 0" class="item-list__footer">
                       Ukupno {{ form.items.length }} {{ form.items.length === 1 ? 'stavka' : 'stavki' }}
                     </div>
+
+                    <div class="field__hint field__hint--info" style="margin-top: 10px;">
+                      <q-icon name="info_outline" size="14px" />
+                      Cijena će biti određena nakon što nabava pronađe dobavljača.
+                    </div>
                   </div>
                 </div>
               </div>
@@ -350,32 +356,56 @@
 
                 <div class="step__body">
                   <div class="review">
+
                     <div class="review__field">
                       <span class="review__label">Odjel / Služba / Projekt</span>
                       <span class="review__value">{{ selectedDepartmentLabel || '—' }}</span>
+                      <button class="review__edit" type="button" @click="step = 1">
+                        <q-icon name="edit" size="12px" /> Uredi
+                      </button>
                     </div>
+
                     <div class="review__field">
                       <span class="review__label">Svrha nabave</span>
                       <span class="review__value review__value--prose">{{ form.reasonName || '—' }}</span>
+                      <button class="review__edit" type="button" @click="step = 3">
+                        <q-icon name="edit" size="12px" /> Uredi
+                      </button>
                     </div>
-                    <div class="review__field">
+
+                    <div v-if="form.hasOffer === true" class="review__field">
                       <span class="review__label">Ponude / računi</span>
                       <span class="review__value">
-                        <template v-if="form.hasOffer === true && form.offerFiles.length > 0">
-                          <span v-for="(file, index) in form.offerFiles" :key="index" class="review__file">
-                            <q-icon name="check_circle" size="14px" />
-                            {{ file.name }}
+                        <template v-if="form.offerFiles.length > 0">
+                          <span class="review__file">
+                            <q-icon name="attach_file" size="14px" />
+                            <span :title="form.offerFiles.map(f => f.name).join(', ')">
+                              {{ form.offerFiles.length === 1 ? form.offerFiles[0].name.length > 40 ? form.offerFiles[0].name.slice(0, 38) + '…' : form.offerFiles[0].name : `${form.offerFiles.length} priložene datoteke` }}
+                            </span>
                           </span>
                         </template>
-                        <span v-else class="review__muted">Bez ponude — dodaje se naknadno</span>
+                        <span v-else class="review__muted">Bez ponude</span>
                       </span>
+                      <button class="review__edit" type="button" @click="step = 3">
+                        <q-icon name="edit" size="12px" /> Uredi
+                      </button>
                     </div>
-                    <div v-if="form.estimatedAmount" class="review__field">
+
+                    <div v-if="form.hasOffer === true" class="review__field">
                       <span class="review__label">Ukupni iznos</span>
                       <span class="review__value review__value--amount">
-                        {{ formatCurrency(form.estimatedAmount) }}
+                        {{ form.estimatedAmount ? formatCurrency(form.estimatedAmount) : '—' }}
                       </span>
+                      <button class="review__edit" type="button" @click="step = 3">
+                        <q-icon name="edit" size="12px" /> Uredi
+                      </button>
                     </div>
+
+                    <div v-if="form.hasOffer === false" class="review__field">
+                      <span class="review__label">Iznos</span>
+                      <span class="review__value review__muted">Bit će određen nakon obrade zahtjeva</span>
+                    </div>
+
                     <div class="review__field">
                       <span class="review__label">
                         <template v-if="form.hasOffer === false">Stavke ({{ form.items.length }})</template>
@@ -392,7 +422,11 @@
                           </li>
                         </ul>
                       </span>
+                      <button class="review__edit" type="button" @click="step = 3">
+                        <q-icon name="edit" size="12px" /> Uredi
+                      </button>
                     </div>
+
                   </div>
                 </div>
               </div>
@@ -507,7 +541,7 @@ const currentSteps = computed(() => {
   }
   return [
     ...base,
-    { key: 'detalji', step: 3, title: 'Detalji', hint: 'Podaci zahtjeva' },
+    { key: 'detalji', step: 3, title: 'Detalji', hint: 'Iznos i kategorija' },
     { key: 'pregled', step: 4, title: 'Pregled', hint: 'Potvrda i slanje' },
   ];
 });
@@ -1065,6 +1099,55 @@ onMounted(() => fetchReferenceData());
   line-height: 1.4;
 }
 
+.field__hint--info {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #0e7490;
+  background: #e0f6fd;
+  border-radius: 4px;
+  padding: 5px 8px;
+  margin-top: 10px;
+  font-size: 0.75rem;
+}
+
+/* ─────────────────────────────────
+   Upload zone
+   ───────────────────────────────── */
+.upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px 16px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: center;
+}
+
+.upload-zone:hover {
+  border-color: #00afdb;
+  background: #f0fbfe;
+}
+
+.upload-zone__icon { color: #9ca3af; transition: color 0.15s; }
+.upload-zone:hover .upload-zone__icon { color: #00afdb; }
+
+.upload-zone__text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.upload-zone__hint {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
 .field-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1137,9 +1220,9 @@ onMounted(() => fetchReferenceData());
 }
 
 .choice--selected {
-  border-color: #111827;
-  background: #eff6ff;
-  box-shadow: 0 0 0 1px #111827;
+  border-color: #00afdb;
+  background: #e0f6fd;
+  box-shadow: 0 0 0 1px #00afdb;
 }
 
 .choice__icon {
@@ -1155,8 +1238,12 @@ onMounted(() => fetchReferenceData());
 }
 
 .choice--selected .choice__icon {
-  background: #dbeafe;
-  color: #111827;
+  background: #b3edf7;
+  color: #0e7490;
+}
+
+.choice--selected .choice__radio {
+  color: #00afdb;
 }
 
 .choice__body { flex: 1; }
@@ -1246,6 +1333,21 @@ onMounted(() => fetchReferenceData());
   border-radius: 4px;
   padding: 12px;
   margin-bottom: 12px;
+}
+
+.add-item__labels {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 80px;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.add-item__label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #6b7280;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .add-item__row {
@@ -1387,13 +1489,28 @@ onMounted(() => fetchReferenceData());
 
 .review__field {
   display: grid;
-  grid-template-columns: 200px 1fr;
+  grid-template-columns: 200px 1fr auto;
   gap: 16px;
   padding: 12px 16px;
   border-bottom: 1px solid #e5e7eb;
   align-items: flex-start;
 }
 .review__field:last-child { border-bottom: none; }
+
+.review__edit {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #00afdb;
+  cursor: pointer;
+  white-space: nowrap;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.review__edit:hover { opacity: 1; }
 
 @media (max-width: 700px) {
   .review__field {

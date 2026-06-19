@@ -1,10 +1,6 @@
 <template>
   <q-layout view="lHh LPr lFf" class="app-layout">
 
-    <div class="app-blob app-blob--1" aria-hidden="true" />
-    <div class="app-blob app-blob--2" aria-hidden="true" />
-    <div class="app-blob app-blob--3" aria-hidden="true" />
-
     <!-- ── Mobile header (logo kao toggle + avatar) ── -->
     <q-header v-if="$q.screen.lt.md" class="app-header">
       <q-toolbar class="toolbar">
@@ -241,7 +237,7 @@ const initials = computed(() => {
 });
 
 const avatarColor = computed(() => {
-  const palette = ['#0067b8', '#7c3aed', '#059669', '#d97706', '#dc2626', '#0891b2', '#9333ea', '#be185d'];
+  const palette = ['#1b2d59', '#00afdb', '#0e7490', '#1d4ed8', '#2563eb', '#0891b2', '#16294e', '#0369a1'];
   const str = (user.value?.first_name || '') + (user.value?.last_name || '');
   const idx = [...str].reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % palette.length;
   return palette[idx];
@@ -276,84 +272,17 @@ onMounted(() => {
    App layout background
    ───────────────────────────────────── */
 .app-layout {
-  background: transparent;
-}
-
-@keyframes app-blob1 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  25%       { transform: translate(50px, -40px) scale(1.08); }
-  50%       { transform: translate(-30px, 50px) scale(0.94); }
-  75%       { transform: translate(40px, 25px) scale(1.04); }
-}
-
-@keyframes app-blob2 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33%       { transform: translate(-60px, 40px) scale(1.06); }
-  66%       { transform: translate(40px, -50px) scale(0.96); }
-}
-
-@keyframes app-blob3 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  40%       { transform: translate(30px, 60px) scale(1.05); }
-  80%       { transform: translate(-40px, -25px) scale(0.95); }
-}
-
-.app-blob {
-  position: fixed;
-  border-radius: 50%;
-  filter: blur(100px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.app-blob--1 {
-  width: 600px;
-  height: 600px;
-  background: #16294e;
-  opacity: 0.3;
-  top: -150px;
-  left: -180px;
-  animation: app-blob1 20s ease-in-out infinite;
-}
-
-.app-blob--2 {
-  width: 550px;
-  height: 550px;
-  background: #00afdb;
-  opacity: 0.25;
-  bottom: -120px;
-  right: -140px;
-  animation: app-blob2 22s ease-in-out infinite;
-}
-
-.app-blob--3 {
-  width: 400px;
-  height: 400px;
-  background: #00afdb;
-  opacity: 0.15;
-  top: 40%;
-  left: 40%;
-  animation: app-blob3 17s ease-in-out infinite;
-}
-
-:deep(.q-page-container) {
-  position: relative;
-  z-index: 1;
+  background: #f8f9fa;
 }
 
 /* ─────────────────────────────────────
    Mobile header
    ───────────────────────────────────── */
 .app-header {
-  background: linear-gradient(90deg,
-    rgba(180, 218, 255, 0.85) 0%,
-    rgba(235, 247, 255, 0.98) 28%,
-    rgba(245, 245, 252, 0.98) 72%,
-    rgba(255, 210, 232, 0.75) 100%
-  ) !important;
+  background: #ffffff !important;
   color: #1a1a1a;
   box-shadow: none;
-  border-bottom: 1px solid rgba(155, 200, 240, 0.75);
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .toolbar {
@@ -414,7 +343,7 @@ onMounted(() => {
 
 .sidebar-brand {
   padding: 14px 16px 12px;
-  border-bottom: 1px solid rgba(155, 200, 240, 0.4);
+  border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -512,10 +441,11 @@ onMounted(() => {
 .nav-soon-badge {
   font-size: 0.6rem;
   font-weight: 600;
-  color: #9ca3af;
-  background: rgba(0, 0, 0, 0.06);
-  border-radius: 3px;
-  padding: 1px 5px;
+  color: #6b7280;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 2px 6px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   flex-shrink: 0;
@@ -523,7 +453,7 @@ onMounted(() => {
 
 .nav-separator {
   height: 1px;
-  background: rgba(155, 200, 240, 0.45);
+  background: #e5e7eb;
   margin: 6px 12px;
 }
 
@@ -588,16 +518,15 @@ onMounted(() => {
 }
 
 .sidebar-nav__item--active {
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  color: #14bae4;
-  font-weight: 500;
+  background: #e8f8fd;
+  border-left: 3px solid #00afdb;
+  padding-left: 9px;
+  color: #00afdb;
+  font-weight: 600;
 }
 
 .sidebar-nav__item--active:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: #d8f3fb;
 }
 
 .sidebar-spacer {
@@ -606,7 +535,7 @@ onMounted(() => {
 
 .sidebar-footer {
   padding: 8px;
-  border-top: 1px solid rgba(155, 200, 240, 0.4);
+  border-top: 1px solid #e5e7eb;
   flex-shrink: 0;
 }
 
@@ -652,12 +581,8 @@ onMounted(() => {
 /* ── Globalni stilovi (ne-scoped) ── */
 
 .app-sidebar {
-  background: linear-gradient(170deg,
-    #e8edf8 0%,
-    #daf0f9 60%,
-    #cdf2fb 100%
-  ) !important;
-  border-right: 1px solid rgba(20, 186, 228, 0.2) !important;
+  background: #ffffff !important;
+  border-right: 1px solid #e5e7eb !important;
 }
 
 .avatar {

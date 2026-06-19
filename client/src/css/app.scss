@@ -1,42 +1,41 @@
 // app global css in SCSS form
 
 body {
-  background: linear-gradient(135deg, #c2cfea 0%, #b8e2f5 50%, #c8f0fa 100%) fixed;
+  background: #f8f9fa;
   min-height: 100vh;
 }
 
 // ── Glassmorphism card surface ──────────────────
 .list-surface {
-  background: rgba(255, 255, 255, 0.72) !important;
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.4) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08) !important;
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06) !important;
 }
 
-// ── Primary gradient button ─────────────────────
+// ── Primary button ──────────────────────────────
 .btn--cta {
-  background: linear-gradient(135deg, #16294e 0%, #00afdb 100%) !important;
+  background: #1b2d59 !important;
   border-radius: 8px !important;
-  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
-}
-
-.btn--cta:hover:not(:disabled) {
-  background: linear-gradient(135deg, #16294e 0%, #00afdb 100%) !important;
-  transform: scale(1.02) !important;
-  box-shadow: 0 4px 16px rgba(0, 175, 219, 0.35) !important;
-}
-
-// ── Secondary button glass ──────────────────────
-.btn--secondary {
-  background: rgba(255, 255, 255, 0.6) !important;
-  backdrop-filter: blur(6px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.5) !important;
-  border-radius: 8px !important;
+  color: #fff !important;
+  border: none !important;
   transition: background 0.2s ease !important;
 }
 
+.btn--cta:hover:not(:disabled) {
+  background: #16294e !important;
+}
+
+// ── Secondary button ────────────────────────────
+.btn--secondary {
+  background: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  color: #374151 !important;
+  transition: background 0.2s ease, border-color 0.2s ease !important;
+}
+
 .btn--secondary:hover {
-  background: rgba(255, 255, 255, 0.85) !important;
+  background: #f9fafb !important;
+  border-color: #9ca3af !important;
 }

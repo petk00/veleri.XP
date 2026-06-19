@@ -5,7 +5,7 @@
       <header class="page-header">
         <div class="page-header__main">
           <div class="page-header__eyebrow">Nabava</div>
-          <h1 class="page-header__title">Zahtjevi</h1>
+          <h1 class="page-header__title">{{ isAdmin ? 'Zahtjevi' : 'Moji zahtjevi' }}</h1>
           <p class="page-header__subtitle">
             Pregled, pretraživanje i praćenje statusa zahtjeva za nabavu.
           </p>
@@ -156,7 +156,9 @@
           <!-- Cell: amount -->
           <template #body-cell-total_amount="props">
             <q-td :props="props" class="cell-num">
-              {{ formatCurrency(props.row.total_amount) }}
+              <div class="cell-num__inner" :title="formatCurrency(props.row.total_amount)">
+                {{ formatCurrency(props.row.total_amount) }}
+              </div>
             </q-td>
           </template>
 
@@ -259,7 +261,7 @@ const hasActiveFilters = computed(() =>
   || categoryFilter.value !== 'all'
 );
 
-const columns = [
+const allColumns = [
   { name: 'request_number', label: 'Broj zahtjeva', field: 'request_number', align: 'left', sortable: false, style: 'min-width: 160px' },
   { name: 'department_name', label: 'Odjel',        field: 'department_name', align: 'left', sortable: false, style: 'min-width: 160px' },
   { name: 'status_name',    label: 'Status',        field: 'status_name',    align: 'left', sortable: false, style: 'min-width: 140px' },
@@ -268,6 +270,12 @@ const columns = [
   { name: 'created_at',     label: 'Datum',         field: 'created_at',     align: 'left', sortable: false, style: 'min-width: 110px' },
   { name: 'actions',        label: '',              field: 'actions',        align: 'right', style: 'width: 38px' },
 ];
+
+const columns = computed(() =>
+  isAdmin.value
+    ? allColumns
+    : allColumns.filter(c => c.name !== 'created_by')
+);
 
 const fetchRequests = async () => {
   loading.value = true;
@@ -381,8 +389,8 @@ const statusClass = (status) => {
     case 'na odobrenju':              return 'status--review';
     case 'vraćeno na dopunu/izmjenu': return 'status--returned';
     case 'odbijeno':                  return 'status--rejected';
+    case 'odobreno':                  return 'status--approved';
     case 'naručeno':                  return 'status--ordered';
-    case 'odobreno':                  return 'status--ordered';
     case 'zatvoreno':                 return 'status--closed';
     default:                          return 'status--default';
   }
@@ -423,7 +431,7 @@ onMounted(async () => {
 
 .page-header__eyebrow {
   margin-bottom: 8px;
-  color: #0067b8;
+  color: #00afdb;
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -528,18 +536,6 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-.summary-item::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-}
-
-.summary-item--total::before    { background: #0067b8; }
-.summary-item--active::before   { background: #059669; }
-.summary-item--attention::before { background: #d97706; }
-.summary-item--closed::before   { background: #9ca3af; }
-
 .summary-item__icon {
   display: inline-flex;
   width: 30px;
@@ -551,10 +547,10 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.summary-item--total    .summary-item__icon { background: #eff6ff; color: #0067b8; }
-.summary-item--active   .summary-item__icon { background: #f0fdf4; color: #059669; }
+.summary-item--total    .summary-item__icon { background: #f0f2f8; color: #1b2d59; }
+.summary-item--active   .summary-item__icon { background: #e0f6fd; color: #00afdb; }
 .summary-item--attention .summary-item__icon { background: #fff7ed; color: #d97706; }
-.summary-item--closed   .summary-item__icon { background: #f9fafb; color: #9ca3af; }
+.summary-item--closed   .summary-item__icon { background: #f0fdf4; color: #16a34a; }
 
 .summary-item__value {
   font-size: 2rem;
@@ -566,9 +562,9 @@ onMounted(async () => {
   color: #111827;
 }
 
-.summary-item--active   .summary-item__value { color: #059669; }
+.summary-item--active   .summary-item__value { color: #00afdb; }
 .summary-item--attention .summary-item__value { color: #d97706; }
-.summary-item--closed   .summary-item__value { color: #9ca3af; }
+.summary-item--closed   .summary-item__value { color: #16a34a; }
 
 .summary-item__label {
   color: #6b7280;
@@ -579,7 +575,7 @@ onMounted(async () => {
 .list-surface {
   overflow: hidden;
   border: 1px solid #e5e7eb;
-  border-top: 2px solid #0067b8;
+  border-top: 2px solid #00afdb;
   background: #fff;
 }
 
@@ -709,7 +705,7 @@ onMounted(async () => {
 }
 
 .data-table :deep(tbody tr:hover td:first-child) {
-  box-shadow: inset 3px 0 0 #0067b8;
+  box-shadow: inset 3px 0 0 #00afdb;
 }
 
 .data-table :deep(tbody td) {
@@ -738,7 +734,7 @@ onMounted(async () => {
 }
 
 .request-cell__number {
-  color: #0067b8;
+  color: #00afdb;
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: -0.005em;
@@ -747,6 +743,13 @@ onMounted(async () => {
 .cell-num {
   font-variant-numeric: tabular-nums;
   font-weight: 500;
+}
+
+.cell-num__inner {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cell-muted {
@@ -760,7 +763,7 @@ onMounted(async () => {
 }
 
 .data-table :deep(tbody tr:hover) .cell-chevron {
-  color: #0067b8;
+  color: #00afdb;
   transform: translateX(2px);
 }
 
@@ -783,7 +786,8 @@ onMounted(async () => {
 .status--review   { color: #92400e; background: #fef3c7; }
 .status--returned { color: #9a3412; background: #ffedd5; }
 .status--rejected { color: #991b1b; background: #fee2e2; }
-.status--ordered  { color: #065f46; background: #d1fae5; }
+.status--approved { color: #1b2d59; background: #e0e7f5; }
+.status--ordered  { color: #0e7490; background: #cffafe; }
 .status--closed   { color: #166534; background: #dcfce7; }
 .status--default  { color: #374151; background: #f3f4f6; }
 
