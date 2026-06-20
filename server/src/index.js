@@ -24,7 +24,13 @@ for (const key of REQUIRED_ENV) {
 
 const app = express();
 
-app.use(helmet());
+app.use(helmet({
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: false,
+  },
+}));
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -40,6 +46,14 @@ const setPasswordLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: 'Previše pokušaja. Pokušajte ponovo za sat vremena.' },
+});
+
+const checkEmailLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Previše pokušaja. Pokušajte ponovo za 15 minuta.' },
 });
 
 const allowedOrigins = process.env.CLIENT_URL
@@ -62,6 +76,7 @@ app.use(cookieParser());
 app.use('/api/test', testRoutes);
 app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth/set-password', setPasswordLimiter);
+app.use('/api/auth/check-email', checkEmailLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/attachments', attachmentRoutes);
 app.use('/api/requests', requestAttachmentRoutes);

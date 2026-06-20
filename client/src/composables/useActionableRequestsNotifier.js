@@ -275,32 +275,38 @@ export function useActionableRequestsNotifier() {
     persistIdSet(ids, mode, userId);
   };
 
+  // Wrappa svaki scenarij neovisno — greška u jednom ne blokira ostale.
+  // 401 preskačemo jer axios interceptor već hendla redirect na login.
+  const safeCheck = async (label, fn) => {
+    try {
+      await fn();
+    } catch (error) {
+      if (error.response?.status !== 401) {
+        console.error(`[notifier] Greška pri provjeri "${label}":`, error);
+      }
+    }
+  };
+
   /**
    * Glavni ulaz — poziva se iz MainLayout on mount.
    */
   const checkActionableRequests = async () => {
-    try {
-      const user = getStoredUser();
-      if (!user) return;
+    const user = getStoredUser();
+    if (!user) return;
 
-      const isAdmin = user.role_name === 'Administrator';
-      const userId = user.id_user;
+    const isAdmin = user.role_name === 'Administrator';
+    const userId = user.id_user;
 
-      if (isAdmin) {
-        // Admin: čekaju pregled (session) + fali otpremnica (permanent)
-        await checkPendingReview(userId);
-        await checkMissingDeliveryNotes(userId, 'permanent');
-      } else {
-        // Zaposlenik: sve promjene statusa njegovih zahtjeva
-        await checkUnderReview(userId);        // NA_ODOBRENJU — session
-        await checkReturnedForRevision(userId); // VRACENO     — session
-        await checkApproved(userId);           // NARUCENO    — permanent
-        await checkRejected(userId);           // ODBIJENO    — permanent
-        await checkClosed(userId);             // ZATVORENO   — permanent
-        await checkMissingDeliveryNotes(userId, 'session'); // NARUCENO bez otpremnice — session
-      }
-    } catch (error) {
-      console.error('Greška pri provjeri zahtjeva koji trebaju akciju:', error);
+    if (isAdmin) {
+      await safeCheck('pending-review',          () => checkPendingReview(userId));
+      await safeCheck('missing-delivery-notes',  () => checkMissingDeliveryNotes(userId, 'permanent'));
+    } else {
+      await safeCheck('under-review',            () => checkUnderReview(userId));
+      await safeCheck('returned-for-revision',   () => checkReturnedForRevision(userId));
+      await safeCheck('approved',                () => checkApproved(userId));
+      await safeCheck('rejected',                () => checkRejected(userId));
+      await safeCheck('closed',                  () => checkClosed(userId));
+      await safeCheck('missing-delivery-notes',  () => checkMissingDeliveryNotes(userId, 'session'));
     }
   };
 

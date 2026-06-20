@@ -53,7 +53,7 @@
               <q-icon name="edit" size="16px" />
               <span>Uredi</span>
             </button>
-            <button v-if="isAdmin && status && !LOCKED_STATUSES.includes(status)" class="btn btn--danger" @click="openActionDialog('storno')">
+            <button v-if="isAdmin && status && !LOCKED_STATUSES.includes(status)" class="btn btn--danger" :disabled="submittingAction" @click="openActionDialog('storno')">
               <q-icon name="block" size="16px" />
               <span>Storniraj</span>
             </button>
@@ -72,7 +72,7 @@
             </div>
           </div>
           <div class="action-banner__actions">
-            <button class="btn btn--danger" @click="openActionDialog('odbij')">
+            <button class="btn btn--danger" :disabled="submittingAction" @click="openActionDialog('odbij')">
               <q-icon name="close" size="16px" />
               <span>Odbij</span>
             </button>
@@ -99,11 +99,11 @@
             </div>
           </div>
           <div class="action-banner__actions">
-            <button class="btn btn--ghost" @click="openActionDialog('vrati-na-izmjenu')">
+            <button class="btn btn--ghost" :disabled="submittingAction" @click="openActionDialog('vrati-na-izmjenu')">
               <q-icon name="undo" size="16px" />
               <span>Vrati na dopunu</span>
             </button>
-            <button class="btn btn--primary" :disabled="!hasPonuda" @click="openActionDialog('odobri')">
+            <button class="btn btn--primary" :disabled="!hasPonuda || submittingAction" @click="openActionDialog('odobri')">
               <q-icon name="check" size="16px" />
               <span>Odobri</span>
             </button>
@@ -148,7 +148,7 @@
             </div>
           </div>
           <div class="action-banner__actions">
-            <button class="btn btn--danger" @click="openActionDialog('odbij')">
+            <button class="btn btn--danger" :disabled="submittingAction" @click="openActionDialog('odbij')">
               <q-icon name="close" size="16px" />
               <span>Odbij</span>
             </button>
@@ -415,7 +415,7 @@
             </div>
             <ol v-else class="timeline">
               <li
-                v-for="entry in history"
+                v-for="entry in visibleHistory"
                 :key="entry.id_request_status_history"
                 class="timeline-item"
                 :class="`timeline-item--${timelineKind(entry)}`"
@@ -430,6 +430,11 @@
                 </div>
               </li>
             </ol>
+            <div v-if="!showAllHistory && history.length > TIMELINE_INITIAL" class="timeline-more">
+              <button class="btn btn--ghost btn--sm" @click="showAllHistory = true">
+                Prikaži sve ({{ history.length }})
+              </button>
+            </div>
           </div>
         </div>
 
@@ -627,6 +632,11 @@ const request = ref(null);
 const items = ref([]);
 const history = ref([]);
 const attachments = ref([]);
+const TIMELINE_INITIAL = 10;
+const showAllHistory = ref(false);
+const visibleHistory = computed(() =>
+  showAllHistory.value ? history.value : history.value.slice(0, TIMELINE_INITIAL)
+);
 
 const uploading = ref(false);
 const uploadForm = ref({ document_type: null, file: null });
@@ -1792,6 +1802,15 @@ onMounted(() => {
   margin: 0;
   padding: 14px 18px;
   position: relative;
+}
+.timeline-more {
+  padding: 0 18px 14px;
+  display: flex;
+  justify-content: center;
+}
+.btn--sm {
+  font-size: 0.8125rem;
+  padding: 5px 12px;
 }
 .timeline-item {
   display: flex;

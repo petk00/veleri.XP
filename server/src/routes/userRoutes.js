@@ -99,6 +99,11 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
       return res.status(409).json({ message: 'Email je već u upotrebi.' });
     }
 
+    const [roles] = await db.query('SELECT id_role FROM Role WHERE id_role = ?', [role_id]);
+    if (roles.length === 0) {
+      return res.status(400).json({ message: 'Odabrana uloga ne postoji.' });
+    }
+
     const [result] = await db.query(
       `UPDATE AppUser SET first_name = ?, last_name = ?, email = ?, fk_role = ? WHERE id_user = ?`,
       [first_name.trim(), last_name.trim(), email.toLowerCase(), role_id, id]
