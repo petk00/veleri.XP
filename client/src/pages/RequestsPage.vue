@@ -4,13 +4,17 @@
 
       <header class="page-header">
         <div class="page-header__main">
-          <div class="page-header__eyebrow">Nabava</div>
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <span class="breadcrumb__item">Nabava</span>
+            <span class="breadcrumb__sep">›</span>
+            <span class="breadcrumb__current">{{ isAdmin ? 'Zahtjevi' : 'Moji zahtjevi' }}</span>
+          </nav>
           <h1 class="page-header__title">{{ isAdmin ? 'Zahtjevi' : 'Moji zahtjevi' }}</h1>
           <p class="page-header__subtitle">
             Pregled, pretraživanje i praćenje statusa zahtjeva za nabavu.
           </p>
         </div>
-        <div class="page-header__actions">
+        <div v-if="isAdmin" class="page-header__actions">
           <button class="btn btn--cta" @click="$router.push('/requests/new')">
             <q-icon name="add" size="20px" />
             <span>Novi zahtjev</span>
@@ -18,35 +22,69 @@
         </div>
       </header>
 
-      <section class="summary-strip" aria-label="Sažetak zahtjeva">
-        <div class="summary-item summary-item--total">
-          <div class="summary-item__icon">
-            <q-icon name="folder_open" size="15px" />
+      <section class="summary-strip" :class="isAdmin ? 'summary-strip--4col' : 'summary-strip--2col'" aria-label="Sažetak zahtjeva">
+
+        <template v-if="isAdmin">
+          <div class="summary-item summary-item--total">
+            <div class="summary-item__icon">
+              <q-icon name="folder_open" size="15px" />
+            </div>
+            <span class="summary-item__value">{{ counts.total }}</span>
+            <span class="summary-item__label">Ukupno zahtjeva</span>
           </div>
-          <span class="summary-item__value">{{ counts.total }}</span>
-          <span class="summary-item__label">Ukupno zahtjeva</span>
-        </div>
-        <div class="summary-item summary-item--active">
-          <div class="summary-item__icon">
-            <q-icon name="autorenew" size="15px" />
+          <div class="summary-item summary-item--active">
+            <div class="summary-item__icon">
+              <q-icon name="autorenew" size="15px" />
+            </div>
+            <span class="summary-item__value">{{ counts.active }}</span>
+            <span class="summary-item__label">Aktivni</span>
           </div>
-          <span class="summary-item__value">{{ counts.active }}</span>
-          <span class="summary-item__label">Aktivni</span>
-        </div>
-        <div class="summary-item summary-item--attention">
-          <div class="summary-item__icon">
-            <q-icon :name="isAdmin ? 'inbox' : 'undo'" size="15px" />
+          <div class="summary-item summary-item--attention">
+            <div class="summary-item__icon">
+              <q-icon name="inbox" size="15px" />
+            </div>
+            <span class="summary-item__value">{{ counts.attention }}</span>
+            <span class="summary-item__label">Čeka pregled</span>
           </div>
-          <span class="summary-item__value">{{ counts.attention }}</span>
-          <span class="summary-item__label">{{ isAdmin ? 'Čeka pregled' : 'Vraćeno' }}</span>
-        </div>
-        <div class="summary-item summary-item--closed">
-          <div class="summary-item__icon">
-            <q-icon name="task_alt" size="15px" />
+          <div class="summary-item summary-item--closed">
+            <div class="summary-item__icon">
+              <q-icon name="task_alt" size="15px" />
+            </div>
+            <span class="summary-item__value">{{ counts.closed }}</span>
+            <span class="summary-item__label">Zatvoreno</span>
           </div>
-          <span class="summary-item__value">{{ counts.closed }}</span>
-          <span class="summary-item__label">Zatvoreno</span>
-        </div>
+        </template>
+
+        <template v-else>
+          <button class="summary-card summary-card--new" @click="$router.push('/requests/new')">
+            <img src="/solarlinear_NABAVA.svg" alt="" class="card-deco" />
+            <div class="new-card__icon-wrap">
+              <img src="/solarlinear_NOVIZAHTJEV.svg" alt="" class="new-card__icon" />
+            </div>
+            <span class="new-card__label">Novi zahtjev</span>
+          </button>
+
+          <button
+            v-if="rows.length"
+            class="summary-card summary-card--status"
+            :style="lastRequestStyle.card"
+            @click="openRequest(rows[0].id_purchase_request)"
+          >
+            <img src="/solarlinear_MOJIZAHTJEVI.svg" alt="" class="card-deco card-deco--status" />
+            <span class="status-card__badge" :style="lastRequestStyle.badge">
+              {{ rows[0].status_name }}
+            </span>
+            <span class="status-card__number">{{ rows[0].request_number }}</span>
+            <span class="status-card__amount">{{ formatCurrency(rows[0].total_amount) }}</span>
+            <span class="status-card__date">{{ formatDate(rows[0].created_at) }}</span>
+            <q-icon name="chevron_right" size="16px" class="status-card__chevron" />
+          </button>
+          <div v-else class="summary-card summary-card--empty">
+            <q-icon name="inbox" size="22px" class="empty-card__icon" />
+            <span class="empty-card__label">Nema zahtjeva</span>
+          </div>
+        </template>
+
       </section>
 
       <section class="list-surface">
@@ -252,6 +290,37 @@ const userOptions        = ref([{ label: 'Svi podnositelji', value: 'all' }]);
 const fiscalYearOptions  = ref([{ label: 'Sve godine', value: 'all' }]);
 const categoryOptions    = ref([{ label: 'Svi predmeti', value: 'all' }]);
 
+const STATUS = {
+  POSLANO:          1,
+  NA_ODOBRENJU:     2,
+  VRACENO_NA_DOPUNU: 3,
+  ODOBRENO:         4,
+  ODBIJENO:         5,
+  NARUCENO:         6,
+  ZATVORENO:        7,
+};
+
+const STATUS_STYLES = {
+  [STATUS.POSLANO]:           { background: '#eff6ff', badge: '#1d4ed8', badgeBg: '#dbeafe', border: '#93c5fd' },
+  [STATUS.NA_ODOBRENJU]:      { background: '#fffbeb', badge: '#b45309', badgeBg: '#fef3c7', border: '#fcd34d' },
+  [STATUS.VRACENO_NA_DOPUNU]: { background: '#fff7ed', badge: '#c2410c', badgeBg: '#ffedd5', border: '#fdba74' },
+  [STATUS.ODBIJENO]:          { background: '#fef2f2', badge: '#b91c1c', badgeBg: '#fee2e2', border: '#fca5a5' },
+  [STATUS.ODOBRENO]:          { background: '#f0fdf4', badge: '#15803d', badgeBg: '#dcfce7', border: '#86efac' },
+  [STATUS.NARUCENO]:          { background: '#ecfeff', badge: '#0e7490', badgeBg: '#cffafe', border: '#67e8f9' },
+  [STATUS.ZATVORENO]:         { background: '#dcfce7', badge: '#166534', badgeBg: '#bbf7d0', border: '#4ade80' },
+};
+
+const DEFAULT_STYLE = { background: '#f9fafb', badge: '#374151', badgeBg: '#f3f4f6', border: '#d1d5db' };
+
+const lastRequestStyle = computed(() => {
+  if (!rows.value.length) return { card: {}, badge: {} };
+  const s = STATUS_STYLES[rows.value[0].fk_request_status] ?? DEFAULT_STYLE;
+  return {
+    card:  { background: s.background, borderLeftColor: s.border },
+    badge: { color: s.badge, background: s.badgeBg },
+  };
+});
+
 const hasActiveFilters = computed(() =>
   searchQuery.value
   || statusFilter.value !== 'all'
@@ -428,11 +497,29 @@ onMounted(async () => {
   min-width: 0;
 }
 
-.page-header__eyebrow {
-  margin-bottom: 8px;
-  color: #00afdb;
-  font-size: 0.75rem;
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.breadcrumb__item {
+  color: #6b7280;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.breadcrumb__sep {
+  color: #d1d5db;
+  font-size: 0.875rem;
+  user-select: none;
+}
+
+.breadcrumb__current {
+  font-size: 0.8125rem;
   font-weight: 600;
+  color: #374151;
 }
 
 .page-header__title {
@@ -516,9 +603,180 @@ onMounted(async () => {
 
 .summary-strip {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 28px;
+}
+
+.summary-strip--4col { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.summary-strip--2col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* ── Shared card base ── */
+.summary-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 190px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+/* ── Dekorativni SVG ── */
+.card-deco {
+  position: absolute;
+  bottom: -18px;
+  right: -18px;
+  width: 115px;
+  height: 115px;
+  opacity: 0.07;
+  transform: rotate(-20deg);
+  pointer-events: none;
+  user-select: none;
+}
+
+.card-deco--status {
+  bottom: -14px;
+  right: -14px;
+  width: 130px;
+  height: 130px;
+  opacity: 0.09;
+  transform: rotate(15deg);
+}
+
+/* ── Novi zahtjev (lijeva) ── */
+.summary-card--new {
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: linear-gradient(160deg, #ffffff 0%, #f3f4f6 100%);
+  border: 1.5px dashed #d1d5db;
+  box-shadow: none;
+}
+
+.summary-card--new:hover {
+  border-color: #00afdb;
+  box-shadow: 0 8px 28px rgba(0, 175, 219, 0.18);
+  transform: scale(1.02);
+  background: linear-gradient(160deg, #f0fbff 0%, #e0f6fd 100%);
+}
+
+.new-card__icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30%;
+  aspect-ratio: 1;
+  max-width: 72px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.summary-card--new:hover .new-card__icon-wrap { opacity: 1; }
+
+.new-card__icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.new-card__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  letter-spacing: 0.01em;
+  transition: color 0.2s ease;
+}
+
+.summary-card--new:hover .new-card__label { color: #00afdb; }
+
+/* ── Status kartica (desna) ── */
+.summary-card--status {
+  align-items: flex-start;
+  justify-content: center;
+  gap: 5px;
+  padding: 22px 24px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-left: 4px solid transparent;
+}
+
+.summary-card--status:hover {
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.14);
+  transform: translateY(-2px);
+}
+
+.status-card__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.status-card__number {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #111827;
+  line-height: 1.15;
+}
+
+.status-card__amount {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-card__date {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.status-card__chevron {
+  position: absolute;
+  bottom: 18px;
+  right: 18px;
+  color: rgba(0, 0, 0, 0.2);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.summary-card--status:hover .status-card__chevron {
+  color: rgba(0, 0, 0, 0.5);
+  transform: translateX(3px);
+}
+
+/* ── Prazna kartica ── */
+.summary-card--empty {
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.4);
+  border-style: dashed;
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: none;
+  cursor: default;
+}
+
+.empty-card__icon { color: #d1d5db; }
+
+.empty-card__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9ca3af;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .summary-item {
@@ -550,6 +808,36 @@ onMounted(async () => {
 .summary-item--active   .summary-item__icon { background: #e0f6fd; color: #00afdb; }
 .summary-item--attention .summary-item__icon { background: #fff7ed; color: #d97706; }
 .summary-item--closed   .summary-item__icon { background: #f0fdf4; color: #16a34a; }
+
+.summary-item--combined {
+  flex-direction: row;
+  align-items: stretch;
+  padding: 0;
+  gap: 0;
+}
+
+.combined-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px 16px;
+}
+
+.summary-item__icon--total     { background: #f0f2f8; color: #1b2d59; }
+.summary-item__icon--active    { background: #e0f6fd; color: #00afdb; }
+.summary-item__icon--attention { background: #fff7ed; color: #d97706; }
+.summary-item__icon--closed    { background: #f0fdf4; color: #16a34a; }
+
+.summary-item__value--active    { color: #00afdb; }
+.summary-item__value--attention { color: #d97706; }
+.summary-item__value--closed    { color: #16a34a; }
+
+.combined-divider {
+  width: 1px;
+  background: rgba(0, 0, 0, 0.07);
+  margin: 18px 0;
+  flex-shrink: 0;
+}
 
 .summary-item__value {
   font-size: 2rem;
@@ -843,7 +1131,11 @@ onMounted(async () => {
     font-size: 1.8rem;
   }
 
-  .summary-strip {
+  .summary-strip--4col {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .summary-strip--2col {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

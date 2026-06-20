@@ -7,7 +7,13 @@
            ───────────────────────────────── -->
       <header class="page-header">
         <div class="page-header__main">
-          <div class="page-header__eyebrow">Nabava</div>
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <span class="breadcrumb__item">Nabava</span>
+            <span class="breadcrumb__sep">›</span>
+            <button class="breadcrumb__back" type="button" @click="$router.push('/requests')">Moji zahtjevi</button>
+            <span class="breadcrumb__sep">›</span>
+            <span class="breadcrumb__current">Novi zahtjev</span>
+          </nav>
           <h1 class="page-header__title">Novi zahtjev za nabavu</h1>
           <p class="page-header__subtitle">
             Ispunite korake u nastavku. Uneseni podaci ostaju sačuvani dok prolazite kroz obrazac.
@@ -847,11 +853,45 @@ onMounted(() => fetchReferenceData());
 
 .page-header__main { flex: 1; min-width: 240px; }
 
-.page-header__eyebrow {
-  margin-bottom: 8px;
-  color: #0067b8;
-  font-size: 0.75rem;
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.breadcrumb__item {
+  color: #6b7280;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.breadcrumb__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.breadcrumb__back:hover { color: #00afdb; }
+
+.breadcrumb__sep {
+  color: #d1d5db;
+  font-size: 0.875rem;
+  user-select: none;
+}
+
+.breadcrumb__current {
+  font-size: 0.8125rem;
   font-weight: 600;
+  color: #374151;
 }
 
 .page-header__title {

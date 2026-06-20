@@ -4,6 +4,11 @@
 
       <header class="page-header">
         <div class="page-header__main">
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <span class="breadcrumb__item">Administracija</span>
+            <span class="breadcrumb__sep">›</span>
+            <span class="breadcrumb__current">Korisnici</span>
+          </nav>
           <h1 class="page-header__title">Korisnici</h1>
         </div>
         <div class="page-header__actions">
@@ -351,6 +356,31 @@ onMounted(async () => {
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 28px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.breadcrumb__item {
+  color: #6b7280;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.breadcrumb__sep {
+  color: #d1d5db;
+  font-size: 0.875rem;
+  user-select: none;
+}
+
+.breadcrumb__current {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
 }
 
 .page-header__eyebrow {
