@@ -957,14 +957,17 @@ const confirmAction = async () => {
 const editRequest = () => router.push(`/requests/${route.params.id}/edit`);
 const goBack = () => router.push('/requests');
 
-const loadImage = (src) =>
+const loadImage = (src, maxPx = 300) =>
   new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
+      const scale = Math.min(1, maxPx / Math.max(img.naturalWidth, img.naturalHeight));
+      const w = Math.round(img.naturalWidth * scale);
+      const h = Math.round(img.naturalHeight * scale);
       const c = document.createElement('canvas');
-      c.width = img.naturalWidth; c.height = img.naturalHeight;
-      c.getContext('2d').drawImage(img, 0, 0);
-      resolve({ data: c.toDataURL('image/png'), w: img.naturalWidth, h: img.naturalHeight });
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve({ data: c.toDataURL('image/png'), w, h });
     };
     img.onerror = () => resolve(null);
     img.src = src;
@@ -996,8 +999,8 @@ const downloadPdf = async () => {
     let y = M;
 
     // ── Fontovi (podržavaju hrvatske znakove) ──
-    const fontLoaded = await embedFont(pdf, '/fonts/Times New Roman.ttf', 'TimesNewRoman', 'normal');
-    await embedFont(pdf, '/fonts/Times New Roman Bold.ttf', 'TimesNewRoman', 'bold');
+    const fontLoaded = await embedFont(pdf, '/fonts/TimesNewRoman-subset.ttf', 'TimesNewRoman', 'normal');
+    await embedFont(pdf, '/fonts/TimesNewRoman-Bold-subset.ttf', 'TimesNewRoman', 'bold');
     const F = fontLoaded ? 'TimesNewRoman' : 'helvetica';
 
     // ── Logo ──

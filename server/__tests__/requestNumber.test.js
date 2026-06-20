@@ -1,5 +1,5 @@
 /**
- * Unit testovi: Generiranje broja zahtjeva (PR-GGGG-NNNN)
+ * Unit testovi: Generiranje broja zahtjeva (NAB-GGGG-NNNN)
  *
  * Testira logiku generiranja sekvencijalnog broja zahtjeva unutar
  * POST /api/requests rute. MySQL pool i authMiddleware su mockani
@@ -63,41 +63,41 @@ const successQueryResponses = (lastRequestNumber = null) => [
 
 beforeEach(() => jest.clearAllMocks());
 
-describe('Generiranje broja zahtjeva (PR-GGGG-NNNN)', () => {
+describe('Generiranje broja zahtjeva (NAB-GGGG-NNNN)', () => {
 
-  test('1. prvi zahtjev u godini dobiva broj PR-2026-0001', async () => {
+  test('1. prvi zahtjev u godini dobiva broj NAB-2026-0001', async () => {
     db.getConnection.mockResolvedValue(makeConn(successQueryResponses(null)));
 
     const res = await supertest(app).post('/api/requests').send(VALID_BODY);
 
     expect(res.status).toBe(201);
-    expect(res.body.request_number).toBe('PR-2026-0001');
+    expect(res.body.request_number).toBe('NAB-2026-0001');
   });
 
-  test('2. drugi zahtjev u godini dobiva PR-2026-0002 (inkrement)', async () => {
-    db.getConnection.mockResolvedValue(makeConn(successQueryResponses('PR-2026-0001')));
+  test('2. drugi zahtjev u godini dobiva NAB-2026-0002 (inkrement)', async () => {
+    db.getConnection.mockResolvedValue(makeConn(successQueryResponses('NAB-2026-0001')));
 
     const res = await supertest(app).post('/api/requests').send(VALID_BODY);
 
     expect(res.status).toBe(201);
-    expect(res.body.request_number).toBe('PR-2026-0002');
+    expect(res.body.request_number).toBe('NAB-2026-0002');
   });
 
   test('3. sekvenca se pravilno prelama iz 4-znamenkastog zapisa (0099 → 0100)', async () => {
-    db.getConnection.mockResolvedValue(makeConn(successQueryResponses('PR-2026-0099')));
+    db.getConnection.mockResolvedValue(makeConn(successQueryResponses('NAB-2026-0099')));
 
     const res = await supertest(app).post('/api/requests').send(VALID_BODY);
 
     expect(res.status).toBe(201);
-    expect(res.body.request_number).toBe('PR-2026-0100');
+    expect(res.body.request_number).toBe('NAB-2026-0100');
   });
 
-  test('4. format broja zahtjeva odgovara obrascu PR-GGGG-NNNN', async () => {
+  test('4. format broja zahtjeva odgovara obrascu NAB-GGGG-NNNN', async () => {
     db.getConnection.mockResolvedValue(makeConn(successQueryResponses(null)));
 
     const res = await supertest(app).post('/api/requests').send(VALID_BODY);
 
-    expect(res.body.request_number).toMatch(/^PR-\d{4}-\d{4}$/);
+    expect(res.body.request_number).toMatch(/^NAB-\d{4}-\d{4}$/);
   });
 
   test('5. kreiranje zahtjeva u zatvorenoj poslovnoj godini vraća 400', async () => {

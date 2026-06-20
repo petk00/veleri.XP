@@ -514,7 +514,7 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     const year = fyRows[0].year;
-    const prefix = `PR-${year}-`;
+    const prefix = `NAB-${year}-`;
 
     const [maxRows] = await connection.query(
       `
