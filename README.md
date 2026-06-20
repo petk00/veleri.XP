@@ -6,6 +6,8 @@ veleri.XP je full-stack web aplikacija za digitalizaciju procesa nabave: zaposle
 
 ## Status projekta
 
+![CI](https://github.com/petk00/veleri.XP/actions/workflows/ci.yml/badge.svg)
+
 **Verzija:** 1.0  
 **Faza:** MVP — funkcionalan end-to-end tijek nabave
 
