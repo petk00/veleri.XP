@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const db = require('../config/db');
 const authenticateToken = require('../middleware/authMiddleware');
+const { sendInvite } = require('../services/emailService');
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:9000';
 
 const router = express.Router();
@@ -70,7 +71,19 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 
     const inviteLink = `${CLIENT_URL}/#/set-password?token=${token}`;
 
-    res.status(201).json({ message: 'Korisnik kreiran.', inviteLink });
+    // Email slanje je opcionalno - po zahtjevu klijenta, admin ručno
+    // prosljeđuje invite link. SMTP konfiguracija nije obavezna; ako
+    // .env nema SMTP podatke, sustav nastavlja raditi normalno s
+    // inviteLink fallbackom u JSON odgovoru.
+    let emailSent = true;
+    try {
+      await sendInvite({ to: email.toLowerCase(), firstName: first_name.trim(), token });
+    } catch (emailErr) {
+      emailSent = false;
+      console.error('[email] sendInvite failed:', emailErr.message);
+    }
+
+    res.status(201).json({ message: 'Korisnik kreiran.', inviteLink, emailSent });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Greška pri kreiranju korisnika.' });
@@ -149,10 +162,11 @@ router.post('/:id/reset-link', authenticateToken, requireAdmin, async (req, res)
   const { id } = req.params;
   try {
     const [rows] = await db.query(
-      'SELECT id_user, first_name, last_name FROM AppUser WHERE id_user = ?', [id]
+      'SELECT id_user, first_name, last_name, email FROM AppUser WHERE id_user = ?', [id]
     );
     if (rows.length === 0) return res.status(404).json({ message: 'Korisnik nije pronađen.' });
 
+    const user = rows[0];
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
@@ -162,7 +176,17 @@ router.post('/:id/reset-link', authenticateToken, requireAdmin, async (req, res)
     );
 
     const inviteLink = `${CLIENT_URL}/#/set-password?token=${token}`;
-    res.json({ inviteLink });
+
+    // Isto kao kod kreiranja: email opcionalan, admin prosljeđuje link ručno.
+    let emailSent = true;
+    try {
+      await sendInvite({ to: user.email, firstName: user.first_name, token });
+    } catch (emailErr) {
+      emailSent = false;
+      console.error('[email] sendInvite (reset-link) failed:', emailErr.message);
+    }
+
+    res.json({ inviteLink, emailSent });
   } catch (err) {
     res.status(500).json({ message: 'Greška pri generiranju linka.' });
   }

@@ -7,6 +7,10 @@ const authenticateToken = require('../middleware/authMiddleware');
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.resolve(__dirname, '../../uploads');
 
+// Handles both legacy absolute paths and new relative paths from UPLOADS_DIR.
+const resolveFilePath = (filePath) =>
+  path.isAbsolute(filePath) ? filePath : path.join(UPLOADS_DIR, filePath);
+
 const LOCKED_STATUSES = [5, 7]; // Odbijeno, Zatvoreno
 
 const isAdmin = (user) => user.role_name === 'Administrator';
@@ -55,7 +59,7 @@ router.get('/download/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Fajl nije pronađen.' });
     }
 
-    const resolvedPath = path.resolve(attachment.file_path);
+    const resolvedPath = path.resolve(resolveFilePath(attachment.file_path));
     if (!resolvedPath.startsWith(UPLOADS_DIR + path.sep) && resolvedPath !== UPLOADS_DIR) {
       return res.status(403).json({ message: 'Pristup odbijen.' });
     }
@@ -145,7 +149,8 @@ router.delete('/delete/:id', authenticateToken, async (req, res) => {
     await connection.commit();
 
     try {
-      if (fs.existsSync(attachment.file_path)) fs.unlinkSync(attachment.file_path);
+      const diskPath = resolveFilePath(attachment.file_path);
+      if (fs.existsSync(diskPath)) fs.unlinkSync(diskPath);
     } catch (err) {
       console.error('Cleanup file failed:', err.message);
     }

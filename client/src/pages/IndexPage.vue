@@ -1,3 +1,10 @@
+// Dashboard pripremljen za buduću multi-modularnu fazu aplikacije.
+// Trenutno nerutiran - aplikacija ima samo jedan modul (Nabava),
+// gdje direktan pristup /requests ima bolji UX od presretanja
+// korisnika dashboardom prije nego dođe do posla koji treba obaviti.
+// Aktivirati kad se doda drugi modul i postoji stvarna potreba za
+// agregiranim pregledom kroz module.
+
 <template>
   <q-page class="page">
     <div class="page-shell">

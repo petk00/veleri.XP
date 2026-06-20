@@ -1189,7 +1189,7 @@ const timelineIcon = (entry) => {
     case STATUS.NA_ODOBRENJU: return 'pending';
     case STATUS.VRACENO: return 'undo';
     case STATUS.ODBIJENO: return 'close';
-    case STATUS.NARUCENO: return 'check';
+    case STATUS.NARUCENO: return 'local_shipping';
     case STATUS.ZATVORENO: return 'task_alt';
     default: return 'circle';
   }
