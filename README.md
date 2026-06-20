@@ -16,7 +16,7 @@ veleri.XP je full-stack web aplikacija za digitalizaciju procesa nabave: zaposle
 - Prijava korisnika (httpOnly JWT cookie).
 - Dvije uloge: `Administrator` i `Zaposlenik`.
 - Kreiranje, pregled, uređivanje i storniranje zahtjeva.
-- Automatski broj zahtjeva u formatu `PR-GGGG-NNNN`.
+- Automatski broj zahtjeva u formatu `NAB-GGGG-NNNN`.
 - Odabir aktivne poslovne godine, odjela i kategorije nabave.
 - Unos stavki i količina; provjera da stavke i odjel pripadaju istoj godini.
 - Serverska paginacija i filteri (status, odjel, korisnik, godina, kategorija, pretraga).
@@ -168,8 +168,10 @@ docker compose up --build
 5. Nakon što sva tri kontejnera budu pokrenuta (poruka `Server running on http://localhost:3000` u logu), aplikacija je dostupna u web pregledniku na adresi:
 
 ```
-http://localhost
+https://localhost
 ```
+
+> **Napomena:** Preglednik će prikazati sigurnosno upozorenje za self-signed SSL certifikat — kliknite *Napredno* → *Nastavi prema localhost* (ili ekvivalent u vašem pregledniku).
 
 6. Za prijavu u aplikaciju koristiti inicijalne korisničke račune iz seed podataka:
 
@@ -245,7 +247,7 @@ npm test
 
 Pokriva: `authStorage` (parsiranje korisnika iz localStorage), `useActionableRequestsNotifier` (API pozivi, deduplikacija notifikacija).
 
-**End-to-end testovi** (iz `e2e/` mape, zahtijeva pokrenuti frontend i backend):
+**End-to-end testovi** (iz `e2e/` mape, zahtijeva pokrenute backend i frontend servise):
 
 ```bash
 cd e2e
@@ -253,6 +255,8 @@ npm test
 ```
 
 Pokriva: prijavu korisnika, kreiranje zahtjeva, workflow (preuzmi / vrati na izmjenu / pošalji ponovo), kontrolu pristupa, zaključavanje zatvorenih zahtjeva.
+
+> **Lokalno pokretanje:** Testovi zahtijevaju istovremeno pokrenute backend (`npm run dev` u `server/`) i frontend (`npm run dev` u `client/`), s inicijaliziranom bazom. U CI-ju se svi servisi automatski podižu unutar pipeline-a.
 
 Za interaktivni UI mod:
 

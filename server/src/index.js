@@ -5,7 +5,6 @@ const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
-const testRoutes = require('./routes/testRoutes');
 const authRoutes = require('./routes/authRoutes');
 const requestRoutes = require('./routes/requestRoutes');
 const requestAttachmentRoutes = require('./routes/requestAttachmentRoutes');
@@ -73,7 +72,6 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 
-app.use('/api/test', testRoutes);
 app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth/set-password', setPasswordLimiter);
 app.use('/api/auth/check-email', checkEmailLimiter);

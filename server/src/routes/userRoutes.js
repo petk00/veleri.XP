@@ -27,6 +27,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Greška pri dohvatu korisnika.' });
   }
 });
@@ -37,6 +38,7 @@ router.get('/roles', authenticateToken, requireAdmin, async (req, res) => {
     const [rows] = await db.query('SELECT id_role, name FROM Role ORDER BY id_role');
     res.json(rows);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Greška pri dohvatu uloga.' });
   }
 });
@@ -128,6 +130,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 
     res.json({ message: 'Korisnik ažuriran.' });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Greška pri ažuriranju korisnika.' });
   }
 });
@@ -153,6 +156,7 @@ router.patch('/:id/status', authenticateToken, requireAdmin, async (req, res) =>
 
     res.json({ message: is_active ? 'Korisnik aktiviran.' : 'Korisnik deaktiviran.' });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Greška pri promjeni statusa.' });
   }
 });
