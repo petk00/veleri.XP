@@ -21,6 +21,11 @@ for (const key of REQUIRED_ENV) {
   }
 }
 
+if (process.env.JWT_SECRET.length < 32) {
+  console.error('[startup] JWT_SECRET je prekratak — minimalno 32 znaka. Generiraj s: openssl rand -base64 48');
+  process.exit(1);
+}
+
 const app = express();
 
 app.use(helmet({

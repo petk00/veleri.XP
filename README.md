@@ -157,7 +157,13 @@ git clone https://github.com/petk00/veleri.XP
 cd veleri.XP
 ```
 
-3. Po potrebi prilagoditi varijable okoline u datoteci `docker-compose.yml` (lozinke, JWT tajni ključ, `API_URL`) — zadane vrijednosti funkcioniraju za lokalno pokretanje bez izmjena.
+3. Kreirati `.env` datoteku u korijenu projekta s JWT tajnim ključem:
+
+```bash
+echo "JWT_SECRET=$(openssl rand -base64 48)" > .env
+```
+
+   Bez `JWT_SECRET` backend odbija pokrenuti se. Za produkciju promijeniti i MySQL lozinke u `docker-compose.yml`.
 
 4. Izgraditi i pokrenuti sve kontejnere:
 
@@ -184,8 +190,9 @@ Lozinka za oba računa: 12345678
 
 ### Napomene za produkcijski deploy
 
-- U `docker-compose.yml` obavezno promijeniti `MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD`, `JWT_SECRET` i `API_URL` na stvarne vrijednosti.
-- `API_URL` mora biti javna IP adresa ili domena servera (npr. `http://192.168.1.100:3000/api`).
+- Generirati jak JWT tajni ključ i postaviti ga u `.env` u korijenu projekta: `echo "JWT_SECRET=$(openssl rand -base64 48)" > .env` — backend odbija pokrenuti bez njega.
+- U `docker-compose.yml` promijeniti MySQL lozinke (`MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD`, `MYSQL_USER`/`DB_PASSWORD`) i `API_URL`.
+- `API_URL` mora biti javna IP adresa ili domena servera bez broja porta (nginx proxira; npr. `https://192.168.1.100/api`).
 - MySQL init skripte (`db/`) se izvršavaju samo pri prvom pokretanju. Za čisti reinit: `docker compose down -v && docker compose up --build`.
 - Uploadani dokumenti čuvaju se u named volumenu `uploads` i ostaju perzistentni između restartova.
 

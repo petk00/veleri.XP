@@ -405,8 +405,7 @@ onMounted(async () => {
 
 <style scoped>
 .page {
-  min-height: 100vh;
-  padding: 38px 40px 72px;
+  padding: 38px 40px 32px;
   background: transparent;
   color: #111827;
   font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -827,7 +826,7 @@ onMounted(async () => {
 
 @media (max-width: 760px) {
   .page {
-    padding: 24px 16px 56px;
+    padding: 24px 16px 24px;
   }
 
   .page-header {

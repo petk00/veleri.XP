@@ -187,10 +187,6 @@
       </router-view>
     </q-page-container>
 
-    <footer class="app-footer no-print">
-      <span>© 2026 Veleučilište u Rijeci. Sva prava pridržana.</span>
-    </footer>
-
   </q-layout>
 </template>
 
@@ -668,20 +664,6 @@ onMounted(() => {
   opacity: 0.85;
   font-size: 0.75rem;
   line-height: 1.4;
-}
-
-.app-footer {
-  position: relative;
-  z-index: 1;
-  text-align: center;
-  padding: 14px 32px;
-  border-top: 1px solid rgba(155, 200, 240, 0.5);
-  color: rgba(17, 24, 39, 0.38);
-  font-size: 0.75rem;
-}
-
-@media (max-width: 600px) {
-  .app-footer { padding: 12px 16px; }
 }
 
 @media print {

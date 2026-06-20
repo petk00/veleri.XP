@@ -144,6 +144,30 @@ router.patch('/:id/status', authenticateToken, requireAdmin, async (req, res) =>
     return res.status(400).json({ message: 'is_active mora biti boolean.' });
   }
 
+  if (!is_active) {
+    if (Number(id) === req.user.id_user) {
+      return res.status(400).json({ message: 'Ne možete deaktivirati vlastiti korisnički račun.' });
+    }
+
+    try {
+      const [[{ remaining }]] = await db.query(
+        `SELECT COUNT(*) AS remaining
+         FROM AppUser u
+         JOIN Role r ON u.fk_role = r.id_role
+         WHERE r.name = 'Administrator' AND u.is_active = 1 AND u.id_user != ?`,
+        [id]
+      );
+      if (remaining === 0) {
+        return res.status(400).json({
+          message: 'Nije moguće deaktivirati zadnjeg aktivnog administratora u sustavu.',
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: 'Greška pri provjeri administratorskih ovlasti.' });
+    }
+  }
+
   try {
     const [result] = await db.query(
       'UPDATE AppUser SET is_active = ? WHERE id_user = ?',

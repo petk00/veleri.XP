@@ -238,8 +238,7 @@ onMounted(async () => {
 
 <style scoped>
 .page {
-  min-height: 100vh;
-  padding: 38px 40px 72px;
+  padding: 38px 40px 32px;
   background: transparent;
   color: #111827;
   font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -601,7 +600,7 @@ onMounted(async () => {
 
 /* ── Responsive ── */
 @media (max-width: 760px) {
-  .page { padding: 24px 16px 56px; }
+  .page { padding: 24px 16px 24px; }
   .page-header { flex-direction: column; align-items: stretch; gap: 16px; }
   .page-header__title { font-size: 1.75rem; }
   .admin-stats { grid-template-columns: repeat(2, 1fr); }

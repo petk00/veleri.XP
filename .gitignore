@@ -20,7 +20,7 @@ yarn-debug.log*
 # Dependencies
 node_modules/
 
-# Environment
+# Environment (sadrže tajne ključeve — ne commitati)
 .env
 .env.local
 .env.*.local

@@ -823,8 +823,7 @@ onMounted(() => fetchReferenceData());
    ───────────────────────────────── */
 .page {
   background: transparent;
-  min-height: 100vh;
-  padding: 38px 40px 72px;
+  padding: 38px 40px 32px;
   font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color: #111827;
 }
@@ -1667,7 +1666,7 @@ onMounted(() => fetchReferenceData());
 }
 
 @media (max-width: 600px) {
-  .page { padding: 24px 16px 56px; }
+  .page { padding: 24px 16px 24px; }
   .wizard__inner { padding: 20px 16px 16px; }
 }
 
