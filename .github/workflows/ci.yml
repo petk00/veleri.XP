@@ -25,9 +25,16 @@ jobs:
         working-directory: server
         run: npm ci
 
-      - name: Pokreni testove
+      - name: Pokreni testove s coverage
         working-directory: server
-        run: npm test
+        run: npm run test:coverage
+
+      - name: Upload backend coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-backend
+          path: server/coverage/
+          retention-days: 7
 
   frontend:
     name: Frontend testovi (Vitest)
@@ -47,9 +54,16 @@ jobs:
         working-directory: client
         run: npm ci
 
-      - name: Pokreni testove
+      - name: Pokreni testove s coverage
         working-directory: client
-        run: npm test
+        run: npm run test:coverage
+
+      - name: Upload frontend coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-frontend
+          path: client/coverage/
+          retention-days: 7
 
   e2e:
     name: E2e testovi (Playwright)
