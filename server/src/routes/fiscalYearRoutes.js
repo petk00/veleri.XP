@@ -18,6 +18,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Greška pri dohvatu poslovnih godina.' });
   }
 });
@@ -128,6 +129,7 @@ router.patch('/:id/close', authenticateToken, requireAdmin, async (req, res) => 
     );
     res.json({ message: `Poslovna godina ${rows[0].year} je zatvorena.` });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Greška pri zatvaranju poslovne godine.' });
   }
 });
@@ -143,6 +145,7 @@ router.get('/:id/departments', authenticateToken, requireAdmin, async (req, res)
     );
     res.json(rows);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Greška pri dohvatu odjela.' });
   }
 });
@@ -171,6 +174,7 @@ router.post('/:id/departments', authenticateToken, requireAdmin, async (req, res
     );
     res.status(201).json({ id_department: result.insertId, message: 'Odjel dodan.' });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Greška pri dodavanju odjela.' });
   }
 });
@@ -200,6 +204,7 @@ router.put('/:id/departments/:deptId', authenticateToken, requireAdmin, async (r
     if (result.affectedRows === 0) return res.status(404).json({ message: 'Odjel nije pronađen.' });
     res.json({ message: 'Odjel ažuriran.' });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Greška pri ažuriranju odjela.' });
   }
 });
@@ -227,6 +232,7 @@ router.delete('/:id/departments/:deptId', authenticateToken, requireAdmin, async
     if (result.affectedRows === 0) return res.status(404).json({ message: 'Odjel nije pronađen.' });
     res.json({ message: 'Odjel obrisan.' });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Greška pri brisanju odjela.' });
   }
 });
@@ -242,6 +248,7 @@ router.get('/:id/categories', authenticateToken, requireAdmin, async (req, res) 
     );
     res.json(rows);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Greška pri dohvatu kategorija.' });
   }
 });
@@ -270,6 +277,7 @@ router.post('/:id/categories', authenticateToken, requireAdmin, async (req, res)
     );
     res.status(201).json({ id_item_category: result.insertId, message: 'Kategorija dodana.' });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Greška pri dodavanju kategorije.' });
   }
 });
@@ -299,6 +307,7 @@ router.put('/:id/categories/:catId', authenticateToken, requireAdmin, async (req
     if (result.affectedRows === 0) return res.status(404).json({ message: 'Kategorija nije pronađena.' });
     res.json({ message: 'Kategorija ažurirana.' });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Greška pri ažuriranju kategorije.' });
   }
 });
@@ -326,6 +335,7 @@ router.delete('/:id/categories/:catId', authenticateToken, requireAdmin, async (
     if (result.affectedRows === 0) return res.status(404).json({ message: 'Kategorija nije pronađena.' });
     res.json({ message: 'Kategorija obrisana.' });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Greška pri brisanju kategorije.' });
   }
 });
