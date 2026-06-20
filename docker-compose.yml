@@ -33,7 +33,7 @@ services:
       DB_USER: veleri
       DB_PASSWORD: veleripassword
       DB_NAME: XP
-      JWT_SECRET: zamijeni-s-dugackim-random-stringom-minimalno-32-znaka
+      JWT_SECRET: ${JWT_SECRET:?Postavi JWT_SECRET u .env datoteci u korijenu projekta (openssl rand -base64 48)}
       JWT_EXPIRES_IN: 1d
       CLIENT_URL: https://localhost
       UPLOADS_DIR: /app/uploads
@@ -44,8 +44,8 @@ services:
       # SMTP_FROM: "veleri.XP <your-email@veleri.hr>"
     volumes:
       - uploads:/app/uploads
-    ports:
-      - "3000:3000"
+    # Port 3000 nije izložen na hostu — backend je dostupan unutar Docker
+    # mreže, proxiran kroz nginx (/api/). Za debug: ports: ['127.0.0.1:3000:3000']
 
   frontend:
     build:
