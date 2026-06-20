@@ -1,0 +1,138 @@
+name: CI
+
+on:
+  push:
+    branches: [main, DEV_v8]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend testovi (Jest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Postavi Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Instaliraj ovisnosti
+        working-directory: server
+        run: npm ci
+
+      - name: Pokreni testove
+        working-directory: server
+        run: npm test
+
+  frontend:
+    name: Frontend testovi (Vitest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Postavi Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Instaliraj ovisnosti
+        working-directory: client
+        run: npm ci
+
+      - name: Pokreni testove
+        working-directory: client
+        run: npm test
+
+  e2e:
+    name: E2e testovi (Playwright)
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: XP
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Postavi Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Importaj shemu i seed podatke
+        run: |
+          mysql -h 127.0.0.1 -u root -proot XP < db/01_schema.sql
+          mysql -h 127.0.0.1 -u root -proot XP < db/02_seed.sql
+
+      - name: Instaliraj backend ovisnosti
+        working-directory: server
+        run: npm ci
+
+      - name: Kreiraj server .env
+        working-directory: server
+        run: |
+          cat > .env << 'EOF'
+          DB_HOST=127.0.0.1
+          DB_PORT=3306
+          DB_USER=root
+          DB_PASSWORD=root
+          DB_NAME=XP
+          JWT_SECRET=ci-test-secret-key-minimalno-32-znaka-ok
+          PORT=3000
+          CLIENT_URL=http://localhost:9000
+          EOF
+
+      - name: Pokreni backend
+        working-directory: server
+        run: npm start &
+
+      - name: Instaliraj frontend ovisnosti
+        working-directory: client
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: client
+        run: npx quasar build
+        env:
+          API_URL: http://localhost:3000/api
+
+      - name: Serviraj frontend
+        run: npx serve client/dist/spa -l 9000 --no-clipboard &
+
+      - name: Čekaj backend i frontend
+        run: npx wait-on http://localhost:3000/health http://localhost:9000 --timeout 60000
+
+      - name: Instaliraj Playwright i Chromium
+        working-directory: e2e
+        run: npm ci && npx playwright install --with-deps chromium
+
+      - name: Pokreni e2e testove
+        working-directory: e2e
+        run: npm test
+
+      - name: Upload izvještaj (samo pri grešci)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7
