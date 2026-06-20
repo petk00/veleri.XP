@@ -103,7 +103,7 @@
           <div class="dialog-actions" style="margin-top: 0;">
             <button type="button" class="btn btn--secondary" @click="inviteDialog.open = false">Zatvori</button>
             <button type="button" class="btn btn--cta" @click="copyLink">
-              <q-icon name="content_copy" size="16px" />
+              <q-icon :name="inviteDialog.copied ? 'check' : 'content_copy'" size="16px" />
               <span>{{ inviteDialog.copied ? 'Kopirano!' : 'Kopiraj link' }}</span>
             </button>
           </div>
@@ -307,16 +307,22 @@ const deleteUser = (u) => {
 };
 
 const toggleStatus = async (u) => {
-  const action = u.is_active ? 'deaktivirati' : 'aktivirati';
+  const deactivating = u.is_active;
   $q.dialog({
-    title: 'Potvrda',
-    message: `Želite li ${action} korisnika ${u.first_name} ${u.last_name}?`,
-    cancel: true,
+    title: deactivating ? 'Deaktivacija korisnika' : 'Aktivacija korisnika',
+    message: deactivating
+      ? `Jeste li sigurni da želite deaktivirati korisnika <strong>${u.first_name} ${u.last_name}</strong>?<br><br>Korisnik više neće moći pristupiti sustavu.`
+      : `Želite li aktivirati korisnika <strong>${u.first_name} ${u.last_name}</strong>?`,
+    html: true,
+    cancel: { label: 'Odustani', flat: true, color: 'primary' },
+    ok: deactivating
+      ? { label: 'Deaktiviraj', color: 'negative', flat: true }
+      : { label: 'Aktiviraj', color: 'positive', flat: true },
     persistent: true,
   }).onOk(async () => {
     try {
       await api.patch(`/users/${u.id_user}/status`, { is_active: !u.is_active });
-      $q.notify({ type: 'positive', message: u.is_active ? 'Korisnik deaktiviran.' : 'Korisnik aktiviran.' });
+      $q.notify({ type: 'positive', message: deactivating ? 'Korisnik deaktiviran.' : 'Korisnik aktiviran.' });
       await loadUsers();
     } catch {
       $q.notify({ type: 'negative', message: 'Greška pri promjeni statusa.' });

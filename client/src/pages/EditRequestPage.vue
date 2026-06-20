@@ -164,6 +164,7 @@
                 <span>Učitaj ponudu</span>
               </button>
             </div>
+            <div v-if="uploadErrorPonuda" class="upload-error">{{ uploadErrorPonuda }}</div>
           </div>
         </div>
 
@@ -230,6 +231,7 @@
                 <span>Učitaj otpremnicu</span>
               </button>
             </div>
+            <div v-if="uploadErrorOtpremnica" class="upload-error">{{ uploadErrorOtpremnica }}</div>
           </div>
         </div>
 
@@ -333,7 +335,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
@@ -352,6 +354,18 @@ const attachments = ref([]);
 const uploading = ref(false);
 const uploadFilePonuda = ref(null);
 const uploadFileOtpremnica = ref(null);
+const uploadErrorPonuda = ref(null);
+const uploadErrorOtpremnica = ref(null);
+
+watch(uploadFilePonuda, () => { uploadErrorPonuda.value = null; });
+watch(uploadFileOtpremnica, () => { uploadErrorOtpremnica.value = null; });
+
+const serializeItems = (items) =>
+  JSON.stringify(items.map((i) => ({
+    c: i.fk_item_category,
+    n: i.item_name,
+    q: Number(i.quantity),
+  })));
 
 const isDirty = computed(() => {
   if (submitted.value || !form.value || !originalForm.value) return false;
@@ -360,7 +374,8 @@ const isDirty = computed(() => {
   return (
     f.fk_department !== o.fk_department ||
     f.justification.trim() !== o.justification.trim() ||
-    String(f.estimated_amount ?? '') !== String(o.estimated_amount ?? '')
+    String(f.estimated_amount ?? '') !== String(o.estimated_amount ?? '') ||
+    serializeItems(f.items) !== o.itemsJson
   );
 });
 
@@ -402,8 +417,9 @@ const refreshAttachments = async () => {
   attachments.value = Array.isArray(res.data) ? res.data : [];
 };
 
-const uploadDoc = async (file, docType, clearFn) => {
+const uploadDoc = async (file, docType, clearFn, errorRef) => {
   if (!file) return;
+  errorRef.value = null;
   uploading.value = true;
   const formData = new FormData();
   formData.append('file', file);
@@ -416,17 +432,14 @@ const uploadDoc = async (file, docType, clearFn) => {
     clearFn();
     await refreshAttachments();
   } catch (error) {
-    $q.notify({
-      type: 'negative',
-      message: error.response?.data?.message || 'Greška pri uploadu.',
-    });
+    errorRef.value = error.response?.data?.message || 'Greška pri učitavanju datoteke. Pokušajte ponovno.';
   } finally {
     uploading.value = false;
   }
 };
 
-const uploadPonuda = () => uploadDoc(uploadFilePonuda.value, 'Ponuda', () => { uploadFilePonuda.value = null; });
-const uploadOtpremnica = () => uploadDoc(uploadFileOtpremnica.value, 'Otpremnica', () => { uploadFileOtpremnica.value = null; });
+const uploadPonuda = () => uploadDoc(uploadFilePonuda.value, 'Ponuda', () => { uploadFilePonuda.value = null; }, uploadErrorPonuda);
+const uploadOtpremnica = () => uploadDoc(uploadFileOtpremnica.value, 'Otpremnica', () => { uploadFileOtpremnica.value = null; }, uploadErrorOtpremnica);
 
 const deleteAttachment = (att) => {
   $q.dialog({
@@ -546,6 +559,7 @@ const fetchData = async () => {
       fk_department: form.value.fk_department,
       justification: form.value.justification,
       estimated_amount: form.value.estimated_amount,
+      itemsJson: serializeItems(form.value.items),
     };
   } catch (error) {
     const status = error.response?.status;
@@ -930,6 +944,11 @@ onMounted(() => fetchData());
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+}
+.upload-error {
+  font-size: 0.8125rem;
+  color: #dc2626;
+  margin-top: 6px;
 }
 
 .add-item {
