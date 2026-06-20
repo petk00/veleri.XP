@@ -28,6 +28,7 @@ veleri.XP je full-stack web aplikacija za digitalizaciju procesa nabave: zaposle
 - Security hardening: CORS whitelist, rate limiting, Helmet, path traversal zaštita.
 - Generiranje PDF dokumenta zahtjeva (samo za admin, status Naručeno/Zatvoreno).
 - Unit testovi za backend (Jest) i frontend (Vitest).
+- End-to-end testovi (Playwright) za ključne korisničke scenarije.
 - Docker deployment (MySQL + Express backend + Quasar/nginx frontend).
 
 ### Nije implementirano / izvan opsega
@@ -58,7 +59,7 @@ veleri.XP je full-stack web aplikacija za digitalizaciju procesa nabave: zaposle
 | Auth | JWT (httpOnly cookie), bcrypt |
 | Upload | Multer |
 | PDF | jsPDF (client-side) |
-| Testovi | Jest, Supertest (backend) · Vitest, jsdom (frontend) |
+| Testovi | Jest, Supertest (backend) · Vitest, jsdom (frontend) · Playwright (e2e) |
 | Deployment | Docker, Docker Compose, nginx |
 
 ## Struktura projekta
@@ -82,7 +83,11 @@ veleri.XP/
 │   │   ├── middleware/  # Auth middleware
 │   │   └── config/      # DB konfiguracija
 │   ├── __tests__/       # Jest unit testovi
+│   ├── scripts/         # Pomoćne skripte (npr. migracija putanja)
 │   └── Dockerfile
+├── e2e/                 # Playwright end-to-end testovi
+│   ├── tests/
+│   └── playwright.config.js
 ├── db/                  # SQL init skripte za Docker MySQL
 │   ├── 01_schema.sql
 │   └── 02_seed.sql
@@ -237,6 +242,21 @@ npm test
 ```
 
 Pokriva: `authStorage` (parsiranje korisnika iz localStorage), `useActionableRequestsNotifier` (API pozivi, deduplikacija notifikacija).
+
+**End-to-end testovi** (iz `e2e/` mape, zahtijeva pokrenuti frontend i backend):
+
+```bash
+cd e2e
+npm test
+```
+
+Pokriva: prijavu korisnika, kreiranje zahtjeva, workflow (preuzmi / vrati na izmjenu / pošalji ponovo), kontrolu pristupa, zaključavanje zatvorenih zahtjeva.
+
+Za interaktivni UI mod:
+
+```bash
+npm run test:ui
+```
 
 **Lint i build provjera:**
 
