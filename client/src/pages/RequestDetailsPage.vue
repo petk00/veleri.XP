@@ -957,17 +957,14 @@ const confirmAction = async () => {
 const editRequest = () => router.push(`/requests/${route.params.id}/edit`);
 const goBack = () => router.push('/requests');
 
-const loadImage = (src, maxPx = 300) =>
+const loadImage = (src) =>
   new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-      const scale = Math.min(1, maxPx / Math.max(img.naturalWidth, img.naturalHeight));
-      const w = Math.round(img.naturalWidth * scale);
-      const h = Math.round(img.naturalHeight * scale);
       const c = document.createElement('canvas');
-      c.width = w; c.height = h;
-      c.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve({ data: c.toDataURL('image/png'), w, h });
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.getContext('2d').drawImage(img, 0, 0);
+      resolve({ data: c.toDataURL('image/png'), w: img.naturalWidth, h: img.naturalHeight });
     };
     img.onerror = () => resolve(null);
     img.src = src;
@@ -993,36 +990,36 @@ const downloadPdf = async () => {
   pdfGenerating.value = true;
   try {
     const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-    const M   = 18;           // margina
+    const M   = 10;           // margina
     const PW  = 210;          // širina A4
     const CW  = PW - 2 * M;  // širina sadržaja
     let y = M;
 
     // ── Fontovi (podržavaju hrvatske znakove) ──
-    const fontLoaded = await embedFont(pdf, '/fonts/TimesNewRoman-subset.ttf', 'TimesNewRoman', 'normal');
-    await embedFont(pdf, '/fonts/TimesNewRoman-Bold-subset.ttf', 'TimesNewRoman', 'bold');
+    const fontLoaded = await embedFont(pdf, '/fonts/Times New Roman.ttf', 'TimesNewRoman', 'normal');
+    await embedFont(pdf, '/fonts/Times New Roman Bold.ttf', 'TimesNewRoman', 'bold');
     const F = fontLoaded ? 'TimesNewRoman' : 'helvetica';
 
     // ── Logo ──
     const logo = await loadImage(ORG.logoPath);
-    const LOGO_H = 18;
+    const LOGO_H = 24;
     const LOGO_W = logo ? (LOGO_H * logo.w / logo.h) : 0;
-    if (logo) pdf.addImage(logo.data, 'PNG', M, y, LOGO_W, LOGO_H);
+    if (logo) pdf.addImage(logo.data, 'PNG', M, y - 2, LOGO_W, LOGO_H);
 
     // ── Naziv institucije lijevo, uz logo, vertikalno centrirano ──
     pdf.setFont(F, 'bold');
-    pdf.setFontSize(14);
-    pdf.setTextColor(31, 56, 100);
+    pdf.setFontSize(16);
+    pdf.setTextColor(27, 45, 89);
     pdf.text(ORG.name, M + (logo ? LOGO_W + 4 : 0), y + 7);
 
     // ── Latinski i engleski naziv desno ──
     const TX = PW - M;
     pdf.setFont(F, 'bold');
     pdf.setFontSize(11);
-    pdf.setTextColor(0, 139, 185);
-    pdf.text(ORG.nameLatin, TX, y + 2, { align: 'right' });
-    pdf.setTextColor(31, 56, 100);
-    pdf.text(ORG.nameEnglish, TX, y + 7, { align: 'right' });
+    pdf.setTextColor(0, 175, 219);
+    pdf.text(ORG.nameLatin, TX, y + 5, { align: 'right' });
+    pdf.setTextColor(27, 45, 89);
+    pdf.text(ORG.nameEnglish, TX, y + 10, { align: 'right' });
 
     y += 13;
 
@@ -1032,14 +1029,14 @@ const downloadPdf = async () => {
     pdf.setTextColor(31, 56, 100);
     pdf.text(
       `${ORG.address} · Telefon ${ORG.phone} · E-mail: ${ORG.email} · ${ORG.web}`,
-      PW / 2, y, { align: 'center' }
+      PW / 2, y + 4, { align: 'center' }
     );
     y += 3.5;
     pdf.text(
       `OIB: ${ORG.oib} · MB: ${ORG.mb} · RKP: ${ORG.rkp} · IBAN: ${ORG.iban}`,
-      PW / 2, y, { align: 'center' }
+      PW / 2, y + 4, { align: 'center' }
     );
-    y += 8;
+    y += 13;
 
     // ── Naslov u okviru ──
     pdf.setLineWidth(0.3);
@@ -1048,7 +1045,7 @@ const downloadPdf = async () => {
     pdf.setFontSize(13);
     pdf.setTextColor(0);
     pdf.text('ZAHTJEV ZA NABAVU', PW / 2, y + 9, { align: 'center' });
-    y += 19;
+    y += 21;
 
     // ── Polja ──
     const LABEL_W = 58;
@@ -1158,9 +1155,11 @@ const formatDate = (value) => {
 };
 const formatDateOnly = (value) => {
   if (!value) return '—';
-  return new Date(value).toLocaleDateString('hr-HR', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-  });
+  const d = new Date(value);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}.${mm}.${yyyy}.`;
 };
 
 const statusClass = (statusId) => {
