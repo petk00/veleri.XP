@@ -555,8 +555,8 @@ const itemForm = ref({ category: null, item_name: '', quantity: 1 });
 
 const currentSteps = computed(() => {
   const base = [
-    { key: 'odjel', step: 1, title: 'Odjel', hint: 'Jedinica zahtjeva' },
-    { key: 'ponuda', step: 2, title: 'Ponuda', hint: 'Imate li dokument?' },
+    { key: 'odjel', step: 1, title: 'Odjel', hint: 'Odaberite odjel' },
+    { key: 'ponuda', step: 2, title: 'Ponuda', hint: 'Imate li ponudu?' },
   ];
   if (form.value.hasOffer === true) {
     return [

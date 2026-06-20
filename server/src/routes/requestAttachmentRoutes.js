@@ -155,11 +155,13 @@ router.post('/:id/attachments', authenticateToken, upload.single('file'), async 
       });
     }
 
+    const relativePath = path.relative(UPLOADS_DIR, req.file.path);
+
     const [result] = await connection.query(
       `INSERT INTO Attachment
         (fk_purchase_request, fk_uploaded_by_user, file_name, file_path, file_type, document_type)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [id, userId, req.file.originalname, req.file.path, req.file.mimetype, document_type]
+      [id, userId, req.file.originalname, relativePath, req.file.mimetype, document_type]
     );
 
     await connection.query(
