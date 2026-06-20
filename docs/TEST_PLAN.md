@@ -54,19 +54,37 @@ Unit testovi provjeravaju manje, izolirane dijelove sustava. U trenutnoj fazi pr
 | UT-FE-06 | Lista zahtjeva | Filter po statusu | Prikazuju se samo zahtjevi odabranog statusa. |
 | UT-FE-07 | Detalji zahtjeva | Zatvoreni zahtjev | Akcije uređivanja i brisanja dokumenata nisu dostupne. |
 
-### Predloženi alati
+### Implementirani alati
 
-| Sloj | Alat |
+| Sloj | Alat | Status |
+|---|---|---|
+| Backend | Jest, Supertest | Implementirano |
+| Frontend | Vitest, jsdom | Implementirano |
+| E2E | Playwright | Implementirano |
+
+## 4.3.2. End-to-end (e2e) testovi
+
+E2e testovi implementirani su pomoću **Playwright** alata i nalaze se u mapi `e2e/tests/`. Pokrivaju ključne korisničke scenarije opisane u nastavku i izvršavaju se nad stvarnom pokrenutom aplikacijom.
+
+Pokretanje:
+
+```bash
+cd e2e
+npm test          # headless
+npm run test:ui   # interaktivni UI mod
+```
+
+### Implementirani e2e testovi
+
+| Datoteka | Scenarij |
 |---|---|
-| Backend | Jest ili Vitest, Supertest |
-| Frontend | Vitest, Vue Test Utils |
-| API testiranje | Postman ili Insomnia |
-| E2E testiranje | Playwright ili Cypress |
+| `auth.spec.js` | Prijava admina, prijava zaposlenika, pogrešna lozinka, neautoriziran pristup, odjava |
+| `requests.spec.js` | Kreiranje zahtjeva bez ponude, zaposlenik vidi samo vlastite zahtjeve, admin vidi sve |
+| `workflow.spec.js` | Preuzimanje zahtjeva, vraćanje na izmjenu, ponovo slanje, zatvoreni zahtjev bez izmjena |
 
-## 4.3.2. Izrada funkcijskih end-user testova
+## 4.3.3. Funkcijski end-user testovi (ručni)
 
-Funkcijski end-user testovi provode se iz perspektive stvarnog korisnika aplikacije.
-Ovi testovi mogu se u početku provoditi ručno, a kasnije se mogu automatizirati pomoću Playwrighta ili Cypressa.
+Funkcijski end-user testovi provode se ručno iz perspektive stvarnog korisnika aplikacije.
 
 ### Scenarij 1: Uspješna prijava djelatnika
 
@@ -209,8 +227,7 @@ MVP se smatra prihvatljivim ako su ispunjeni sljedeći uvjeti:
 
 ## Poznata ograničenja testiranja
 
-- Trenutno nisu implementirani automatizirani testovi.
-- Serverska paginacija nije implementirana, pa se ne može testirati prema punom SRS zahtjevu.
-- Limiti i financijsko praćenje nisu implementirani i testiraju se tek u kasnijoj fazi.
-- Poslovne godine i šifrarnici trenutno nemaju admin sučelje za potpuno testiranje.
-- Notifikacije nisu perzistentne, nego su primarno prikazane kroz UI obavijesti.
+- E2e testovi zahtijevaju pokrenuti frontend (`localhost:9000`) i backend (`localhost:3000`) te postavljenu bazu s inicijalnim podacima.
+- Workflow testovi koji ovise o stanju baze (npr. postojanje vraćenog zahtjeva) koriste `test.skip` ako uvjet nije ispunjen.
+- Limiti i financijsko praćenje nisu implementirani — testiraju se u kasnijoj fazi (v2.0).
+- Notifikacije nisu perzistentne, prikazuju se samo kroz UI u aktivnoj sesiji.
