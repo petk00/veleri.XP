@@ -14,10 +14,6 @@
             <span class="breadcrumb__sep">›</span>
             <span class="breadcrumb__current">Uređivanje</span>
           </nav>
-          <h1 class="page-header__title">{{ requestNumber || '...' }}</h1>
-          <p class="page-header__subtitle">
-            Promjene se evidentiraju u povijesti aktivnosti.
-          </p>
         </div>
       </header>
 

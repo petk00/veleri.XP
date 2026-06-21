@@ -1,10 +1,3 @@
-// Dashboard pripremljen za buduću multi-modularnu fazu aplikacije.
-// Trenutno nerutiran - aplikacija ima samo jedan modul (Nabava),
-// gdje direktan pristup /requests ima bolji UX od presretanja
-// korisnika dashboardom prije nego dođe do posla koji treba obaviti.
-// Aktivirati kad se doda drugi modul i postoji stvarna potreba za
-// agregiranim pregledom kroz module.
-
 <template>
   <q-page class="page">
     <div class="page-shell">
@@ -16,70 +9,12 @@
             Bok, <span class="page-header__name">{{ user?.first_name || 'korisniče' }}</span>
           </h1>
         </div>
-        <div class="page-header__actions">
-          <button class="btn btn--cta" type="button" @click="$router.push('/requests/new')">
-            <q-icon name="add" size="20px" />
-            <span>Novi zahtjev</span>
-          </button>
-        </div>
       </header>
 
       <div v-if="loading" class="loading-block">
         <q-spinner color="primary" size="28px" />
       </div>
 
-      <!-- ── Admin view ── -->
-      <template v-else-if="isAdmin">
-
-        <div class="admin-stats">
-          <div class="stat-card">
-            <span class="stat-card__value">{{ adminTotal }}</span>
-            <span class="stat-card__label">Ukupno zahtjeva</span>
-          </div>
-          <div class="stat-card" :class="{ 'stat-card--action': adminActionable > 0 }">
-            <span class="stat-card__value">{{ adminActionable }}</span>
-            <span class="stat-card__label">Čeka akciju</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-card__value">{{ adminOrdered }}</span>
-            <span class="stat-card__label">Naručeno</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-card__value">{{ adminClosed }}</span>
-            <span class="stat-card__label">Zatvoreno</span>
-          </div>
-        </div>
-
-        <section class="list-surface">
-          <div class="surface-header">
-            <h2 class="surface-title">Čeka vašu akciju</h2>
-            <span v-if="displayRows.length > 0" class="surface-count">{{ displayRows.length }}</span>
-          </div>
-          <div v-if="displayRows.length === 0" class="empty-state">
-            <div class="empty-state__icon"><q-icon name="check_circle" size="28px" /></div>
-            <div class="empty-state__title">Sve je obrađeno</div>
-            <div class="empty-state__hint">Trenutno nema zahtjeva koji čekaju vašu akciju.</div>
-          </div>
-          <ul v-else class="request-list">
-            <li
-              v-for="r in displayRows"
-              :key="r.id_purchase_request"
-              class="request-row"
-              @click="$router.push(`/requests/${r.id_purchase_request}`)"
-            >
-              <span class="row-number">{{ r.request_number }}</span>
-              <span class="row-dept">{{ r.department_name }}</span>
-              <span class="row-person">{{ r.created_by }}</span>
-              <span class="status" :class="statusClass(r.status_name)">{{ r.status_name }}</span>
-              <span class="row-amount">{{ formatCurrency(r.total_amount) }}</span>
-              <span class="row-date">{{ formatDate(r.created_at) }}</span>
-              <q-icon name="chevron_right" size="16px" class="row-chevron" />
-            </li>
-          </ul>
-        </section>
-      </template>
-
-      <!-- ── Employee view ── -->
       <template v-else>
 
         <!-- Vraćen alert -->
@@ -96,42 +31,47 @@
           <q-icon name="chevron_right" size="15px" class="returned-alert__chevron" />
         </div>
 
-        <!-- Statistike -->
-        <div class="emp-stats">
-          <div class="stat-card">
-            <span class="stat-card__value">{{ totalCount }}</span>
-            <span class="stat-card__label">Ukupno zahtjeva</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-card__value">{{ activeCount }}</span>
-            <span class="stat-card__label">Aktivni</span>
-          </div>
-          <div class="stat-card" :class="{ 'stat-card--warn': returnedCount > 0 }">
-            <span class="stat-card__value">{{ returnedCount }}</span>
-            <span class="stat-card__label">Vraćeno na dopunu</span>
-          </div>
-        </div>
+        <!-- Cards grid -->
+        <section class="card-grid">
 
-        <!-- Nedavni zahtjevi -->
-        <section class="list-surface">
-          <div v-if="displayRows.length === 0" class="empty-state">
-            <div class="empty-state__icon"><q-icon name="inbox" size="28px" /></div>
-            <div class="empty-state__title">Nemate zahtjeva</div>
-            <div class="empty-state__hint">Kreirajte prvi zahtjev za nabavu klikom na "Novi zahtjev".</div>
-          </div>
-          <ul v-else class="request-list request-list--minimal">
-            <li
-              v-for="r in displayRows"
-              :key="r.id_purchase_request"
-              class="request-row"
-              @click="$router.push(`/requests/${r.id_purchase_request}`)"
-            >
-              <span class="row-number">{{ r.request_number }}</span>
-              <span class="status" :class="statusClass(r.status_name)">{{ r.status_name }}</span>
-              <span class="row-date">{{ formatDate(r.created_at) }}</span>
-              <q-icon name="chevron_right" size="16px" class="row-chevron" />
-            </li>
-          </ul>
+          <!-- CTA: Sa ponudom -->
+          <button class="dash-card dash-card--offer" @click="$router.push('/requests/new')">
+            <img src="/solarlinear_FINANCIRANJE.svg" alt="" class="card-deco card-deco--offer" />
+            <div class="card-icon-wrap">
+              <img src="/solarlinear_NABAVA.svg" alt="" class="card-icon" />
+            </div>
+            <span class="card-label">Novi zahtjev</span>
+            <span class="card-sub">Sa ponudom dobavljača</span>
+          </button>
+
+          <!-- CTA: Bez ponude -->
+          <button class="dash-card dash-card--no-offer" @click="$router.push('/requests/new')">
+            <img src="/solarlinear_POSLOVNEGODINE.svg" alt="" class="card-deco card-deco--no-offer" />
+            <div class="card-icon-wrap">
+              <img src="/solarlinear_NOVIZAHTJEV.svg" alt="" class="card-icon" />
+            </div>
+            <span class="card-label">Trebam određene predmete</span>
+            <span class="card-sub">Bez ponude dobavljača</span>
+          </button>
+
+          <!-- Status kartice: zadnji zahtjevi -->
+          <button
+            v-for="row in recentRows"
+            :key="row.id_purchase_request"
+            class="dash-card dash-card--status"
+            :style="buildRequestStyle(row).card"
+            @click="$router.push(`/requests/${row.id_purchase_request}`)"
+          >
+            <img src="/solarlinear_MOJIZAHTJEVI.svg" alt="" class="card-deco card-deco--status" />
+            <span class="status-badge" :style="buildRequestStyle(row).badge">{{ row.status_name }}</span>
+            <span class="status-number">{{ row.request_number }}</span>
+            <span v-if="row.last_comment" class="status-comment">{{ row.last_comment }}</span>
+            <span v-else class="status-comment status-comment--empty" />
+            <span class="status-amount">{{ formatCurrency(row.total_amount) }}</span>
+            <span class="status-date">{{ formatDate(row.created_at) }}</span>
+            <q-icon name="chevron_right" size="16px" class="status-chevron" />
+          </button>
+
         </section>
 
       </template>
@@ -146,7 +86,6 @@ import { api } from 'boot/axios';
 import { getStoredUser } from 'src/utils/authStorage';
 
 const user = getStoredUser();
-const isAdmin = user?.role_name === 'Administrator';
 
 const loading = ref(true);
 const allRequests = ref([]);
@@ -159,45 +98,33 @@ const todayFormatted = computed(() => {
 });
 
 const returnedAlertItem = computed(() =>
-  allRequests.value.find(r => r.status_name === 'Vraćeno na dopunu/izmjenu') || null
+  allRequests.value.find(r => r.fk_request_status === 3) || null
 );
 
-// Admin stats
-const adminTotal = computed(() => allRequests.value.length);
-const adminActionable = computed(() =>
-  allRequests.value.filter(r => ['Poslano', 'Na odobrenju'].includes(r.status_name)).length
-);
-const adminOrdered = computed(() =>
-  allRequests.value.filter(r => r.status_name === 'Naručeno').length
-);
-const adminClosed = computed(() =>
-  allRequests.value.filter(r => r.status_name === 'Zatvoreno').length
-);
-
-const totalCount = computed(() => allRequests.value.length);
-
-const activeCount = computed(() =>
-  allRequests.value.filter(r => !['Zatvoreno', 'Odbijeno'].includes(r.status_name)).length
-);
-
-const returnedCount = computed(() =>
-  allRequests.value.filter(r => r.status_name === 'Vraćeno na dopunu/izmjenu').length
-);
-
-const displayRows = computed(() => {
-  if (isAdmin) {
-    const priority = { 'Poslano': 1, 'Na odobrenju': 2, 'Naručeno': 3 };
-    return allRequests.value
-      .filter(r => priority[r.status_name] !== undefined)
-      .sort((a, b) => {
-        const d = priority[a.status_name] - priority[b.status_name];
-        return d !== 0 ? d : new Date(b.created_at) - new Date(a.created_at);
-      });
-  }
-  return [...allRequests.value]
+const recentRows = computed(() =>
+  [...allRequests.value]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 3);
-});
+);
+
+const STATUS_STYLES = {
+  1: { background: '#eff6ff', badge: '#1d4ed8', badgeBg: '#dbeafe', border: '#93c5fd' },
+  2: { background: '#fffbeb', badge: '#b45309', badgeBg: '#fef3c7', border: '#fcd34d' },
+  3: { background: '#fff7ed', badge: '#c2410c', badgeBg: '#ffedd5', border: '#fdba74' },
+  4: { background: '#f0fdf4', badge: '#15803d', badgeBg: '#dcfce7', border: '#86efac' },
+  5: { background: '#fef2f2', badge: '#b91c1c', badgeBg: '#fee2e2', border: '#fca5a5' },
+  6: { background: '#ecfeff', badge: '#0e7490', badgeBg: '#cffafe', border: '#67e8f9' },
+  7: { background: '#dcfce7', badge: '#166534', badgeBg: '#bbf7d0', border: '#4ade80' },
+};
+
+const DEFAULT_STYLE = { background: '#f9fafb', badge: '#374151', badgeBg: '#f3f4f6', border: '#d1d5db' };
+
+function buildRequestStyle(row) {
+  const s = STATUS_STYLES[row.fk_request_status] ?? DEFAULT_STYLE;
+  return {
+    card:  { borderLeftColor: s.border },
+    badge: { color: s.badge, background: s.badgeBg },
+  };
+}
 
 const formatCurrency = (value) => {
   if (value == null) return '—';
@@ -211,22 +138,10 @@ const formatDate = (value) => {
   });
 };
 
-const statusClass = (status) => {
-  switch ((status || '').toLowerCase().replace(/\s*\/\s*/g, '/')) {
-    case 'poslano':                   return 'status--sent';
-    case 'na odobrenju':              return 'status--review';
-    case 'vraćeno na dopunu/izmjenu': return 'status--returned';
-    case 'odbijeno':                  return 'status--rejected';
-    case 'naručeno':
-    case 'odobreno':                  return 'status--ordered';
-    case 'zatvoreno':                 return 'status--closed';
-    default:                          return 'status--default';
-  }
-};
-
 onMounted(async () => {
   try {
-    const { data } = await api.get('/requests', { params: { limit: 500 } });
+    const currentYear = new Date().getFullYear();
+    const { data } = await api.get('/requests', { params: { limit: 500, fiscalYear: currentYear } });
     allRequests.value = Array.isArray(data.data) ? data.data : [];
   } catch (e) {
     console.error(e);
@@ -245,7 +160,7 @@ onMounted(async () => {
 }
 
 .page-shell {
-  max-width: 900px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -276,28 +191,6 @@ onMounted(async () => {
 
 .page-header__name { color: #0067b8; }
 
-.page-header__actions { flex-shrink: 0; }
-
-.btn--cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 0 24px;
-  border: none;
-  border-radius: 3px;
-  background: #0067b8;
-  color: #fff;
-  font: inherit;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s;
-}
-
-.btn--cta:hover { background: #005a9e; }
-
 /* ── Loading ── */
 .loading-block {
   display: flex;
@@ -305,7 +198,7 @@ onMounted(async () => {
   padding: 64px 0;
 }
 
-/* ── Returned alert ── */
+/* ── Vraćen alert ── */
 .returned-alert {
   display: flex;
   align-items: center;
@@ -317,6 +210,7 @@ onMounted(async () => {
   color: #7c2d12;
   font-size: 0.8125rem;
   cursor: pointer;
+  border-radius: 6px;
   transition: background 0.12s;
 }
 
@@ -324,290 +218,225 @@ onMounted(async () => {
 .returned-alert__icon { flex-shrink: 0; color: #c2410c; }
 .returned-alert__chevron { margin-left: auto; flex-shrink: 0; color: #c2410c; }
 
-/* ── List surface ── */
-.list-surface {
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  overflow: hidden;
-}
-
-.surface-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* ── Card grid ── */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
-  padding: 14px 20px;
-  border-bottom: 1px solid #e5e7eb;
 }
 
-.surface-title {
-  margin: 0;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #111827;
+/* ── Base card ── */
+.dash-card {
+  all: unset;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 20px;
+  min-height: 190px;
+  padding: 24px;
+  box-sizing: border-box;
+  cursor: pointer;
+  border-left: 4px solid transparent;
+  transition: all 0.2s ease;
 }
 
-.surface-count {
-  color: #6b7280;
-  font-size: 0.75rem;
+/* ── CTA: Sa ponudom (indigo) ── */
+.dash-card--offer {
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(145deg, #eef2ff 0%, #e0e7ff 100%);
+  border: 1.5px solid #c7d2fe;
+  border-left: 1.5px solid #c7d2fe;
+  box-shadow: 0 4px 24px rgba(99, 102, 241, 0.10);
 }
 
-/* ── Request list ── */
-.request-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.dash-card--offer:hover {
+  background: linear-gradient(145deg, #e0e7ff 0%, #c7d2fe 100%);
+  border-color: #818cf8;
+  box-shadow: 0 10px 32px rgba(99, 102, 241, 0.22);
+  transform: scale(1.02);
 }
 
-.request-row {
+.dash-card--offer .card-label { color: #3730a3; }
+.dash-card--offer .card-sub   { color: #6366f1; }
+.dash-card--offer:hover .card-icon-wrap { opacity: 1; }
+
+/* ── CTA: Bez ponude (emerald) ── */
+.dash-card--no-offer {
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(145deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1.5px solid #a7f3d0;
+  border-left: 1.5px solid #a7f3d0;
+  box-shadow: 0 4px 24px rgba(16, 185, 129, 0.10);
+}
+
+.dash-card--no-offer:hover {
+  background: linear-gradient(145deg, #d1fae5 0%, #a7f3d0 100%);
+  border-color: #34d399;
+  box-shadow: 0 10px 32px rgba(16, 185, 129, 0.22);
+  transform: scale(1.02);
+}
+
+.dash-card--no-offer .card-label { color: #065f46; }
+.dash-card--no-offer .card-sub   { color: #059669; }
+.dash-card--no-offer:hover .card-icon-wrap { opacity: 1; }
+
+/* ── Status kartica ── */
+.dash-card--status {
+  grid-column: span 2;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  min-height: 80px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border-left-width: 4px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.dash-card--status:hover {
+  transform: translateX(3px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.09);
+}
+
+/* ── Zajednički elementi CTA kartica ── */
+.card-icon-wrap {
   display: flex;
   align-items: center;
-  gap: 0;
-  padding: 0 20px;
-  height: 52px;
-  border-bottom: 1px solid #f3f4f6;
-  cursor: pointer;
-  transition: background 0.12s;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
 }
 
-.request-row:last-child { border-bottom: none; }
+.card-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 
-.request-row:hover { background: #f9fafb; }
+.card-label {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: color 0.2s ease;
+}
 
-.request-row:hover .row-chevron { color: #0067b8; transform: translateX(2px); }
-.request-row:hover { box-shadow: inset 3px 0 0 #0067b8; }
+.card-sub {
+  font-size: 0.75rem;
+  font-weight: 500;
+  opacity: 0.8;
+  letter-spacing: 0.01em;
+}
 
-.row-number {
-  min-width: 155px;
-  color: #0067b8;
+/* ── Dekorativni SVG ── */
+.card-deco {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+}
+
+.card-deco--offer {
+  bottom: -22px;
+  right: -22px;
+  width: 140px;
+  height: 140px;
+  opacity: 0.13;
+  transform: rotate(-25deg) scale(1.1);
+}
+
+.card-deco--no-offer {
+  bottom: -16px;
+  right: -20px;
+  width: 130px;
+  height: 130px;
+  opacity: 0.13;
+  transform: rotate(18deg) scale(1.05);
+}
+
+.card-deco--status {
+  right: 60px;
+  top: 50%;
+  transform: translateY(-50%) rotate(15deg);
+  width: 56px;
+  height: 56px;
+  opacity: 0.07;
+}
+
+/* ── Status kartica sadržaj ── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-number {
   font-size: 0.875rem;
   font-weight: 600;
-  letter-spacing: -0.005em;
+  color: #111827;
+  letter-spacing: -0.01em;
   flex-shrink: 0;
+  min-width: 160px;
 }
 
-.row-dept {
+.status-comment {
   flex: 1;
-  min-width: 0;
-  color: #111827;
   font-size: 0.8125rem;
+  color: #6b7280;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-right: 16px;
+  padding-right: 12px;
 }
 
-.row-person {
+.status-comment--empty {
   flex: 1;
-  min-width: 0;
-  color: #4b5563;
-  font-size: 0.8125rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding-right: 16px;
 }
 
-.row-amount {
-  min-width: 100px;
-  color: #111827;
-  font-size: 0.8125rem;
+.status-amount {
+  font-size: 0.875rem;
   font-weight: 500;
+  color: #374151;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
-  padding-right: 16px;
 }
 
-.row-date {
-  min-width: 90px;
-  color: #4b5563;
+.status-date {
   font-size: 0.8125rem;
+  color: #6b7280;
   flex-shrink: 0;
-  padding-right: 16px;
+  min-width: 90px;
+  text-align: right;
 }
 
-.row-chevron {
-  color: transparent;
+.status-chevron {
+  color: #d1d5db;
   flex-shrink: 0;
   transition: color 0.12s, transform 0.12s;
 }
 
-/* ── Status badges ── */
-.status {
-  display: inline-flex;
-  align-items: center;
-  min-height: 20px;
-  padding: 2px 8px;
-  border-radius: 3px;
-  background: #f3f4f6;
-  color: #374151;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  flex-shrink: 0;
-  margin-right: 16px;
-}
-
-.status--sent     { color: #1d4ed8; background: #dbeafe; }
-.status--review   { color: #92400e; background: #fef3c7; }
-.status--returned { color: #9a3412; background: #ffedd5; }
-.status--rejected { color: #991b1b; background: #fee2e2; }
-.status--ordered  { color: #065f46; background: #d1fae5; }
-.status--closed   { color: #166534; background: #dcfce7; }
-.status--default  { color: #374151; background: #f3f4f6; }
-
-/* ── Empty state ── */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 56px 24px;
-  text-align: center;
-}
-
-.empty-state__icon {
-  display: flex;
-  width: 48px;
-  height: 48px;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 14px;
-  border: 1px solid #e5e7eb;
-  color: #9ca3af;
-}
-
-.empty-state__title {
-  margin: 0 0 6px;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: #111827;
-}
-
-.empty-state__hint {
-  max-width: 300px;
+.dash-card--status:hover .status-chevron {
   color: #6b7280;
-  font-size: 0.8125rem;
-  line-height: 1.5;
+  transform: translateX(2px);
 }
 
-/* ── Minimal list (employee dashboard) ── */
-.request-list--minimal .request-row {
-  height: auto;
-  padding: 12px 20px;
-  align-items: center;
-}
-
-.request-list--minimal .row-number {
-  flex: 1;
-  min-width: 0;
-}
-
-.request-list--minimal .status {
-  flex: 1;
-  justify-content: center;
-  margin-right: 0;
-  font-size: 0.75rem;
-  padding: 4px 12px;
-  min-height: 24px;
-}
-
-.request-list--minimal .row-date {
-  flex: 1;
-  text-align: right;
-  padding-right: 12px;
-  color: #6b7280;
-  font-size: 0.8125rem;
-  flex-shrink: 0;
-}
-
-/* ── Admin stats ── */
-.admin-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.stat-card--action {
-  border-color: #bfdbfe;
-  background: #eff6ff;
-}
-
-.stat-card--action .stat-card__value { color: #1d4ed8; }
-.stat-card--action .stat-card__label { color: #1e40af; }
-
-/* ── Employee stats ── */
-.emp-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.stat-card {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 16px 20px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-}
-
-.stat-card--warn {
-  border-color: #fed7aa;
-  background: #fff7ed;
-}
-
-.stat-card__value {
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: #111827;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.stat-card--warn .stat-card__value { color: #c2410c; }
-
-.stat-card__label {
-  font-size: 0.75rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.stat-card--warn .stat-card__label { color: #9a3412; }
-
-/* ── Surface footer ── */
-.surface-footer {
-  all: unset;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  padding: 12px;
-  border-top: 1px solid #e5e7eb;
-  color: #0067b8;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  box-sizing: border-box;
-  transition: background 0.12s;
-}
-
-.surface-footer:hover { background: #f9fafb; }
-
-/* ── Responsive ── */
 @media (max-width: 760px) {
-  .page { padding: 24px 16px 24px; }
-  .page-header { flex-direction: column; align-items: stretch; gap: 16px; }
+  .page { padding: 24px 16px; }
+  .card-grid { grid-template-columns: 1fr; }
+  .dash-card--status { grid-column: span 1; }
   .page-header__title { font-size: 1.75rem; }
-  .admin-stats { grid-template-columns: repeat(2, 1fr); }
-  .emp-stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .stat-card { padding: 12px 14px; }
-  .stat-card__value { font-size: 1.375rem; }
-  .row-dept, .row-person, .row-amount, .row-date { display: none; }
-  .row-number { flex: 1; }
 }
 </style>

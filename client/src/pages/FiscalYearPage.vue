@@ -9,7 +9,6 @@
             <span class="breadcrumb__sep">›</span>
             <span class="breadcrumb__current">Poslovne godine</span>
           </nav>
-          <h1 class="page-header__title">Administracija poslovnih godina</h1>
         </div>
         <div class="page-header__actions">
           <button class="btn btn--cta" :disabled="hasOpenYear" @click="openCreateDialog">

@@ -73,46 +73,58 @@
         <!-- Navigation -->
         <nav class="sidebar-nav">
 
-          <!-- Nabava -->
-          <div class="nav-group">
-            <button class="nav-group__header" @click="toggleGroup('nabava')">
-              <img src="/solarlinear_NABAVA.svg" width="30" height="30" class="nav-group__icon" />
-              <span class="nav-group__label">Nabava</span>
-              <q-icon :name="openGroups.nabava ? 'expand_less' : 'expand_more'" size="15px" class="nav-group__chevron" />
-            </button>
-            <div v-show="miniMode || openGroups.nabava" class="nav-group__items">
-              <button
-                class="sidebar-nav__item"
-                :class="{ 'sidebar-nav__item--active': isActive('/requests/new') }"
-                @click="navigate('/requests/new')"
-              >
-                <img src="/solarlinear_NOVIZAHTJEV.svg" width="30" height="30" />
-                <span>Novi zahtjev</span>
+          <!-- Nabava: admin ima dropdown, zaposlenik samo link -->
+          <template v-if="isAdmin">
+            <div class="nav-group">
+              <button class="nav-group__header" @click="navigate('/nabava'); toggleGroup('nabava')">
+                <img src="/solarlinear_NABAVA.svg" width="30" height="30" class="nav-group__icon" />
+                <span class="nav-group__label">Nabava</span>
+                <q-icon :name="openGroups.nabava ? 'expand_less' : 'expand_more'" size="15px" class="nav-group__chevron" />
               </button>
-              <button
-                class="sidebar-nav__item"
-                :class="{ 'sidebar-nav__item--active': isActive('/requests') }"
-                @click="navigate('/requests')"
-              >
-                <img src="/solarlinear_MOJIZAHTJEVI.svg" width="30" height="30" />
-                <span>{{ isAdmin ? 'Zahtjevi' : 'Moji zahtjevi' }}</span>
-              </button>
-              <button
-                v-if="isAdmin"
-                class="sidebar-nav__item"
-                :class="{ 'sidebar-nav__item--active': isActive('/fiscal-years') }"
-                @click="navigate('/fiscal-years')"
-              >
-                <img src="/solarlinear_POSLOVNEGODINE.svg" width="30" height="30" />
-                <span>Poslovne godine</span>
-              </button>
-              <div v-if="isAdmin" class="sidebar-nav__item sidebar-nav__item--soon">
-                <img src="/solarlinear_FINANCIRANJE.svg" width="30" height="30" />
-                <span>Financiranje</span>
-                <span class="nav-soon-badge">uskoro</span>
+              <div v-show="miniMode || openGroups.nabava" class="nav-group__items">
+                <button
+                  class="sidebar-nav__item"
+                  :class="{ 'sidebar-nav__item--active': isActive('/requests/new') }"
+                  @click="navigate('/requests/new')"
+                >
+                  <img src="/solarlinear_NOVIZAHTJEV.svg" width="30" height="30" />
+                  <span>Novi zahtjev</span>
+                </button>
+                <button
+                  class="sidebar-nav__item"
+                  :class="{ 'sidebar-nav__item--active': isActive('/requests') }"
+                  @click="navigate('/requests')"
+                >
+                  <img src="/solarlinear_MOJIZAHTJEVI.svg" width="30" height="30" />
+                  <span>Zahtjevi</span>
+                </button>
+                <button
+                  class="sidebar-nav__item"
+                  :class="{ 'sidebar-nav__item--active': isActive('/fiscal-years') }"
+                  @click="navigate('/fiscal-years')"
+                >
+                  <img src="/solarlinear_POSLOVNEGODINE.svg" width="30" height="30" />
+                  <span>Poslovne godine</span>
+                </button>
+                <div class="sidebar-nav__item sidebar-nav__item--soon">
+                  <img src="/solarlinear_FINANCIRANJE.svg" width="30" height="30" />
+                  <span>Financiranje</span>
+                  <span class="nav-soon-badge">uskoro</span>
+                </div>
               </div>
             </div>
-          </div>
+          </template>
+
+          <template v-else>
+            <button
+              class="nav-group__header"
+              :class="{ 'nav-group__header--active': route.path === '/nabava' }"
+              @click="navigate('/nabava')"
+            >
+              <img src="/solarlinear_NABAVA.svg" width="30" height="30" class="nav-group__icon" />
+              <span class="nav-group__label">Nabava</span>
+            </button>
+          </template>
           <div class="nav-group nav-group--soon">
             <div class="nav-group__header nav-group__header--soon">
               <img src="/solarlinear_PUTNINALOG.svg" width="30" height="30" class="nav-group__icon" />
@@ -403,6 +415,13 @@ onMounted(() => {
 
 .nav-group__header:hover {
   color: #14bae4;
+}
+
+.nav-group__header--active {
+  background: #e8f8fd;
+  border-left: 3px solid #00afdb;
+  padding-left: 9px;
+  color: #00afdb;
 }
 
 .nav-group__label {

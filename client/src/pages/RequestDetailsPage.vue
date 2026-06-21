@@ -22,7 +22,6 @@
               <span class="breadcrumb__current">{{ request.request_number }}</span>
             </nav>
             <div class="page-header__title-row">
-              <h1 class="page-header__title">{{ request.request_number }}</h1>
               <span class="status" :class="statusClass(request.fk_request_status)">
                 {{ request.status_name }}
               </span>

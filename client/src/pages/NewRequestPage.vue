@@ -14,10 +14,6 @@
             <span class="breadcrumb__sep">›</span>
             <span class="breadcrumb__current">Novi zahtjev</span>
           </nav>
-          <h1 class="page-header__title">Novi zahtjev za nabavu</h1>
-          <p class="page-header__subtitle">
-            Ispunite korake u nastavku. Uneseni podaci ostaju sačuvani dok prolazite kroz obrazac.
-          </p>
         </div>
         <button class="btn btn--ghost" @click="$router.push('/requests')">
           <q-icon name="close" size="16px" />
@@ -835,7 +831,7 @@ onMounted(() => fetchReferenceData());
 }
 
 .page-shell {
-  max-width: 1100px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -980,6 +976,7 @@ onMounted(() => fetchReferenceData());
   grid-template-columns: 240px 1fr;
   gap: 16px;
   align-items: start;
+  max-width: 1100px;
 }
 
 /* ─────────────────────────────────

@@ -9,12 +9,8 @@
             <span class="breadcrumb__sep">›</span>
             <span class="breadcrumb__current">{{ isAdmin ? 'Zahtjevi' : 'Moji zahtjevi' }}</span>
           </nav>
-          <h1 class="page-header__title">{{ isAdmin ? 'Zahtjevi' : 'Moji zahtjevi' }}</h1>
-          <p class="page-header__subtitle">
-            Pregled, pretraživanje i praćenje statusa zahtjeva za nabavu.
-          </p>
         </div>
-        <div v-if="isAdmin" class="page-header__actions">
+        <div class="page-header__actions">
           <button class="btn btn--cta" @click="$router.push('/requests/new')">
             <q-icon name="add" size="20px" />
             <span>Novi zahtjev</span>
@@ -22,69 +18,27 @@
         </div>
       </header>
 
-      <section class="summary-strip" :class="isAdmin ? 'summary-strip--4col' : 'summary-strip--2col'" aria-label="Sažetak zahtjeva">
-
-        <template v-if="isAdmin">
-          <div class="summary-item summary-item--total">
-            <div class="summary-item__icon">
-              <q-icon name="folder_open" size="15px" />
-            </div>
-            <span class="summary-item__value">{{ counts.total }}</span>
-            <span class="summary-item__label">Ukupno zahtjeva</span>
-          </div>
-          <div class="summary-item summary-item--active">
-            <div class="summary-item__icon">
-              <q-icon name="autorenew" size="15px" />
-            </div>
-            <span class="summary-item__value">{{ counts.active }}</span>
-            <span class="summary-item__label">Aktivni</span>
-          </div>
-          <div class="summary-item summary-item--attention">
-            <div class="summary-item__icon">
-              <q-icon name="inbox" size="15px" />
-            </div>
-            <span class="summary-item__value">{{ counts.attention }}</span>
-            <span class="summary-item__label">Čeka pregled</span>
-          </div>
-          <div class="summary-item summary-item--closed">
-            <div class="summary-item__icon">
-              <q-icon name="task_alt" size="15px" />
-            </div>
-            <span class="summary-item__value">{{ counts.closed }}</span>
-            <span class="summary-item__label">Zatvoreno</span>
-          </div>
-        </template>
-
-        <template v-else>
-          <button class="summary-card summary-card--new" @click="$router.push('/requests/new')">
-            <img src="/solarlinear_NABAVA.svg" alt="" class="card-deco" />
-            <div class="new-card__icon-wrap">
-              <img src="/solarlinear_NOVIZAHTJEV.svg" alt="" class="new-card__icon" />
-            </div>
-            <span class="new-card__label">Novi zahtjev</span>
-          </button>
-
-          <button
-            v-if="rows.length"
-            class="summary-card summary-card--status"
-            :style="lastRequestStyle.card"
-            @click="openRequest(rows[0].id_purchase_request)"
-          >
-            <img src="/solarlinear_MOJIZAHTJEVI.svg" alt="" class="card-deco card-deco--status" />
-            <span class="status-card__badge" :style="lastRequestStyle.badge">
-              {{ rows[0].status_name }}
-            </span>
-            <span class="status-card__number">{{ rows[0].request_number }}</span>
-            <span class="status-card__amount">{{ formatCurrency(rows[0].total_amount) }}</span>
-            <span class="status-card__date">{{ formatDate(rows[0].created_at) }}</span>
-            <q-icon name="chevron_right" size="16px" class="status-card__chevron" />
-          </button>
-          <div v-else class="summary-card summary-card--empty">
-            <q-icon name="inbox" size="22px" class="empty-card__icon" />
-            <span class="empty-card__label">Nema zahtjeva</span>
-          </div>
-        </template>
-
+      <section class="summary-strip summary-strip--4col" aria-label="Sažetak zahtjeva">
+        <div class="summary-item summary-item--total">
+          <div class="summary-item__icon"><q-icon name="folder_open" size="15px" /></div>
+          <span class="summary-item__value">{{ counts.total }}</span>
+          <span class="summary-item__label">Ukupno zahtjeva</span>
+        </div>
+        <div class="summary-item summary-item--active">
+          <div class="summary-item__icon"><q-icon name="autorenew" size="15px" /></div>
+          <span class="summary-item__value">{{ counts.active }}</span>
+          <span class="summary-item__label">Aktivni</span>
+        </div>
+        <div class="summary-item summary-item--attention">
+          <div class="summary-item__icon"><q-icon name="inbox" size="15px" /></div>
+          <span class="summary-item__value">{{ counts.attention }}</span>
+          <span class="summary-item__label">{{ isAdmin ? 'Čeka pregled' : 'Vraćeno na dopunu' }}</span>
+        </div>
+        <div class="summary-item summary-item--closed">
+          <div class="summary-item__icon"><q-icon name="task_alt" size="15px" /></div>
+          <span class="summary-item__value">{{ counts.closed }}</span>
+          <span class="summary-item__label">Zatvoreno</span>
+        </div>
       </section>
 
       <section class="list-surface">
@@ -312,14 +266,15 @@ const STATUS_STYLES = {
 
 const DEFAULT_STYLE = { background: '#f9fafb', badge: '#374151', badgeBg: '#f3f4f6', border: '#d1d5db' };
 
-const lastRequestStyle = computed(() => {
-  if (!rows.value.length) return { card: {}, badge: {} };
-  const s = STATUS_STYLES[rows.value[0].fk_request_status] ?? DEFAULT_STYLE;
+function buildRequestStyle(row) {
+  const s = STATUS_STYLES[row.fk_request_status] ?? DEFAULT_STYLE;
   return {
     card:  { background: s.background, borderLeftColor: s.border },
     badge: { color: s.badge, background: s.badgeBg },
   };
-});
+}
+
+
 
 const hasActiveFilters = computed(() =>
   searchQuery.value
@@ -629,14 +584,26 @@ onMounted(async () => {
 /* ── Dekorativni SVG ── */
 .card-deco {
   position: absolute;
-  bottom: -18px;
-  right: -18px;
-  width: 115px;
-  height: 115px;
-  opacity: 0.07;
-  transform: rotate(-20deg);
   pointer-events: none;
   user-select: none;
+}
+
+.card-deco--offer {
+  bottom: -22px;
+  right: -22px;
+  width: 140px;
+  height: 140px;
+  opacity: 0.13;
+  transform: rotate(-25deg) scale(1.1);
+}
+
+.card-deco--no-offer {
+  bottom: -16px;
+  right: -20px;
+  width: 130px;
+  height: 130px;
+  opacity: 0.13;
+  transform: rotate(18deg) scale(1.05);
 }
 
 .card-deco--status {
@@ -648,23 +615,49 @@ onMounted(async () => {
   transform: rotate(15deg);
 }
 
-/* ── Novi zahtjev (lijeva) ── */
-.summary-card--new {
+/* ── Kartica: Sa ponudom (indigo) ── */
+.summary-card--offer {
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  background: linear-gradient(160deg, #ffffff 0%, #f3f4f6 100%);
-  border: 1.5px dashed #d1d5db;
-  box-shadow: none;
+  gap: 10px;
+  background: linear-gradient(145deg, #eef2ff 0%, #e0e7ff 100%);
+  border: 1.5px solid #c7d2fe;
+  box-shadow: 0 4px 24px rgba(99, 102, 241, 0.10);
 }
 
-.summary-card--new:hover {
-  border-color: #00afdb;
-  box-shadow: 0 8px 28px rgba(0, 175, 219, 0.18);
+.summary-card--offer:hover {
+  background: linear-gradient(145deg, #e0e7ff 0%, #c7d2fe 100%);
+  border-color: #818cf8;
+  box-shadow: 0 10px 32px rgba(99, 102, 241, 0.22);
   transform: scale(1.02);
-  background: linear-gradient(160deg, #f0fbff 0%, #e0f6fd 100%);
 }
 
+.summary-card--offer .new-card__label { color: #3730a3; }
+.summary-card--offer .new-card__sub   { color: #6366f1; }
+.summary-card--offer:hover .new-card__icon-wrap { opacity: 1; }
+
+/* ── Kartica: Bez ponude (emerald) ── */
+.summary-card--no-offer {
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(145deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1.5px solid #a7f3d0;
+  box-shadow: 0 4px 24px rgba(16, 185, 129, 0.10);
+}
+
+.summary-card--no-offer:hover {
+  background: linear-gradient(145deg, #d1fae5 0%, #a7f3d0 100%);
+  border-color: #34d399;
+  box-shadow: 0 10px 32px rgba(16, 185, 129, 0.22);
+  transform: scale(1.02);
+}
+
+.summary-card--no-offer .new-card__label { color: #065f46; }
+.summary-card--no-offer .new-card__sub   { color: #059669; }
+.summary-card--no-offer:hover .new-card__icon-wrap { opacity: 1; }
+
+/* ── Zajednički elementi kartica ── */
 .new-card__icon-wrap {
   display: flex;
   align-items: center;
@@ -672,11 +665,9 @@ onMounted(async () => {
   width: 30%;
   aspect-ratio: 1;
   max-width: 72px;
-  opacity: 0.6;
+  opacity: 0.7;
   transition: opacity 0.2s ease;
 }
-
-.summary-card--new:hover .new-card__icon-wrap { opacity: 1; }
 
 .new-card__icon {
   width: 100%;
@@ -685,14 +676,18 @@ onMounted(async () => {
 }
 
 .new-card__label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #374151;
+  font-size: 0.9375rem;
+  font-weight: 700;
   letter-spacing: 0.01em;
   transition: color 0.2s ease;
 }
 
-.summary-card--new:hover .new-card__label { color: #00afdb; }
+.new-card__sub {
+  font-size: 0.75rem;
+  font-weight: 500;
+  opacity: 0.8;
+  letter-spacing: 0.01em;
+}
 
 /* ── Status kartica (desna) ── */
 .summary-card--status {
@@ -703,6 +698,11 @@ onMounted(async () => {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-left: 4px solid transparent;
+}
+
+.summary-card--wide {
+  grid-column: span 2;
+  min-height: 100px;
 }
 
 .summary-card--status:hover {

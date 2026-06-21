@@ -9,7 +9,6 @@
             <span class="breadcrumb__sep">›</span>
             <span class="breadcrumb__current">Korisnici</span>
           </nav>
-          <h1 class="page-header__title">Korisnici</h1>
         </div>
         <div class="page-header__actions">
           <button class="btn btn--cta" type="button" @click="openCreateDialog">
