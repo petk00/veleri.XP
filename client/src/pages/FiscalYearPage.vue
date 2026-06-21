@@ -4,7 +4,11 @@
 
       <header class="page-header">
         <div class="page-header__main">
-          <h1 class="page-header__title">Administracija poslovnih godina</h1>
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <span class="breadcrumb__item">Administracija</span>
+            <span class="breadcrumb__sep">›</span>
+            <span class="breadcrumb__current">Poslovne godine</span>
+          </nav>
         </div>
         <div class="page-header__actions">
           <button class="btn btn--cta" :disabled="hasOpenYear" @click="openCreateDialog">
@@ -443,7 +447,31 @@ onMounted(loadYears);
   display: flex; align-items: flex-start; justify-content: space-between;
   gap: 24px; margin-bottom: 28px;
 }
-.page-header__eyebrow { margin-bottom: 8px; color: #0067b8; font-size: 0.75rem; font-weight: 600; }
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.breadcrumb__item {
+  color: #6b7280;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.breadcrumb__sep {
+  color: #d1d5db;
+  font-size: 0.875rem;
+  user-select: none;
+}
+
+.breadcrumb__current {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+}
 .page-header__title { margin: 0; color: #111827; font-size: 2.25rem; font-weight: 600; letter-spacing: -0.015em; line-height: 1.1; }
 .page-header__actions { flex-shrink: 0; }
 

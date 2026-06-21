@@ -1,10 +1,3 @@
-// Dashboard pripremljen za buduću multi-modularnu fazu aplikacije.
-// Trenutno nerutiran - aplikacija ima samo jedan modul (Nabava),
-// gdje direktan pristup /requests ima bolji UX od presretanja
-// korisnika dashboardom prije nego dođe do posla koji treba obaviti.
-// Aktivirati kad se doda drugi modul i postoji stvarna potreba za
-// agregiranim pregledom kroz module.
-
 <template>
   <q-page class="page">
     <div class="page-shell">
@@ -16,77 +9,19 @@
             Bok, <span class="page-header__name">{{ user?.first_name || 'korisniče' }}</span>
           </h1>
         </div>
-        <div class="page-header__actions">
-          <button class="btn btn--cta" type="button" @click="$router.push('/requests/new')">
-            <q-icon name="add" size="20px" />
-            <span>Novi zahtjev</span>
-          </button>
-        </div>
       </header>
 
       <div v-if="loading" class="loading-block">
         <q-spinner color="primary" size="28px" />
       </div>
 
-      <!-- ── Admin view ── -->
-      <template v-else-if="isAdmin">
-
-        <div class="admin-stats">
-          <div class="stat-card">
-            <span class="stat-card__value">{{ adminTotal }}</span>
-            <span class="stat-card__label">Ukupno zahtjeva</span>
-          </div>
-          <div class="stat-card" :class="{ 'stat-card--action': adminActionable > 0 }">
-            <span class="stat-card__value">{{ adminActionable }}</span>
-            <span class="stat-card__label">Čeka akciju</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-card__value">{{ adminOrdered }}</span>
-            <span class="stat-card__label">Naručeno</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-card__value">{{ adminClosed }}</span>
-            <span class="stat-card__label">Zatvoreno</span>
-          </div>
-        </div>
-
-        <section class="list-surface">
-          <div class="surface-header">
-            <h2 class="surface-title">Čeka vašu akciju</h2>
-            <span v-if="displayRows.length > 0" class="surface-count">{{ displayRows.length }}</span>
-          </div>
-          <div v-if="displayRows.length === 0" class="empty-state">
-            <div class="empty-state__icon"><q-icon name="check_circle" size="28px" /></div>
-            <div class="empty-state__title">Sve je obrađeno</div>
-            <div class="empty-state__hint">Trenutno nema zahtjeva koji čekaju vašu akciju.</div>
-          </div>
-          <ul v-else class="request-list">
-            <li
-              v-for="r in displayRows"
-              :key="r.id_purchase_request"
-              class="request-row"
-              @click="$router.push(`/requests/${r.id_purchase_request}`)"
-            >
-              <span class="row-number">{{ r.request_number }}</span>
-              <span class="row-dept">{{ r.department_name }}</span>
-              <span class="row-person">{{ r.created_by }}</span>
-              <span class="status" :class="statusClass(r.status_name)">{{ r.status_name }}</span>
-              <span class="row-amount">{{ formatCurrency(r.total_amount) }}</span>
-              <span class="row-date">{{ formatDate(r.created_at) }}</span>
-              <q-icon name="chevron_right" size="16px" class="row-chevron" />
-            </li>
-          </ul>
-        </section>
-      </template>
-
-      <!-- ── Employee view ── -->
       <template v-else>
 
         <!-- Vraćen alert -->
         <div
           v-if="returnedAlertItem"
           class="returned-alert"
-          @click="$router.push(`/requests/${returnedAlertItem.id_purchase_request}`)"
+          @click="$router.push(`/zahtjevi/${returnedAlertItem.id_purchase_request}`)"
         >
           <q-icon name="undo" size="15px" class="returned-alert__icon" />
           <span>
@@ -96,42 +31,141 @@
           <q-icon name="chevron_right" size="15px" class="returned-alert__chevron" />
         </div>
 
-        <!-- Statistike -->
-        <div class="emp-stats">
-          <div class="stat-card">
-            <span class="stat-card__value">{{ totalCount }}</span>
-            <span class="stat-card__label">Ukupno zahtjeva</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-card__value">{{ activeCount }}</span>
-            <span class="stat-card__label">Aktivni</span>
-          </div>
-          <div class="stat-card" :class="{ 'stat-card--warn': returnedCount > 0 }">
-            <span class="stat-card__value">{{ returnedCount }}</span>
-            <span class="stat-card__label">Vraćeno na dopunu</span>
-          </div>
-        </div>
+        <!-- Cards grid -->
+        <section class="card-grid">
 
-        <!-- Nedavni zahtjevi -->
-        <section class="list-surface">
-          <div v-if="displayRows.length === 0" class="empty-state">
-            <div class="empty-state__icon"><q-icon name="inbox" size="28px" /></div>
-            <div class="empty-state__title">Nemate zahtjeva</div>
-            <div class="empty-state__hint">Kreirajte prvi zahtjev za nabavu klikom na "Novi zahtjev".</div>
-          </div>
-          <ul v-else class="request-list request-list--minimal">
-            <li
-              v-for="r in displayRows"
-              :key="r.id_purchase_request"
-              class="request-row"
-              @click="$router.push(`/requests/${r.id_purchase_request}`)"
+          <!-- Gornji red: kvadratne kartice -->
+          <div class="square-row">
+            <button class="dash-card dash-card--offer" @click="$router.push('/zahtjevi/novi')">
+              <!-- Dekorativni SVG pozadina -->
+              <img src="/solarlinear_NOVIZAHTJEV.svg" alt="" class="offer-deco" />
+
+              <!-- Header -->
+              <span class="card-label">Novi zahtjev</span>
+              <span class="card-sub">Pokrenite postupak nabave u par koraka</span>
+
+              <!-- Koraci -->
+              <ol class="offer-steps">
+                <li class="offer-step">
+                  <div class="offer-step__icon">
+                    <img src="/solarlinear_NABAVA.svg" alt="" />
+                  </div>
+                  <span class="offer-step__text">Izaberite predmete koje naručujete</span>
+                </li>
+                <li class="offer-step">
+                  <div class="offer-step__icon">
+                    <img src="/solarlinear_FINANCIRANJE.svg" alt="" />
+                  </div>
+                  <span class="offer-step__text">Priložite ponudu dobavljača <em>(opcionalno)</em></span>
+                </li>
+                <li class="offer-step">
+                  <div class="offer-step__icon">
+                    <img src="/solarlinear_POSLOVNEGODINE.svg" alt="" />
+                  </div>
+                  <span class="offer-step__text">Odaberite odjel ili projekt</span>
+                </li>
+                <li class="offer-step">
+                  <div class="offer-step__icon">
+                    <img src="/solarlinear_KORISNICI.svg" alt="" />
+                  </div>
+                  <span class="offer-step__text">Pošaljite zahtjev na obradu</span>
+                </li>
+                <li class="offer-step">
+                  <div class="offer-step__icon">
+                    <img src="/solarlinear_MOJIZAHTJEVI.svg" alt="" />
+                  </div>
+                  <span class="offer-step__text">Pratite status u stvarnom vremenu</span>
+                </li>
+              </ol>
+            </button>
+
+            <button
+              v-if="recentRows[0]"
+              class="dash-card dash-card--featured"
+              :style="buildRequestStyle(recentRows[0]).featuredCard"
+              @click="$router.push(`/zahtjevi/${recentRows[0].id_purchase_request}`)"
             >
-              <span class="row-number">{{ r.request_number }}</span>
-              <span class="status" :class="statusClass(r.status_name)">{{ r.status_name }}</span>
-              <span class="row-date">{{ formatDate(r.created_at) }}</span>
-              <q-icon name="chevron_right" size="16px" class="row-chevron" />
-            </li>
-          </ul>
+              <!-- Dekorativni SVG -->
+              <img
+                :src="recentRows[0].fk_request_status === 7 ? '/bag-check-svgrepo-com.svg'
+                    : recentRows[0].fk_request_status === 1 ? '/rocket-2-svgrepo-com.svg'
+                    : recentRows[0].fk_request_status === 6 ? '/bus-svgrepo-com.svg'
+                    : '/solarlinear_MOJIZAHTJEVI.svg'"
+                alt=""
+                class="featured-deco"
+              />
+
+              <!-- Header -->
+              <div class="featured-header">
+                <span class="status-badge featured-badge" :style="buildRequestStyle(recentRows[0]).badge">
+                  <q-icon :name="statusIcon(recentRows[0])" size="12px" class="badge-icon" />
+                  {{ recentRows[0].status_name }}
+                </span>
+                <div class="featured-header__row">
+                  <span class="featured-number" :style="{ color: buildRequestStyle(recentRows[0]).badge.color }">{{ recentRows[0].request_number }}</span>
+                  <span class="featured-amount">{{ formatCurrency(recentRows[0].total_amount) }}</span>
+                </div>
+              </div>
+
+              <!-- Timeline -->
+              <ol v-if="featuredHistory.length" class="featured-timeline">
+                <template v-for="(entry, i) in featuredHistory" :key="entry.id_request_status_history">
+                  <li class="ftl-item">
+                    <div class="ftl-dot">
+                      <q-icon :name="tlIcon(entry)" size="11px" />
+                    </div>
+                    <div class="ftl-body">
+                      <span class="ftl-title">{{ tlTitle(entry) }}</span>
+                      <span v-if="entry.comment && !entry.comment.startsWith('Dokument') && !entry.comment.startsWith('Zahtjev') && !entry.comment.startsWith('Dodan')" class="ftl-comment">{{ entry.comment }}</span>
+                    </div>
+                  </li>
+                  <li v-if="i < featuredHistory.length - 1" class="ftl-arrow" aria-hidden="true">↓</li>
+                </template>
+              </ol>
+
+              <!-- Footer -->
+              <div class="featured-footer">
+                <div class="featured-footer__meta">
+                  <span class="fmeta-item">
+                    <q-icon name="calendar_today" size="12px" />
+                    {{ formatDate(featuredCreatedAt) }}
+                  </span>
+                  <span class="fmeta-sep">·</span>
+                  <span class="fmeta-item" :class="featuredHasPonuda ? 'fmeta--ok' : 'fmeta--missing'">
+                    <q-icon :name="featuredHasPonuda ? 'check_circle' : 'radio_button_unchecked'" size="13px" />
+                    Ponuda
+                  </span>
+                  <span class="fmeta-sep">·</span>
+                  <span class="fmeta-item" :class="featuredHasOtpremnica ? 'fmeta--ok' : 'fmeta--missing'">
+                    <q-icon :name="featuredHasOtpremnica ? 'check_circle' : 'radio_button_unchecked'" size="13px" />
+                    Otpremnica
+                  </span>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Ostali nalozi -->
+          <div v-if="recentRows.slice(1).length" class="requests-box">
+            <button
+              v-for="row in recentRows.slice(1)"
+              :key="row.id_purchase_request"
+              class="dash-card dash-card--status"
+              :style="buildRequestStyle(row).card"
+              @click="$router.push(`/zahtjevi/${row.id_purchase_request}`)"
+            >
+              <span class="status-badge" :style="buildRequestStyle(row).badge">
+                <q-icon :name="statusIcon(row)" size="12px" class="badge-icon" />
+                {{ row.status_name }}
+              </span>
+              <span class="status-number">{{ row.request_number }}</span>
+              <span v-if="row.last_comment" class="status-comment">{{ row.last_comment }}</span>
+              <span v-else class="status-comment status-comment--empty" />
+              <span class="status-amount">{{ formatCurrency(row.total_amount) }}</span>
+              <q-icon name="chevron_right" size="16px" class="status-chevron" />
+            </button>
+          </div>
+
         </section>
 
       </template>
@@ -146,7 +180,6 @@ import { api } from 'boot/axios';
 import { getStoredUser } from 'src/utils/authStorage';
 
 const user = getStoredUser();
-const isAdmin = user?.role_name === 'Administrator';
 
 const loading = ref(true);
 const allRequests = ref([]);
@@ -159,45 +192,46 @@ const todayFormatted = computed(() => {
 });
 
 const returnedAlertItem = computed(() =>
-  allRequests.value.find(r => r.status_name === 'Vraćeno na dopunu/izmjenu') || null
+  allRequests.value.find(r => r.fk_request_status === 3) || null
 );
 
-// Admin stats
-const adminTotal = computed(() => allRequests.value.length);
-const adminActionable = computed(() =>
-  allRequests.value.filter(r => ['Poslano', 'Na odobrenju'].includes(r.status_name)).length
-);
-const adminOrdered = computed(() =>
-  allRequests.value.filter(r => r.status_name === 'Naručeno').length
-);
-const adminClosed = computed(() =>
-  allRequests.value.filter(r => r.status_name === 'Zatvoreno').length
-);
-
-const totalCount = computed(() => allRequests.value.length);
-
-const activeCount = computed(() =>
-  allRequests.value.filter(r => !['Zatvoreno', 'Odbijeno'].includes(r.status_name)).length
-);
-
-const returnedCount = computed(() =>
-  allRequests.value.filter(r => r.status_name === 'Vraćeno na dopunu/izmjenu').length
-);
-
-const displayRows = computed(() => {
-  if (isAdmin) {
-    const priority = { 'Poslano': 1, 'Na odobrenju': 2, 'Naručeno': 3 };
-    return allRequests.value
-      .filter(r => priority[r.status_name] !== undefined)
-      .sort((a, b) => {
-        const d = priority[a.status_name] - priority[b.status_name];
-        return d !== 0 ? d : new Date(b.created_at) - new Date(a.created_at);
-      });
-  }
-  return [...allRequests.value]
+const recentRows = computed(() =>
+  [...allRequests.value]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 3);
-});
+);
+
+const STATUS_STYLES = {
+  1: { background: '#eff6ff', badge: '#1d4ed8', badgeBg: '#dbeafe', border: '#93c5fd' },
+  2: { background: '#fffbeb', badge: '#b45309', badgeBg: '#fef3c7', border: '#fcd34d' },
+  3: { background: '#fff7ed', badge: '#c2410c', badgeBg: '#ffedd5', border: '#fdba74' },
+  4: { background: '#f0fdf4', badge: '#15803d', badgeBg: '#dcfce7', border: '#86efac' },
+  5: { background: '#fef2f2', badge: '#b91c1c', badgeBg: '#fee2e2', border: '#fca5a5' },
+  6: { background: '#faf5ff', badge: '#7c3aed', badgeBg: '#ede9fe', border: '#c4b5fd' },
+  7: { background: '#dcfce7', badge: '#166534', badgeBg: '#bbf7d0', border: '#4ade80' },
+};
+
+const DEFAULT_STYLE = { background: '#f9fafb', badge: '#374151', badgeBg: '#f3f4f6', border: '#d1d5db' };
+
+const STATUS_ICONS = {
+  1: 'outbox',
+  2: 'pending',
+  3: 'undo',
+  4: 'verified',
+  5: 'close',
+  6: 'local_shipping',
+  7: 'task_alt',
+};
+
+const statusIcon = (row) => STATUS_ICONS[row.fk_request_status] ?? 'circle';
+
+function buildRequestStyle(row) {
+  const s = STATUS_STYLES[row.fk_request_status] ?? DEFAULT_STYLE;
+  return {
+    card:         { borderLeftColor: s.border },
+    featuredCard: { borderColor: s.border, background: s.background },
+    badge:        { color: s.badge, background: s.badgeBg },
+  };
+}
 
 const formatCurrency = (value) => {
   if (value == null) return '—';
@@ -211,23 +245,56 @@ const formatDate = (value) => {
   });
 };
 
-const statusClass = (status) => {
-  switch ((status || '').toLowerCase().replace(/\s*\/\s*/g, '/')) {
-    case 'poslano':                   return 'status--sent';
-    case 'na odobrenju':              return 'status--review';
-    case 'vraćeno na dopunu/izmjenu': return 'status--returned';
-    case 'odbijeno':                  return 'status--rejected';
-    case 'naručeno':
-    case 'odobreno':                  return 'status--ordered';
-    case 'zatvoreno':                 return 'status--closed';
-    default:                          return 'status--default';
-  }
+const featuredHistory = ref([]);
+const featuredAttachments = ref([]);
+const featuredCreatedAt = ref(null);
+
+const featuredHasPonuda = computed(() => featuredAttachments.value.some(a => a.document_type === 'Ponuda'));
+const featuredHasOtpremnica = computed(() => featuredAttachments.value.some(a => a.document_type === 'Otpremnica'));
+
+const tlIcon = (entry) => {
+  if (entry.comment?.startsWith('Dokument dodan')) return 'attach_file';
+  if (entry.comment?.startsWith('Dokument obrisan')) return 'delete';
+  if (entry.comment?.startsWith('Zahtjev izmijenjen')) return 'edit';
+  if (entry.comment?.startsWith('Dodan procijenjeni iznos')) return 'payments';
+  const map = { 1: 'outbox', 2: 'pending', 3: 'undo', 5: 'close', 6: 'local_shipping', 7: 'task_alt' };
+  return map[entry.fk_request_status] ?? 'circle';
+};
+
+const tlTitle = (entry) => {
+  if (entry.comment?.startsWith('Dokument dodan: Ponuda')) return 'Priložena ponuda';
+  if (entry.comment?.startsWith('Dokument dodan: Otpremnica')) return 'Priložena otpremnica';
+  if (entry.comment?.startsWith('Dokument dodan')) return 'Priložen dokument';
+  if (entry.comment?.startsWith('Dokument obrisan')) return 'Uklonjen dokument';
+  if (entry.comment?.startsWith('Zahtjev izmijenjen')) return 'Izmjena zahtjeva';
+  if (entry.comment?.startsWith('Dodan procijenjeni iznos')) return 'Upisan iznos';
+  const labels = {
+    'Poslano': 'Zahtjev poslan',
+    'Na odobrenju': 'Preuzeto na obradu',
+    'Vraćeno': 'Vraćeno na dopunu',
+    'Naručeno': 'Odobreno i naručeno',
+    'Zatvoreno': 'Zahtjev zatvoren',
+  };
+  return labels[entry.status_name] ?? entry.status_name;
 };
 
 onMounted(async () => {
   try {
-    const { data } = await api.get('/requests', { params: { limit: 500 } });
+    const currentYear = new Date().getFullYear();
+    const { data } = await api.get('/requests', { params: { limit: 500, fiscalYear: currentYear, onlyMine: 1 } });
     allRequests.value = Array.isArray(data.data) ? data.data : [];
+
+    const sorted = [...allRequests.value].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    if (sorted[0]) {
+      const id = sorted[0].id_purchase_request;
+      const [{ data: detail }, { data: atts }] = await Promise.all([
+        api.get(`/requests/${id}`),
+        api.get(`/requests/${id}/attachments`),
+      ]);
+      featuredHistory.value = detail.history || [];
+      featuredAttachments.value = Array.isArray(atts) ? atts : [];
+      featuredCreatedAt.value = detail.created_at || sorted[0].created_at;
+    }
   } catch (e) {
     console.error(e);
   } finally {
@@ -245,7 +312,7 @@ onMounted(async () => {
 }
 
 .page-shell {
-  max-width: 900px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -260,9 +327,10 @@ onMounted(async () => {
 
 .page-header__eyebrow {
   margin-bottom: 8px;
-  color: #0067b8;
+  color: #1b2d59;
   font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.03em;
 }
 
 .page-header__title {
@@ -274,29 +342,7 @@ onMounted(async () => {
   line-height: 1.1;
 }
 
-.page-header__name { color: #0067b8; }
-
-.page-header__actions { flex-shrink: 0; }
-
-.btn--cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 0 24px;
-  border: none;
-  border-radius: 3px;
-  background: #0067b8;
-  color: #fff;
-  font: inherit;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s;
-}
-
-.btn--cta:hover { background: #005a9e; }
+.page-header__name { color: #14bae4; }
 
 /* ── Loading ── */
 .loading-block {
@@ -305,7 +351,7 @@ onMounted(async () => {
   padding: 64px 0;
 }
 
-/* ── Returned alert ── */
+/* ── Vraćen alert ── */
 .returned-alert {
   display: flex;
   align-items: center;
@@ -317,6 +363,7 @@ onMounted(async () => {
   color: #7c2d12;
   font-size: 0.8125rem;
   cursor: pointer;
+  border-radius: 6px;
   transition: background 0.12s;
 }
 
@@ -324,290 +371,485 @@ onMounted(async () => {
 .returned-alert__icon { flex-shrink: 0; color: #c2410c; }
 .returned-alert__chevron { margin-left: auto; flex-shrink: 0; color: #c2410c; }
 
-/* ── List surface ── */
-.list-surface {
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  overflow: hidden;
+
+/* ── Card grid ── */
+.card-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
 }
 
-.surface-header {
+/* ── Base card ── */
+.dash-card {
+  all: unset;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 16px;
+  min-height: 130px;
+  padding: 20px 24px;
+  box-sizing: border-box;
+  cursor: pointer;
+  border-left: 4px solid transparent;
+  transition: all 0.2s ease;
+}
+
+/* ── Square row ── */
+.square-row {
+  display: flex;
+  gap: 16px;
+}
+
+
+.square-row .dash-card {
+  width: 480px;
+  height: 480px;
+  min-height: unset;
+  flex-shrink: 0;
+}
+
+/* ── CTA: Novi zahtjev (navy/cyan) ── */
+
+.dash-card--offer {
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 6px;
+  background: linear-gradient(145deg, #e8f6fd 0%, #cceef9 100%);
+  border: 1.5px solid #00afdb;
+  border-left: 1.5px solid #00afdb;
+  box-shadow: 0 4px 24px rgba(0, 175, 219, 0.12);
+}
+
+.dash-card--offer:hover {
+  background: linear-gradient(145deg, #d0edf9 0%, #b3e4f5 100%);
+  border-color: #14bae4;
+  box-shadow: 0 10px 32px rgba(0, 175, 219, 0.25);
+  transform: scale(1.02);
+}
+
+.offer-deco {
+  position: absolute;
+  bottom: -20px;
+  right: -10px;
+  width: 260px;
+  height: 260px;
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.offer-steps {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.offer-step {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 20px;
-  border-bottom: 1px solid #e5e7eb;
+  gap: 12px;
 }
 
-.surface-title {
-  margin: 0;
+.offer-step__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 175, 219, 0.12);
+  border: 1px solid rgba(0, 175, 219, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.offer-step__icon img {
+  width: 18px;
+  height: 18px;
+  opacity: 0.7;
+}
+
+.offer-step__text {
   font-size: 0.8125rem;
-  font-weight: 600;
-  color: #111827;
+  font-weight: 500;
+  color: #1b2d59;
+  line-height: 1.3;
 }
 
-.surface-count {
-  color: #6b7280;
+.offer-step__text em {
+  font-style: normal;
+  opacity: 0.6;
   font-size: 0.75rem;
 }
 
-/* ── Request list ── */
-.request-list {
+.offer-step__arrow {
+  padding: 2px 0 2px 15px;
+  color: rgba(0, 175, 219, 0.5);
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.dash-card--offer .card-label {
+  color: #1b2d59;
+  font-size: 2rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  position: relative;
+  z-index: 1;
+}
+
+.dash-card--offer .card-sub {
+  color: #00afdb;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  opacity: 1;
+  letter-spacing: 0.01em;
+  margin-top: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+
+.card-label {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: color 0.2s ease;
+}
+
+.card-sub {
+  font-size: 0.75rem;
+  font-weight: 500;
+  opacity: 0.8;
+  letter-spacing: 0.01em;
+}
+
+
+/* ── Featured (zadnji nalog) ── */
+.dash-card--featured {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 12px;
+  border: 1.5px solid #e5e7eb;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  position: relative;
+}
+
+.dash-card--featured:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.10);
+  transform: translateY(-1px);
+}
+
+.dash-card--featured .status-badge {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  letter-spacing: 0.08em;
+  border-radius: 12px;
+}
+
+.featured-number {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.featured-amount {
+  font-size: 1.625rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.featured-deco {
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  width: 270px;
+  height: 270px;
+  top: 56%;
+  opacity: 0.07;
+  transform: translateY(-50%) rotate(-18deg);
+  pointer-events: none;
+}
+
+.featured-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.featured-header__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.featured-timeline {
   list-style: none;
   margin: 0;
   padding: 0;
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
-.request-row {
+.featured-timeline::-webkit-scrollbar {
+  display: none;
+}
+
+.ftl-item {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.ftl-arrow {
+  display: flex;
+  justify-content: flex-start;
+  padding: 0 0 0 8px;
+  color: #d1d5db;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.ftl-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.06);
   display: flex;
   align-items: center;
-  gap: 0;
-  padding: 0 20px;
-  height: 52px;
-  border-bottom: 1px solid #f3f4f6;
-  cursor: pointer;
-  transition: background 0.12s;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #6b7280;
+  margin-top: 1px;
 }
 
-.request-row:last-child { border-bottom: none; }
+.ftl-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
 
-.request-row:hover { background: #f9fafb; }
+.ftl-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #111827;
+}
 
-.request-row:hover .row-chevron { color: #0067b8; transform: translateX(2px); }
-.request-row:hover { box-shadow: inset 3px 0 0 #0067b8; }
+.ftl-comment {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-.row-number {
-  min-width: 155px;
-  color: #0067b8;
+.featured-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0,0,0,0.07);
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+}
+
+.featured-footer__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fmeta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.fmeta-sep { color: #d1d5db; font-size: 0.75rem; }
+.fmeta--ok { color: #16a34a; }
+.fmeta--missing { color: #9ca3af; }
+
+.featured-chevron {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  color: #d1d5db;
+  transition: color 0.12s, transform 0.12s;
+}
+
+.dash-card--featured:hover .featured-chevron {
+  color: #9ca3af;
+  transform: translateX(2px);
+}
+
+/* ── Requests box ── */
+.requests-box {
+  width: 976px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.requests-box .dash-card--status {
+  width: 100%;
+  border-radius: 0;
+  box-shadow: none;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.requests-box .dash-card--status:last-child {
+  border-bottom: none;
+}
+
+
+/* ── Status kartica ── */
+.dash-card--status {
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  min-height: 80px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border-left-width: 4px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.dash-card--status:hover {
+  background: #f9fafb;
+}
+
+.dash-card--status:hover .status-chevron {
+  transform: translateX(2px);
+}
+
+/* ── Dekorativni SVG (status kartice) ── */
+.card-deco {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+}
+
+.card-deco--offer {
+  bottom: -22px;
+  right: -22px;
+  width: 140px;
+  height: 140px;
+  opacity: 0.13;
+  transform: rotate(-25deg) scale(1.1);
+}
+
+.card-deco--status {
+  right: 60px;
+  top: 50%;
+  transform: translateY(-50%) rotate(15deg);
+  width: 56px;
+  height: 56px;
+  opacity: 0.07;
+}
+
+/* ── Status kartica sadržaj ── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 148px;
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.badge-icon {
+  margin-right: 4px;
+  opacity: 0.85;
+  vertical-align: middle;
+}
+
+.status-number {
   font-size: 0.875rem;
   font-weight: 600;
-  letter-spacing: -0.005em;
+  margin-left: 44px;
+  color: #111827;
+  letter-spacing: -0.01em;
   flex-shrink: 0;
+  min-width: 160px;
 }
 
-.row-dept {
+.status-comment {
   flex: 1;
-  min-width: 0;
-  color: #111827;
   font-size: 0.8125rem;
+  color: #6b7280;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-right: 16px;
+  padding-right: 12px;
 }
 
-.row-person {
+.status-comment--empty {
   flex: 1;
-  min-width: 0;
-  color: #4b5563;
-  font-size: 0.8125rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding-right: 16px;
 }
 
-.row-amount {
-  min-width: 100px;
+.status-amount {
+  font-size: 1rem;
+  font-weight: 600;
   color: #111827;
-  font-size: 0.8125rem;
-  font-weight: 500;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
-  padding-right: 16px;
 }
 
-.row-date {
-  min-width: 90px;
-  color: #4b5563;
+.status-date {
   font-size: 0.8125rem;
+  color: #6b7280;
   flex-shrink: 0;
-  padding-right: 16px;
+  min-width: 90px;
+  text-align: right;
 }
 
-.row-chevron {
-  color: transparent;
+.status-chevron {
+  color: #d1d5db;
   flex-shrink: 0;
   transition: color 0.12s, transform 0.12s;
 }
 
-/* ── Status badges ── */
-.status {
-  display: inline-flex;
-  align-items: center;
-  min-height: 20px;
-  padding: 2px 8px;
-  border-radius: 3px;
-  background: #f3f4f6;
-  color: #374151;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  flex-shrink: 0;
-  margin-right: 16px;
-}
-
-.status--sent     { color: #1d4ed8; background: #dbeafe; }
-.status--review   { color: #92400e; background: #fef3c7; }
-.status--returned { color: #9a3412; background: #ffedd5; }
-.status--rejected { color: #991b1b; background: #fee2e2; }
-.status--ordered  { color: #065f46; background: #d1fae5; }
-.status--closed   { color: #166534; background: #dcfce7; }
-.status--default  { color: #374151; background: #f3f4f6; }
-
-/* ── Empty state ── */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 56px 24px;
-  text-align: center;
-}
-
-.empty-state__icon {
-  display: flex;
-  width: 48px;
-  height: 48px;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 14px;
-  border: 1px solid #e5e7eb;
-  color: #9ca3af;
-}
-
-.empty-state__title {
-  margin: 0 0 6px;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: #111827;
-}
-
-.empty-state__hint {
-  max-width: 300px;
+.dash-card--status:hover .status-chevron {
   color: #6b7280;
-  font-size: 0.8125rem;
-  line-height: 1.5;
+  transform: translateX(2px);
 }
 
-/* ── Minimal list (employee dashboard) ── */
-.request-list--minimal .request-row {
-  height: auto;
-  padding: 12px 20px;
-  align-items: center;
-}
-
-.request-list--minimal .row-number {
-  flex: 1;
-  min-width: 0;
-}
-
-.request-list--minimal .status {
-  flex: 1;
-  justify-content: center;
-  margin-right: 0;
-  font-size: 0.75rem;
-  padding: 4px 12px;
-  min-height: 24px;
-}
-
-.request-list--minimal .row-date {
-  flex: 1;
-  text-align: right;
-  padding-right: 12px;
-  color: #6b7280;
-  font-size: 0.8125rem;
-  flex-shrink: 0;
-}
-
-/* ── Admin stats ── */
-.admin-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.stat-card--action {
-  border-color: #bfdbfe;
-  background: #eff6ff;
-}
-
-.stat-card--action .stat-card__value { color: #1d4ed8; }
-.stat-card--action .stat-card__label { color: #1e40af; }
-
-/* ── Employee stats ── */
-.emp-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.stat-card {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 16px 20px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-}
-
-.stat-card--warn {
-  border-color: #fed7aa;
-  background: #fff7ed;
-}
-
-.stat-card__value {
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: #111827;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.stat-card--warn .stat-card__value { color: #c2410c; }
-
-.stat-card__label {
-  font-size: 0.75rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.stat-card--warn .stat-card__label { color: #9a3412; }
-
-/* ── Surface footer ── */
-.surface-footer {
-  all: unset;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  padding: 12px;
-  border-top: 1px solid #e5e7eb;
-  color: #0067b8;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  box-sizing: border-box;
-  transition: background 0.12s;
-}
-
-.surface-footer:hover { background: #f9fafb; }
-
-/* ── Responsive ── */
 @media (max-width: 760px) {
-  .page { padding: 24px 16px 24px; }
-  .page-header { flex-direction: column; align-items: stretch; gap: 16px; }
+  .page { padding: 24px 16px; }
+  .card-grid { grid-template-columns: 1fr; }
+  .dash-card--status { grid-column: span 1; }
   .page-header__title { font-size: 1.75rem; }
-  .admin-stats { grid-template-columns: repeat(2, 1fr); }
-  .emp-stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .stat-card { padding: 12px 14px; }
-  .stat-card__value { font-size: 1.375rem; }
-  .row-dept, .row-person, .row-amount, .row-date { display: none; }
-  .row-number { flex: 1; }
 }
 </style>

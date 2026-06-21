@@ -135,8 +135,9 @@ router.get('/', authenticateToken, async (req, res) => {
 
     const adminUser = isAdmin(req.user);
 
-    const baseConditions = adminUser ? [] : ['pr.fk_created_by_user = ?'];
-    const baseParams      = adminUser ? [] : [req.user.id_user];
+    const onlyMine = req.query.onlyMine === '1';
+    const baseConditions = (adminUser && !onlyMine) ? [] : ['pr.fk_created_by_user = ?'];
+    const baseParams      = (adminUser && !onlyMine) ? [] : [req.user.id_user];
 
     const filterConditions = [...baseConditions];
     const filterParams     = [...baseParams];
@@ -212,6 +213,12 @@ router.get('/', authenticateToken, async (req, res) => {
       INNER JOIN FiscalYear fy ON pr.fk_fiscal_year = fy.id_fiscal_year
       INNER JOIN Department d  ON pr.fk_department  = d.id_department
       INNER JOIN AppUser u     ON pr.fk_created_by_user = u.id_user
+      LEFT JOIN (
+        SELECT fk_purchase_request, comment,
+               ROW_NUMBER() OVER (PARTITION BY fk_purchase_request ORDER BY changed_at DESC) AS rn
+        FROM RequestStatusHistory
+        WHERE comment IS NOT NULL AND comment != ''
+      ) lc ON lc.fk_purchase_request = pr.id_purchase_request AND lc.rn = 1
     `;
 
     const [[countRow]] = await db.query(
@@ -229,7 +236,8 @@ router.get('/', authenticateToken, async (req, res) => {
         pr.fk_request_status,
         CONCAT(u.first_name, ' ', u.last_name) AS created_by,
         pr.total_amount,
-        pr.created_at
+        pr.created_at,
+        lc.comment AS last_comment
        ${baseJoin}
        ${filterWhere}
        ORDER BY pr.created_at DESC, pr.id_purchase_request DESC

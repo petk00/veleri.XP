@@ -2,20 +2,18 @@
   <q-page class="page">
     <div class="page-shell">
 
-      <!-- Back link -->
-      <button class="back-link" @click="goBack">
-        <q-icon name="arrow_back" size="14px" />
-        <span>Natrag na detalje</span>
-      </button>
-
       <!-- Page header -->
       <header class="page-header">
         <div class="page-header__main">
-          <div class="page-header__eyebrow">Uređivanje zahtjeva</div>
-          <h1 class="page-header__title">{{ requestNumber || '...' }}</h1>
-          <p class="page-header__subtitle">
-            Promjene se evidentiraju u povijesti aktivnosti.
-          </p>
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <span class="breadcrumb__item">Nabava</span>
+            <span class="breadcrumb__sep">›</span>
+            <button class="breadcrumb__back" type="button" @click="$router.push(isAdmin ? '/zahtjevi' : '/dashboard')">{{ isAdmin ? 'Zahtjevi' : 'Moji zahtjevi' }}</button>
+            <span class="breadcrumb__sep">›</span>
+            <button class="breadcrumb__back" type="button" @click="goBack">{{ requestNumber || '...' }}</button>
+            <span class="breadcrumb__sep">›</span>
+            <span class="breadcrumb__current">Uređivanje</span>
+          </nav>
         </div>
       </header>
 
@@ -339,6 +337,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
+import { getStoredUser } from 'src/utils/authStorage';
 
 const route = useRoute();
 const router = useRouter();
@@ -349,6 +348,7 @@ const saving = ref(false);
 const submitted = ref(false);
 const originalForm = ref(null);
 const requestNumber = ref('');
+const isAdmin = getStoredUser()?.role_name === 'Administrator';
 const fiscalYear = ref('');
 const attachments = ref([]);
 const uploading = ref(false);
@@ -567,7 +567,7 @@ const fetchData = async () => {
 
     if (status === 403 || status === 404) {
       $q.notify({ type: 'negative', message });
-      router.replace(`/requests/${route.params.id}`);
+      router.replace(`/zahtjevi/${route.params.id}`);
       return;
     }
 
@@ -640,7 +640,7 @@ const saveChanges = async () => {
     await api.put(`/requests/${route.params.id}`, payload);
     $q.notify({ type: 'positive', message: 'Zahtjev uspješno ažuriran.' });
     submitted.value = true;
-    router.push(`/requests/${route.params.id}`);
+    router.push(`/zahtjevi/${route.params.id}`);
   } catch (error) {
     console.error('Greška pri spremanju:', error);
     $q.notify({
@@ -652,7 +652,7 @@ const saveChanges = async () => {
   }
 };
 
-const goBack = () => router.push(`/requests/${route.params.id}`);
+const goBack = () => router.push(`/zahtjevi/${route.params.id}`);
 
 onMounted(() => fetchData());
 </script>
@@ -670,20 +670,46 @@ onMounted(() => fetchData());
   margin: 0 auto;
 }
 
-.back-link {
-  display: inline-flex;
+.breadcrumb {
+  display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 18px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: #4b5563;
-  font: inherit;
-  font-size: 0.8125rem;
-  cursor: pointer;
+  margin-bottom: 10px;
 }
-.back-link:hover { color: #0067b8; text-decoration: underline; }
+
+.breadcrumb__item {
+  color: #6b7280;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.breadcrumb__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.breadcrumb__back:hover { color: #00afdb; }
+
+.breadcrumb__sep {
+  color: #d1d5db;
+  font-size: 0.875rem;
+  user-select: none;
+}
+
+.breadcrumb__current {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+}
 
 .page-header {
   margin-bottom: 28px;
@@ -692,12 +718,6 @@ onMounted(() => fetchData());
 }
 
 .page-header__main { min-width: 240px; }
-.page-header__eyebrow {
-  margin-bottom: 8px;
-  color: #0067b8;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
 .page-header__title {
   margin: 0;
   color: #111827;

@@ -6,14 +6,8 @@
            Page header
            ───────────────────────────────── -->
       <header class="page-header">
-        <div class="page-header__main">
-          <div class="page-header__eyebrow">Nabava</div>
-          <h1 class="page-header__title">Novi zahtjev za nabavu</h1>
-          <p class="page-header__subtitle">
-            Ispunite korake u nastavku. Uneseni podaci ostaju sačuvani dok prolazite kroz obrazac.
-          </p>
-        </div>
-        <button class="btn btn--ghost" @click="$router.push('/requests')">
+        <div class="page-header__main" />
+        <button class="btn btn--ghost" @click="confirmCancel">
           <q-icon name="close" size="16px" />
           <span>Odustani</span>
         </button>
@@ -519,6 +513,19 @@ const handleBeforeUnload = (e) => {
 onMounted(() => window.addEventListener('beforeunload', handleBeforeUnload));
 onUnmounted(() => window.removeEventListener('beforeunload', handleBeforeUnload));
 
+const confirmCancel = () => {
+  $q.dialog({
+    title: 'Odustajete od zahtjeva?',
+    message: 'Uneseni podaci neće biti spremljeni.',
+    cancel: { label: 'Nastavi unos', flat: true, color: 'primary' },
+    ok: { label: 'Odustani', color: 'negative', flat: true },
+    persistent: true,
+  }).onOk(() => {
+    submitted.value = true;
+    router.push('/dashboard');
+  });
+};
+
 onBeforeRouteLeave(() => {
   if (!isDirty.value) return true;
   return new Promise((resolve) => {
@@ -804,7 +811,7 @@ const submitWizard = async () => {
       timeout: 2500,
     });
     submitted.value = true;
-    router.push('/requests');
+    router.push('/dashboard');
   } catch (error) {
     console.error('Greška:', error);
     const message = error.response?.data?.message || 'Greška pri kreiranju zahtjeva.';
@@ -829,7 +836,7 @@ onMounted(() => fetchReferenceData());
 }
 
 .page-shell {
-  max-width: 1100px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -847,28 +854,47 @@ onMounted(() => fetchReferenceData());
 
 .page-header__main { flex: 1; min-width: 240px; }
 
-.page-header__eyebrow {
-  margin-bottom: 8px;
-  color: #0067b8;
-  font-size: 0.75rem;
-  font-weight: 600;
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
 }
 
-.page-header__title {
-  font-size: 2.25rem;
+.breadcrumb__item {
+  color: #6b7280;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.breadcrumb__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.breadcrumb__back:hover { color: #00afdb; }
+
+.breadcrumb__sep {
+  color: #d1d5db;
+  font-size: 0.875rem;
+  user-select: none;
+}
+
+.breadcrumb__current {
+  font-size: 0.8125rem;
   font-weight: 600;
-  color: #111827;
-  letter-spacing: -0.015em;
-  line-height: 1.1;
-  margin: 0;
+  color: #374151;
 }
-.page-header__subtitle {
-  font-size: 0.9375rem;
-  color: #4b5563;
-  margin: 10px 0 0;
-  line-height: 1.5;
-  max-width: 560px;
-}
+
 
 /* ─────────────────────────────────
    Loading
@@ -940,6 +966,7 @@ onMounted(() => fetchReferenceData());
   grid-template-columns: 240px 1fr;
   gap: 16px;
   align-items: start;
+  max-width: 1100px;
 }
 
 /* ─────────────────────────────────
