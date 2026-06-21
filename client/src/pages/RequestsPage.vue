@@ -11,7 +11,7 @@
           </nav>
         </div>
         <div class="page-header__actions">
-          <button class="btn btn--cta" @click="$router.push('/requests/new')">
+          <button class="btn btn--cta" @click="$router.push('/zahtjevi/novi')">
             <q-icon name="add" size="20px" />
             <span>Novi zahtjev</span>
           </button>
@@ -182,7 +182,7 @@
               <p class="empty-state__hint">
                 Kreirajte novi zahtjev kako biste započeli s radom.
               </p>
-              <button class="btn btn--primary" @click="$router.push('/requests/new')">
+              <button class="btn btn--primary" @click="$router.push('/zahtjevi/novi')">
                 <q-icon name="add" size="16px" />
                 <span>Novi zahtjev</span>
               </button>
@@ -260,7 +260,7 @@ const STATUS_STYLES = {
   [STATUS.VRACENO_NA_DOPUNU]: { background: '#fff7ed', badge: '#c2410c', badgeBg: '#ffedd5', border: '#fdba74' },
   [STATUS.ODBIJENO]:          { background: '#fef2f2', badge: '#b91c1c', badgeBg: '#fee2e2', border: '#fca5a5' },
   [STATUS.ODOBRENO]:          { background: '#f0fdf4', badge: '#15803d', badgeBg: '#dcfce7', border: '#86efac' },
-  [STATUS.NARUCENO]:          { background: '#ecfeff', badge: '#0e7490', badgeBg: '#cffafe', border: '#67e8f9' },
+  [STATUS.NARUCENO]:          { background: '#faf5ff', badge: '#7c3aed', badgeBg: '#ede9fe', border: '#c4b5fd' },
   [STATUS.ZATVORENO]:         { background: '#dcfce7', badge: '#166534', badgeBg: '#bbf7d0', border: '#4ade80' },
 };
 
@@ -390,7 +390,7 @@ watch([statusFilter, departmentFilter, userFilter, fiscalYearFilter, categoryFil
   fetchRequests();
 });
 
-const openRequest = (id) => router.push(`/requests/${id}`);
+const openRequest = (id) => router.push(`/zahtjevi/${id}`);
 
 const formatCurrency = (value) => {
   if (value == null) return '—';
@@ -1074,7 +1074,7 @@ onMounted(async () => {
 .status--returned { color: #9a3412; background: #ffedd5; }
 .status--rejected { color: #991b1b; background: #fee2e2; }
 .status--approved { color: #1b2d59; background: #e0e7f5; }
-.status--ordered  { color: #0e7490; background: #cffafe; }
+.status--ordered  { color: #7c3aed; background: #ede9fe; }
 .status--closed   { color: #166534; background: #dcfce7; }
 .status--default  { color: #374151; background: #f3f4f6; }
 

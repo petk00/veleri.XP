@@ -19,16 +19,24 @@ const routes = [
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      { path: '', redirect: '/login' },
-      { path: 'home', redirect: '/nabava' },
-      { path: 'dashboard', redirect: '/nabava' },
-      { path: 'nabava', component: () => import('pages/IndexPage.vue') },
-      { path: 'requests', component: () => import('pages/RequestsPage.vue') },
-      { path: 'requests/new', component: () => import('pages/NewRequestPage.vue') },
-      { path: 'requests/:id', component: () => import('pages/RequestDetailsPage.vue') },
-      { path: 'requests/:id/edit', component: () => import('pages/EditRequestPage.vue') },
-      { path: 'users', component: () => import('pages/UsersPage.vue') },
-      { path: 'fiscal-years', component: () => import('pages/FiscalYearPage.vue') },
+      { path: '', redirect: '/dashboard' },
+      { path: 'home', redirect: '/dashboard' },
+      { path: 'nabava', redirect: '/dashboard' },
+      { path: 'dashboard', component: () => import('pages/IndexPage.vue') },
+
+      { path: 'zahtjevi',          component: () => import('pages/RequestsPage.vue') },
+      { path: 'zahtjevi/novi',     component: () => import('pages/NewRequestPage.vue') },
+      { path: 'zahtjevi/:id',      component: () => import('pages/RequestDetailsPage.vue') },
+      { path: 'zahtjevi/:id/edit', component: () => import('pages/EditRequestPage.vue') },
+
+      // backwards compat redirecti
+      { path: 'requests',          redirect: '/zahtjevi' },
+      { path: 'requests/new',      redirect: '/zahtjevi/novi' },
+      { path: 'requests/:id',      redirect: to => `/zahtjevi/${to.params.id}` },
+      { path: 'requests/:id/edit', redirect: to => `/zahtjevi/${to.params.id}/edit` },
+
+      { path: 'users',             component: () => import('pages/UsersPage.vue') },
+      { path: 'fiscal-years',      component: () => import('pages/FiscalYearPage.vue') },
     ],
   },
 

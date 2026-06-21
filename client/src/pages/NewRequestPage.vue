@@ -6,16 +6,8 @@
            Page header
            ───────────────────────────────── -->
       <header class="page-header">
-        <div class="page-header__main">
-          <nav class="breadcrumb" aria-label="Breadcrumb">
-            <span class="breadcrumb__item">Nabava</span>
-            <span class="breadcrumb__sep">›</span>
-            <button class="breadcrumb__back" type="button" @click="$router.push('/requests')">Moji zahtjevi</button>
-            <span class="breadcrumb__sep">›</span>
-            <span class="breadcrumb__current">Novi zahtjev</span>
-          </nav>
-        </div>
-        <button class="btn btn--ghost" @click="$router.push('/requests')">
+        <div class="page-header__main" />
+        <button class="btn btn--ghost" @click="confirmCancel">
           <q-icon name="close" size="16px" />
           <span>Odustani</span>
         </button>
@@ -521,6 +513,19 @@ const handleBeforeUnload = (e) => {
 onMounted(() => window.addEventListener('beforeunload', handleBeforeUnload));
 onUnmounted(() => window.removeEventListener('beforeunload', handleBeforeUnload));
 
+const confirmCancel = () => {
+  $q.dialog({
+    title: 'Odustajete od zahtjeva?',
+    message: 'Uneseni podaci neće biti spremljeni.',
+    cancel: { label: 'Nastavi unos', flat: true, color: 'primary' },
+    ok: { label: 'Odustani', color: 'negative', flat: true },
+    persistent: true,
+  }).onOk(() => {
+    submitted.value = true;
+    router.push('/dashboard');
+  });
+};
+
 onBeforeRouteLeave(() => {
   if (!isDirty.value) return true;
   return new Promise((resolve) => {
@@ -806,7 +811,7 @@ const submitWizard = async () => {
       timeout: 2500,
     });
     submitted.value = true;
-    router.push('/requests');
+    router.push('/dashboard');
   } catch (error) {
     console.error('Greška:', error);
     const message = error.response?.data?.message || 'Greška pri kreiranju zahtjeva.';
@@ -890,21 +895,6 @@ onMounted(() => fetchReferenceData());
   color: #374151;
 }
 
-.page-header__title {
-  font-size: 2.25rem;
-  font-weight: 600;
-  color: #111827;
-  letter-spacing: -0.015em;
-  line-height: 1.1;
-  margin: 0;
-}
-.page-header__subtitle {
-  font-size: 0.9375rem;
-  color: #4b5563;
-  margin: 10px 0 0;
-  line-height: 1.5;
-  max-width: 560px;
-}
 
 /* ─────────────────────────────────
    Loading

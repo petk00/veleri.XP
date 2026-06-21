@@ -21,11 +21,6 @@
               <span class="breadcrumb__sep">/</span>
               <span class="breadcrumb__current">{{ request.request_number }}</span>
             </nav>
-            <div class="page-header__title-row">
-              <span class="status" :class="statusClass(request.fk_request_status)">
-                {{ request.status_name }}
-              </span>
-            </div>
             <div class="page-header__meta">
               {{ request.created_by }} · {{ formatDate(request.created_at) }}
             </div>
@@ -58,6 +53,14 @@
             </button>
           </div>
         </header>
+
+        <!-- Status capsule -->
+        <div class="status-capsule-row no-print">
+          <span class="status status--capsule" :class="statusClass(request.fk_request_status)">
+            <q-icon :name="timelineIcon({ fk_request_status: request.fk_request_status })" size="14px" />
+            {{ request.status_name }}
+          </span>
+        </div>
 
         <!-- ──────────────── ACTION BANNERS ──────────────── -->
         <div v-if="canTakeOver" class="action-banner action-banner--neutral no-print">
@@ -953,8 +956,8 @@ const confirmAction = async () => {
   }
 };
 
-const editRequest = () => router.push(`/requests/${route.params.id}/edit`);
-const goBack = () => router.push('/requests');
+const editRequest = () => router.push(`/zahtjevi/${route.params.id}/edit`);
+const goBack = () => router.push(isAdmin.value ? '/zahtjevi' : '/dashboard');
 
 const loadImage = (src) =>
   new Promise((resolve) => {
@@ -1201,19 +1204,26 @@ const parseDocType = (comment) =>
 const timelineTitle = (entry) => {
   if (entry.comment?.startsWith('Dokument dodan')) {
     const t = parseDocType(entry.comment);
-    if (t === 'Ponuda') return 'Dodana ponuda';
-    if (t === 'Otpremnica') return 'Dodana otpremnica';
-    return 'Dokument dodan';
+    if (t === 'Ponuda') return 'Priložena ponuda';
+    if (t === 'Otpremnica') return 'Priložena otpremnica';
+    return 'Priložen dokument';
   }
   if (entry.comment?.startsWith('Dokument obrisan')) {
     const t = parseDocType(entry.comment);
-    if (t === 'Ponuda') return 'Obrisana ponuda';
-    if (t === 'Otpremnica') return 'Obrisana otpremnica';
-    return 'Dokument obrisan';
+    if (t === 'Ponuda') return 'Uklonjena ponuda';
+    if (t === 'Otpremnica') return 'Uklonjena otpremnica';
+    return 'Uklonjen dokument';
   }
-  if (entry.comment?.startsWith('Zahtjev izmijenjen')) return 'Zahtjev izmijenjen';
-  if (entry.comment?.startsWith('Dodan procijenjeni iznos')) return 'Dodan procijenjeni iznos';
-  return entry.status_name;
+  if (entry.comment?.startsWith('Zahtjev izmijenjen')) return 'Izmjena zahtjeva';
+  if (entry.comment?.startsWith('Dodan procijenjeni iznos')) return 'Upisan iznos';
+  const labels = {
+    'Poslano': 'Zahtjev poslan',
+    'Na odobrenju': 'Preuzeto na obradu',
+    'Vraćeno': 'Vraćeno na dopunu',
+    'Naručeno': 'Odobreno i naručeno',
+    'Zatvoreno': 'Zahtjev zatvoren',
+  };
+  return labels[entry.status_name] ?? entry.status_name;
 };
 
 const fileIcon = (mimeType) => {
@@ -1315,6 +1325,10 @@ onMounted(() => {
   font-size: 0.875rem;
   color: #4b5563;
   margin-top: 8px;
+}
+
+.status-capsule-row {
+  margin: 16px 0;
 }
 .page-header__actions {
   display: flex;
@@ -1420,11 +1434,22 @@ onMounted(() => {
   text-transform: uppercase;
   white-space: nowrap;
 }
+
+.status--capsule {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  letter-spacing: 0.08em;
+}
 .status--sent     { color: #1d4ed8; background: #dbeafe; }
 .status--review   { color: #92400e; background: #fef3c7; }
 .status--returned { color: #9a3412; background: #ffedd5; }
 .status--rejected { color: #991b1b; background: #fee2e2; }
-.status--ordered  { color: #065f46; background: #d1fae5; }
+.status--ordered  { color: #7c3aed; background: #ede9fe; }
 .status--closed   { color: #166534; background: #dcfce7; }
 .status--default  { color: #374151; background: #f3f4f6; }
 

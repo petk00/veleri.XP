@@ -21,7 +21,7 @@
         <div
           v-if="returnedAlertItem"
           class="returned-alert"
-          @click="$router.push(`/requests/${returnedAlertItem.id_purchase_request}`)"
+          @click="$router.push(`/zahtjevi/${returnedAlertItem.id_purchase_request}`)"
         >
           <q-icon name="undo" size="15px" class="returned-alert__icon" />
           <span>
@@ -34,43 +34,137 @@
         <!-- Cards grid -->
         <section class="card-grid">
 
-          <!-- CTA: Sa ponudom -->
-          <button class="dash-card dash-card--offer" @click="$router.push('/requests/new')">
-            <img src="/solarlinear_FINANCIRANJE.svg" alt="" class="card-deco card-deco--offer" />
-            <div class="card-icon-wrap">
-              <img src="/solarlinear_NABAVA.svg" alt="" class="card-icon" />
-            </div>
-            <span class="card-label">Novi zahtjev</span>
-            <span class="card-sub">Sa ponudom dobavljača</span>
-          </button>
+          <!-- Gornji red: kvadratne kartice -->
+          <div class="square-row">
+            <button class="dash-card dash-card--offer" @click="$router.push('/zahtjevi/novi')">
+              <!-- Dekorativni SVG pozadina -->
+              <img src="/solarlinear_NOVIZAHTJEV.svg" alt="" class="offer-deco" />
 
-          <!-- CTA: Bez ponude -->
-          <button class="dash-card dash-card--no-offer" @click="$router.push('/requests/new')">
-            <img src="/solarlinear_POSLOVNEGODINE.svg" alt="" class="card-deco card-deco--no-offer" />
-            <div class="card-icon-wrap">
-              <img src="/solarlinear_NOVIZAHTJEV.svg" alt="" class="card-icon" />
-            </div>
-            <span class="card-label">Trebam određene predmete</span>
-            <span class="card-sub">Bez ponude dobavljača</span>
-          </button>
+              <!-- Header -->
+              <span class="card-label">Novi zahtjev</span>
+              <span class="card-sub">Pokrenite postupak nabave u par koraka</span>
 
-          <!-- Status kartice: zadnji zahtjevi -->
-          <button
-            v-for="row in recentRows"
-            :key="row.id_purchase_request"
-            class="dash-card dash-card--status"
-            :style="buildRequestStyle(row).card"
-            @click="$router.push(`/requests/${row.id_purchase_request}`)"
-          >
-            <img src="/solarlinear_MOJIZAHTJEVI.svg" alt="" class="card-deco card-deco--status" />
-            <span class="status-badge" :style="buildRequestStyle(row).badge">{{ row.status_name }}</span>
-            <span class="status-number">{{ row.request_number }}</span>
-            <span v-if="row.last_comment" class="status-comment">{{ row.last_comment }}</span>
-            <span v-else class="status-comment status-comment--empty" />
-            <span class="status-amount">{{ formatCurrency(row.total_amount) }}</span>
-            <span class="status-date">{{ formatDate(row.created_at) }}</span>
-            <q-icon name="chevron_right" size="16px" class="status-chevron" />
-          </button>
+              <!-- Koraci -->
+              <ol class="offer-steps">
+                <li class="offer-step">
+                  <div class="offer-step__icon">
+                    <img src="/solarlinear_NABAVA.svg" alt="" />
+                  </div>
+                  <span class="offer-step__text">Izaberite predmete koje naručujete</span>
+                </li>
+                <li class="offer-step">
+                  <div class="offer-step__icon">
+                    <img src="/solarlinear_FINANCIRANJE.svg" alt="" />
+                  </div>
+                  <span class="offer-step__text">Priložite ponudu dobavljača <em>(opcionalno)</em></span>
+                </li>
+                <li class="offer-step">
+                  <div class="offer-step__icon">
+                    <img src="/solarlinear_POSLOVNEGODINE.svg" alt="" />
+                  </div>
+                  <span class="offer-step__text">Odaberite odjel ili projekt</span>
+                </li>
+                <li class="offer-step">
+                  <div class="offer-step__icon">
+                    <img src="/solarlinear_KORISNICI.svg" alt="" />
+                  </div>
+                  <span class="offer-step__text">Pošaljite zahtjev na obradu</span>
+                </li>
+                <li class="offer-step">
+                  <div class="offer-step__icon">
+                    <img src="/solarlinear_MOJIZAHTJEVI.svg" alt="" />
+                  </div>
+                  <span class="offer-step__text">Pratite status u stvarnom vremenu</span>
+                </li>
+              </ol>
+            </button>
+
+            <button
+              v-if="recentRows[0]"
+              class="dash-card dash-card--featured"
+              :style="buildRequestStyle(recentRows[0]).featuredCard"
+              @click="$router.push(`/zahtjevi/${recentRows[0].id_purchase_request}`)"
+            >
+              <!-- Dekorativni SVG -->
+              <img
+                :src="recentRows[0].fk_request_status === 7 ? '/bag-check-svgrepo-com.svg'
+                    : recentRows[0].fk_request_status === 1 ? '/rocket-2-svgrepo-com.svg'
+                    : recentRows[0].fk_request_status === 6 ? '/bus-svgrepo-com.svg'
+                    : '/solarlinear_MOJIZAHTJEVI.svg'"
+                alt=""
+                class="featured-deco"
+              />
+
+              <!-- Header -->
+              <div class="featured-header">
+                <span class="status-badge featured-badge" :style="buildRequestStyle(recentRows[0]).badge">
+                  <q-icon :name="statusIcon(recentRows[0])" size="12px" class="badge-icon" />
+                  {{ recentRows[0].status_name }}
+                </span>
+                <div class="featured-header__row">
+                  <span class="featured-number" :style="{ color: buildRequestStyle(recentRows[0]).badge.color }">{{ recentRows[0].request_number }}</span>
+                  <span class="featured-amount">{{ formatCurrency(recentRows[0].total_amount) }}</span>
+                </div>
+              </div>
+
+              <!-- Timeline -->
+              <ol v-if="featuredHistory.length" class="featured-timeline">
+                <template v-for="(entry, i) in featuredHistory" :key="entry.id_request_status_history">
+                  <li class="ftl-item">
+                    <div class="ftl-dot">
+                      <q-icon :name="tlIcon(entry)" size="11px" />
+                    </div>
+                    <div class="ftl-body">
+                      <span class="ftl-title">{{ tlTitle(entry) }}</span>
+                      <span v-if="entry.comment && !entry.comment.startsWith('Dokument') && !entry.comment.startsWith('Zahtjev') && !entry.comment.startsWith('Dodan')" class="ftl-comment">{{ entry.comment }}</span>
+                    </div>
+                  </li>
+                  <li v-if="i < featuredHistory.length - 1" class="ftl-arrow" aria-hidden="true">↓</li>
+                </template>
+              </ol>
+
+              <!-- Footer -->
+              <div class="featured-footer">
+                <div class="featured-footer__meta">
+                  <span class="fmeta-item">
+                    <q-icon name="calendar_today" size="12px" />
+                    {{ formatDate(featuredCreatedAt) }}
+                  </span>
+                  <span class="fmeta-sep">·</span>
+                  <span class="fmeta-item" :class="featuredHasPonuda ? 'fmeta--ok' : 'fmeta--missing'">
+                    <q-icon :name="featuredHasPonuda ? 'check_circle' : 'radio_button_unchecked'" size="13px" />
+                    Ponuda
+                  </span>
+                  <span class="fmeta-sep">·</span>
+                  <span class="fmeta-item" :class="featuredHasOtpremnica ? 'fmeta--ok' : 'fmeta--missing'">
+                    <q-icon :name="featuredHasOtpremnica ? 'check_circle' : 'radio_button_unchecked'" size="13px" />
+                    Otpremnica
+                  </span>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Ostali nalozi -->
+          <div v-if="recentRows.slice(1).length" class="requests-box">
+            <button
+              v-for="row in recentRows.slice(1)"
+              :key="row.id_purchase_request"
+              class="dash-card dash-card--status"
+              :style="buildRequestStyle(row).card"
+              @click="$router.push(`/zahtjevi/${row.id_purchase_request}`)"
+            >
+              <span class="status-badge" :style="buildRequestStyle(row).badge">
+                <q-icon :name="statusIcon(row)" size="12px" class="badge-icon" />
+                {{ row.status_name }}
+              </span>
+              <span class="status-number">{{ row.request_number }}</span>
+              <span v-if="row.last_comment" class="status-comment">{{ row.last_comment }}</span>
+              <span v-else class="status-comment status-comment--empty" />
+              <span class="status-amount">{{ formatCurrency(row.total_amount) }}</span>
+              <q-icon name="chevron_right" size="16px" class="status-chevron" />
+            </button>
+          </div>
 
         </section>
 
@@ -112,17 +206,30 @@ const STATUS_STYLES = {
   3: { background: '#fff7ed', badge: '#c2410c', badgeBg: '#ffedd5', border: '#fdba74' },
   4: { background: '#f0fdf4', badge: '#15803d', badgeBg: '#dcfce7', border: '#86efac' },
   5: { background: '#fef2f2', badge: '#b91c1c', badgeBg: '#fee2e2', border: '#fca5a5' },
-  6: { background: '#ecfeff', badge: '#0e7490', badgeBg: '#cffafe', border: '#67e8f9' },
+  6: { background: '#faf5ff', badge: '#7c3aed', badgeBg: '#ede9fe', border: '#c4b5fd' },
   7: { background: '#dcfce7', badge: '#166534', badgeBg: '#bbf7d0', border: '#4ade80' },
 };
 
 const DEFAULT_STYLE = { background: '#f9fafb', badge: '#374151', badgeBg: '#f3f4f6', border: '#d1d5db' };
 
+const STATUS_ICONS = {
+  1: 'outbox',
+  2: 'pending',
+  3: 'undo',
+  4: 'verified',
+  5: 'close',
+  6: 'local_shipping',
+  7: 'task_alt',
+};
+
+const statusIcon = (row) => STATUS_ICONS[row.fk_request_status] ?? 'circle';
+
 function buildRequestStyle(row) {
   const s = STATUS_STYLES[row.fk_request_status] ?? DEFAULT_STYLE;
   return {
-    card:  { borderLeftColor: s.border },
-    badge: { color: s.badge, background: s.badgeBg },
+    card:         { borderLeftColor: s.border },
+    featuredCard: { borderColor: s.border, background: s.background },
+    badge:        { color: s.badge, background: s.badgeBg },
   };
 }
 
@@ -138,11 +245,56 @@ const formatDate = (value) => {
   });
 };
 
+const featuredHistory = ref([]);
+const featuredAttachments = ref([]);
+const featuredCreatedAt = ref(null);
+
+const featuredHasPonuda = computed(() => featuredAttachments.value.some(a => a.document_type === 'Ponuda'));
+const featuredHasOtpremnica = computed(() => featuredAttachments.value.some(a => a.document_type === 'Otpremnica'));
+
+const tlIcon = (entry) => {
+  if (entry.comment?.startsWith('Dokument dodan')) return 'attach_file';
+  if (entry.comment?.startsWith('Dokument obrisan')) return 'delete';
+  if (entry.comment?.startsWith('Zahtjev izmijenjen')) return 'edit';
+  if (entry.comment?.startsWith('Dodan procijenjeni iznos')) return 'payments';
+  const map = { 1: 'outbox', 2: 'pending', 3: 'undo', 5: 'close', 6: 'local_shipping', 7: 'task_alt' };
+  return map[entry.fk_request_status] ?? 'circle';
+};
+
+const tlTitle = (entry) => {
+  if (entry.comment?.startsWith('Dokument dodan: Ponuda')) return 'Priložena ponuda';
+  if (entry.comment?.startsWith('Dokument dodan: Otpremnica')) return 'Priložena otpremnica';
+  if (entry.comment?.startsWith('Dokument dodan')) return 'Priložen dokument';
+  if (entry.comment?.startsWith('Dokument obrisan')) return 'Uklonjen dokument';
+  if (entry.comment?.startsWith('Zahtjev izmijenjen')) return 'Izmjena zahtjeva';
+  if (entry.comment?.startsWith('Dodan procijenjeni iznos')) return 'Upisan iznos';
+  const labels = {
+    'Poslano': 'Zahtjev poslan',
+    'Na odobrenju': 'Preuzeto na obradu',
+    'Vraćeno': 'Vraćeno na dopunu',
+    'Naručeno': 'Odobreno i naručeno',
+    'Zatvoreno': 'Zahtjev zatvoren',
+  };
+  return labels[entry.status_name] ?? entry.status_name;
+};
+
 onMounted(async () => {
   try {
     const currentYear = new Date().getFullYear();
-    const { data } = await api.get('/requests', { params: { limit: 500, fiscalYear: currentYear } });
+    const { data } = await api.get('/requests', { params: { limit: 500, fiscalYear: currentYear, onlyMine: 1 } });
     allRequests.value = Array.isArray(data.data) ? data.data : [];
+
+    const sorted = [...allRequests.value].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    if (sorted[0]) {
+      const id = sorted[0].id_purchase_request;
+      const [{ data: detail }, { data: atts }] = await Promise.all([
+        api.get(`/requests/${id}`),
+        api.get(`/requests/${id}/attachments`),
+      ]);
+      featuredHistory.value = detail.history || [];
+      featuredAttachments.value = Array.isArray(atts) ? atts : [];
+      featuredCreatedAt.value = detail.created_at || sorted[0].created_at;
+    }
   } catch (e) {
     console.error(e);
   } finally {
@@ -175,9 +327,10 @@ onMounted(async () => {
 
 .page-header__eyebrow {
   margin-bottom: 8px;
-  color: #0067b8;
+  color: #1b2d59;
   font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.03em;
 }
 
 .page-header__title {
@@ -189,7 +342,7 @@ onMounted(async () => {
   line-height: 1.1;
 }
 
-.page-header__name { color: #0067b8; }
+.page-header__name { color: #14bae4; }
 
 /* ── Loading ── */
 .loading-block {
@@ -218,10 +371,12 @@ onMounted(async () => {
 .returned-alert__icon { flex-shrink: 0; color: #c2410c; }
 .returned-alert__chevron { margin-left: auto; flex-shrink: 0; color: #c2410c; }
 
+
 /* ── Card grid ── */
 .card-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 16px;
 }
 
@@ -232,94 +387,134 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 20px;
-  min-height: 190px;
-  padding: 24px;
+  border-radius: 16px;
+  min-height: 130px;
+  padding: 20px 24px;
   box-sizing: border-box;
   cursor: pointer;
   border-left: 4px solid transparent;
   transition: all 0.2s ease;
 }
 
-/* ── CTA: Sa ponudom (indigo) ── */
+/* ── Square row ── */
+.square-row {
+  display: flex;
+  gap: 16px;
+}
+
+
+.square-row .dash-card {
+  width: 480px;
+  height: 480px;
+  min-height: unset;
+  flex-shrink: 0;
+}
+
+/* ── CTA: Novi zahtjev (navy/cyan) ── */
+
 .dash-card--offer {
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  background: linear-gradient(145deg, #eef2ff 0%, #e0e7ff 100%);
-  border: 1.5px solid #c7d2fe;
-  border-left: 1.5px solid #c7d2fe;
-  box-shadow: 0 4px 24px rgba(99, 102, 241, 0.10);
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 6px;
+  background: linear-gradient(145deg, #e8f6fd 0%, #cceef9 100%);
+  border: 1.5px solid #00afdb;
+  border-left: 1.5px solid #00afdb;
+  box-shadow: 0 4px 24px rgba(0, 175, 219, 0.12);
 }
 
 .dash-card--offer:hover {
-  background: linear-gradient(145deg, #e0e7ff 0%, #c7d2fe 100%);
-  border-color: #818cf8;
-  box-shadow: 0 10px 32px rgba(99, 102, 241, 0.22);
+  background: linear-gradient(145deg, #d0edf9 0%, #b3e4f5 100%);
+  border-color: #14bae4;
+  box-shadow: 0 10px 32px rgba(0, 175, 219, 0.25);
   transform: scale(1.02);
 }
 
-.dash-card--offer .card-label { color: #3730a3; }
-.dash-card--offer .card-sub   { color: #6366f1; }
-.dash-card--offer:hover .card-icon-wrap { opacity: 1; }
-
-/* ── CTA: Bez ponude (emerald) ── */
-.dash-card--no-offer {
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  background: linear-gradient(145deg, #ecfdf5 0%, #d1fae5 100%);
-  border: 1.5px solid #a7f3d0;
-  border-left: 1.5px solid #a7f3d0;
-  box-shadow: 0 4px 24px rgba(16, 185, 129, 0.10);
+.offer-deco {
+  position: absolute;
+  bottom: -20px;
+  right: -10px;
+  width: 260px;
+  height: 260px;
+  opacity: 0.08;
+  pointer-events: none;
 }
 
-.dash-card--no-offer:hover {
-  background: linear-gradient(145deg, #d1fae5 0%, #a7f3d0 100%);
-  border-color: #34d399;
-  box-shadow: 0 10px 32px rgba(16, 185, 129, 0.22);
-  transform: scale(1.02);
-}
-
-.dash-card--no-offer .card-label { color: #065f46; }
-.dash-card--no-offer .card-sub   { color: #059669; }
-.dash-card--no-offer:hover .card-icon-wrap { opacity: 1; }
-
-/* ── Status kartica ── */
-.dash-card--status {
-  grid-column: span 2;
-  flex-direction: row;
-  align-items: center;
+.offer-steps {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-  min-height: 80px;
-  padding: 16px 20px;
-  border-radius: 12px;
-  border-left-width: 4px;
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  position: relative;
+  z-index: 1;
 }
 
-.dash-card--status:hover {
-  transform: translateX(3px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.09);
+.offer-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-/* ── Zajednički elementi CTA kartica ── */
-.card-icon-wrap {
+.offer-step__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 175, 219, 0.12);
+  border: 1px solid rgba(0, 175, 219, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
+  flex-shrink: 0;
 }
 
-.card-icon {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+.offer-step__icon img {
+  width: 18px;
+  height: 18px;
+  opacity: 0.7;
 }
+
+.offer-step__text {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #1b2d59;
+  line-height: 1.3;
+}
+
+.offer-step__text em {
+  font-style: normal;
+  opacity: 0.6;
+  font-size: 0.75rem;
+}
+
+.offer-step__arrow {
+  padding: 2px 0 2px 15px;
+  color: rgba(0, 175, 219, 0.5);
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.dash-card--offer .card-label {
+  color: #1b2d59;
+  font-size: 2rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  position: relative;
+  z-index: 1;
+}
+
+.dash-card--offer .card-sub {
+  color: #00afdb;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  opacity: 1;
+  letter-spacing: 0.01em;
+  margin-top: 4px;
+  position: relative;
+  z-index: 1;
+}
+
 
 .card-label {
   font-size: 0.9375rem;
@@ -335,7 +530,224 @@ onMounted(async () => {
   letter-spacing: 0.01em;
 }
 
-/* ── Dekorativni SVG ── */
+
+/* ── Featured (zadnji nalog) ── */
+.dash-card--featured {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 12px;
+  border: 1.5px solid #e5e7eb;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  position: relative;
+}
+
+.dash-card--featured:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.10);
+  transform: translateY(-1px);
+}
+
+.dash-card--featured .status-badge {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  letter-spacing: 0.08em;
+  border-radius: 12px;
+}
+
+.featured-number {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.featured-amount {
+  font-size: 1.625rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.featured-deco {
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  width: 270px;
+  height: 270px;
+  top: 56%;
+  opacity: 0.07;
+  transform: translateY(-50%) rotate(-18deg);
+  pointer-events: none;
+}
+
+.featured-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.featured-header__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.featured-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.featured-timeline::-webkit-scrollbar {
+  display: none;
+}
+
+.ftl-item {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.ftl-arrow {
+  display: flex;
+  justify-content: flex-start;
+  padding: 0 0 0 8px;
+  color: #d1d5db;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.ftl-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #6b7280;
+  margin-top: 1px;
+}
+
+.ftl-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ftl-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.ftl-comment {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.featured-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0,0,0,0.07);
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+}
+
+.featured-footer__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fmeta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.fmeta-sep { color: #d1d5db; font-size: 0.75rem; }
+.fmeta--ok { color: #16a34a; }
+.fmeta--missing { color: #9ca3af; }
+
+.featured-chevron {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  color: #d1d5db;
+  transition: color 0.12s, transform 0.12s;
+}
+
+.dash-card--featured:hover .featured-chevron {
+  color: #9ca3af;
+  transform: translateX(2px);
+}
+
+/* ── Requests box ── */
+.requests-box {
+  width: 976px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.requests-box .dash-card--status {
+  width: 100%;
+  border-radius: 0;
+  box-shadow: none;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.requests-box .dash-card--status:last-child {
+  border-bottom: none;
+}
+
+
+/* ── Status kartica ── */
+.dash-card--status {
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  min-height: 80px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border-left-width: 4px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.dash-card--status:hover {
+  background: #f9fafb;
+}
+
+.dash-card--status:hover .status-chevron {
+  transform: translateX(2px);
+}
+
+/* ── Dekorativni SVG (status kartice) ── */
 .card-deco {
   position: absolute;
   pointer-events: none;
@@ -351,15 +763,6 @@ onMounted(async () => {
   transform: rotate(-25deg) scale(1.1);
 }
 
-.card-deco--no-offer {
-  bottom: -16px;
-  right: -20px;
-  width: 130px;
-  height: 130px;
-  opacity: 0.13;
-  transform: rotate(18deg) scale(1.05);
-}
-
 .card-deco--status {
   right: 60px;
   top: 50%;
@@ -373,9 +776,12 @@ onMounted(async () => {
 .status-badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 10px;
+  justify-content: center;
+  width: 148px;
+  flex-shrink: 0;
+  padding: 5px 10px;
   border-radius: 20px;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -383,9 +789,16 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
+.badge-icon {
+  margin-right: 4px;
+  opacity: 0.85;
+  vertical-align: middle;
+}
+
 .status-number {
   font-size: 0.875rem;
   font-weight: 600;
+  margin-left: 44px;
   color: #111827;
   letter-spacing: -0.01em;
   flex-shrink: 0;
@@ -407,9 +820,9 @@ onMounted(async () => {
 }
 
 .status-amount {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }

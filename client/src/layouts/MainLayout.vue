@@ -76,7 +76,7 @@
           <!-- Nabava: admin ima dropdown, zaposlenik samo link -->
           <template v-if="isAdmin">
             <div class="nav-group">
-              <button class="nav-group__header" @click="navigate('/nabava'); toggleGroup('nabava')">
+              <button class="nav-group__header" @click="navigate('/dashboard'); toggleGroup('nabava')">
                 <img src="/solarlinear_NABAVA.svg" width="30" height="30" class="nav-group__icon" />
                 <span class="nav-group__label">Nabava</span>
                 <q-icon :name="openGroups.nabava ? 'expand_less' : 'expand_more'" size="15px" class="nav-group__chevron" />
@@ -84,16 +84,16 @@
               <div v-show="miniMode || openGroups.nabava" class="nav-group__items">
                 <button
                   class="sidebar-nav__item"
-                  :class="{ 'sidebar-nav__item--active': isActive('/requests/new') }"
-                  @click="navigate('/requests/new')"
+                  :class="{ 'sidebar-nav__item--active': isActive('/zahtjevi/novi') }"
+                  @click="navigate('/zahtjevi/novi')"
                 >
                   <img src="/solarlinear_NOVIZAHTJEV.svg" width="30" height="30" />
                   <span>Novi zahtjev</span>
                 </button>
                 <button
                   class="sidebar-nav__item"
-                  :class="{ 'sidebar-nav__item--active': isActive('/requests') }"
-                  @click="navigate('/requests')"
+                  :class="{ 'sidebar-nav__item--active': isActive('/zahtjevi') }"
+                  @click="navigate('/zahtjevi')"
                 >
                   <img src="/solarlinear_MOJIZAHTJEVI.svg" width="30" height="30" />
                   <span>Zahtjevi</span>
@@ -118,11 +118,19 @@
           <template v-else>
             <button
               class="nav-group__header"
-              :class="{ 'nav-group__header--active': route.path === '/nabava' }"
-              @click="navigate('/nabava')"
+              :class="{ 'nav-group__header--active': route.path === '/dashboard' }"
+              @click="navigate('/dashboard')"
             >
               <img src="/solarlinear_NABAVA.svg" width="30" height="30" class="nav-group__icon" />
               <span class="nav-group__label">Nabava</span>
+            </button>
+            <button
+              class="sidebar-nav__item"
+              :class="{ 'sidebar-nav__item--active': isActive('/zahtjevi/novi') }"
+              @click="navigate('/zahtjevi/novi')"
+            >
+              <img src="/solarlinear_NOVIZAHTJEV.svg" width="30" height="30" />
+              <span>Novi zahtjev</span>
             </button>
           </template>
           <div class="nav-group nav-group--soon">
@@ -254,7 +262,7 @@ const avatarColor = computed(() => {
 const isAdmin = computed(() => user.value?.role_name === 'Administrator');
 
 const isActive = (path) => {
-  if (path === '/requests') return route.path.startsWith('/requests') && !route.path.startsWith('/requests/new');
+  if (path === '/zahtjevi') return route.path.startsWith('/zahtjevi') && !route.path.startsWith('/zahtjevi/novi');
   return route.path === path;
 };
 

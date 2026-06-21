@@ -55,7 +55,7 @@ export function useActionableRequestsNotifier() {
           label: 'Pregledaj',
           color: 'white',
           handler: () => {
-            router.push(`/requests/${requestId}`);
+            router.push(`/zahtjevi/${requestId}`);
           },
         },
         {

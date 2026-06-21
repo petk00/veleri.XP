@@ -135,8 +135,9 @@ router.get('/', authenticateToken, async (req, res) => {
 
     const adminUser = isAdmin(req.user);
 
-    const baseConditions = adminUser ? [] : ['pr.fk_created_by_user = ?'];
-    const baseParams      = adminUser ? [] : [req.user.id_user];
+    const onlyMine = req.query.onlyMine === '1';
+    const baseConditions = (adminUser && !onlyMine) ? [] : ['pr.fk_created_by_user = ?'];
+    const baseParams      = (adminUser && !onlyMine) ? [] : [req.user.id_user];
 
     const filterConditions = [...baseConditions];
     const filterParams     = [...baseParams];

@@ -8,7 +8,7 @@
           <nav class="breadcrumb" aria-label="Breadcrumb">
             <span class="breadcrumb__item">Nabava</span>
             <span class="breadcrumb__sep">›</span>
-            <button class="breadcrumb__back" type="button" @click="$router.push('/requests')">{{ isAdmin ? 'Zahtjevi' : 'Moji zahtjevi' }}</button>
+            <button class="breadcrumb__back" type="button" @click="$router.push(isAdmin ? '/zahtjevi' : '/dashboard')">{{ isAdmin ? 'Zahtjevi' : 'Moji zahtjevi' }}</button>
             <span class="breadcrumb__sep">›</span>
             <button class="breadcrumb__back" type="button" @click="goBack">{{ requestNumber || '...' }}</button>
             <span class="breadcrumb__sep">›</span>
@@ -567,7 +567,7 @@ const fetchData = async () => {
 
     if (status === 403 || status === 404) {
       $q.notify({ type: 'negative', message });
-      router.replace(`/requests/${route.params.id}`);
+      router.replace(`/zahtjevi/${route.params.id}`);
       return;
     }
 
@@ -640,7 +640,7 @@ const saveChanges = async () => {
     await api.put(`/requests/${route.params.id}`, payload);
     $q.notify({ type: 'positive', message: 'Zahtjev uspješno ažuriran.' });
     submitted.value = true;
-    router.push(`/requests/${route.params.id}`);
+    router.push(`/zahtjevi/${route.params.id}`);
   } catch (error) {
     console.error('Greška pri spremanju:', error);
     $q.notify({
@@ -652,7 +652,7 @@ const saveChanges = async () => {
   }
 };
 
-const goBack = () => router.push(`/requests/${route.params.id}`);
+const goBack = () => router.push(`/zahtjevi/${route.params.id}`);
 
 onMounted(() => fetchData());
 </script>
