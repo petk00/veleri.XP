@@ -77,6 +77,19 @@
               />
             </div>
 
+            <div class="field">
+              <label class="field__label">Napomena podnositelja</label>
+              <q-input
+                v-model="form.comment"
+                type="textarea"
+                outlined autogrow rows="3"
+                counter maxlength="500"
+                placeholder="Opcionalna napomena uz zahtjev..."
+                class="field__input field__input--textarea"
+              />
+              <div class="field__hint">Neobavezno. Vidljivo svim sudionicima u obradi.</div>
+            </div>
+
             <div class="field-grid">
               <div class="field">
                 <label class="field__label">Procijenjeni iznos</label>
@@ -374,6 +387,7 @@ const isDirty = computed(() => {
   return (
     f.fk_department !== o.fk_department ||
     f.justification.trim() !== o.justification.trim() ||
+    (f.comment ?? '').trim() !== (o.comment ?? '').trim() ||
     String(f.estimated_amount ?? '') !== String(o.estimated_amount ?? '') ||
     serializeItems(f.items) !== o.itemsJson
   );
@@ -544,6 +558,7 @@ const fetchData = async () => {
       fk_department:
         departmentOptions.value.find((d) => d.label === request.department_name)?.value || null,
       justification: request.justification || '',
+      comment: request.comment || '',
       estimated_amount: request.total_amount || null,
       items: items.map((it) => ({
         fk_item_category:
@@ -558,6 +573,7 @@ const fetchData = async () => {
     originalForm.value = {
       fk_department: form.value.fk_department,
       justification: form.value.justification,
+      comment: form.value.comment,
       estimated_amount: form.value.estimated_amount,
       itemsJson: serializeItems(form.value.items),
     };
@@ -628,6 +644,7 @@ const saveChanges = async () => {
   const payload = {
     fk_department: form.value.fk_department,
     justification: form.value.justification.trim(),
+    comment: form.value.comment?.trim() || null,
     estimated_amount: form.value.estimated_amount || null,
     items: form.value.items.map((it) => ({
       fk_item_category: it.fk_item_category,

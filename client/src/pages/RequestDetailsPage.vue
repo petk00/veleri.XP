@@ -234,29 +234,30 @@
             </div>
           </div>
 
-          <div class="card">
-            <div class="card__header card__header--no-divider">
-              <h2 class="card__title">
-                <q-icon name="subject" size="16px" />
-                <span>Svrha nabave</span>
-              </h2>
-            </div>
-            <div class="card__body">
-              <p class="prose">{{ request.justification || 'Nema unesenog obrazloženja.' }}</p>
+          <div class="info-col">
+            <div class="card">
+              <div class="card__header card__header--no-divider">
+                <h2 class="card__title">
+                  <q-icon name="subject" size="16px" />
+                  <span>Svrha nabave</span>
+                </h2>
+              </div>
+              <div class="card__body">
+                <p class="prose">{{ request.justification || 'Nema unesenog obrazloženja.' }}</p>
+              </div>
             </div>
 
-            <template v-if="request.comment">
-              <div class="card__divider" />
-              <div class="card__body">
-                <div class="comment-block">
-                  <div class="comment-block__label">
-                    <q-icon name="chat_bubble_outline" size="13px" />
-                    Napomena podnositelja
-                  </div>
-                  <p class="prose">{{ request.comment }}</p>
-                </div>
+            <div v-if="request.comment" class="card">
+              <div class="card__header card__header--no-divider">
+                <h2 class="card__title">
+                  <q-icon name="chat_bubble_outline" size="16px" />
+                  <span>Napomena podnositelja</span>
+                </h2>
               </div>
-            </template>
+              <div class="card__body">
+                <p class="prose">{{ request.comment }}</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1232,7 +1233,7 @@ const timelineTitle = (entry) => {
   const labels = {
     'Poslano': 'Zahtjev poslan',
     'Na odobrenju': 'Preuzeto na obradu',
-    'Vraćeno': 'Vraćeno na dopunu',
+    'Zahtjeva izmjene': 'Zahtjeva izmjene',
     'Naručeno': 'Odobreno i naručeno',
     'Zatvoreno': 'Zahtjev zatvoren',
   };
@@ -1611,6 +1612,11 @@ onMounted(() => {
   margin-bottom: 24px;
 }
 .info-grid .card { margin-bottom: 0; }
+.info-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
 @media (max-width: 800px) {
   .info-grid { grid-template-columns: 1fr; }
 }
