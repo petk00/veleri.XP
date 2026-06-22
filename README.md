@@ -159,22 +159,32 @@ cd veleri.XP
 
 3. Kreirati `.env` datoteku u korijenu projekta s JWT tajnim ključem.
 
+   **Najlakše (bilo koji OS) — ručno u Notepadu ili VS Code:**  
+   Kreirati datoteku `.env` u korijenu projekta (`veleri.XP/.env`) s ovim sadržajem:
+   ```
+   JWT_SECRET=PROMIJENI_OVO_minimum_32_znaka_dugacak_kljuc_ovdje
+   ```
+   Zamijeniti `PROMIJENI_OVO_...` s proizvoljnim nizom od minimalno 32 znaka (slova, brojevi).
+
    **macOS / Linux / Git Bash:**
    ```bash
    echo "JWT_SECRET=$(openssl rand -base64 48)" > .env
    ```
 
-   **Windows PowerShell:**
+   **Windows PowerShell 5.x** (standardni PowerShell na Windows 10/11):
    ```powershell
-   "JWT_SECRET=$([System.Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(48)))" | Out-File .env -Encoding utf8NoBOM
+   $b = New-Object byte[] 48
+   [Security.Cryptography.RNGCryptoServiceProvider]::new().GetBytes($b)
+   "JWT_SECRET=$([Convert]::ToBase64String($b))" | Set-Content .env -Encoding ASCII
    ```
 
-   **Ručno (bilo koji OS):** kreirati datoteku `.env` u korijenu projekta s ovim sadržajem (zamijeniti `PROMIJENI_OVO` s bilo kojim nizom od minimalno 32 nasumična znaka):
-   ```
-   JWT_SECRET=PROMIJENI_OVO_minimum_32_znaka_dugacak_kljuc_ovdje
+   **Windows PowerShell 7+:**
+   ```powershell
+   $b = [Security.Cryptography.RandomNumberGenerator]::GetBytes(48)
+   "JWT_SECRET=$([Convert]::ToBase64String($b))" | Set-Content .env -Encoding utf8NoBOM
    ```
 
-   > **Napomena za Windows CMD:** koristiti Git Bash ili PowerShell umjesto CMD — `echo` u CMD-u ne evaluira `$(...)` i kreira neispravnu datoteku.
+   > **Važno:** `.env` datoteka mora biti plain UTF-8 (bez BOM) ili ASCII — Docker Compose ne može čitati UTF-16 datoteke koje `Out-File` ponekad kreira na staroj PowerShell verziji.
 
    Bez `JWT_SECRET` backend odbija pokrenuti se. Za produkciju promijeniti i MySQL lozinke u `docker-compose.yml`.
 
