@@ -17,20 +17,6 @@
 
       <template v-else>
 
-        <!-- Vraćen alert -->
-        <div
-          v-if="returnedAlertItem"
-          class="returned-alert"
-          @click="$router.push(`/zahtjevi/${returnedAlertItem.id_purchase_request}`)"
-        >
-          <q-icon name="undo" size="15px" class="returned-alert__icon" />
-          <span>
-            <strong>{{ returnedAlertItem.request_number }}</strong>
-            je vraćen na dopunu. Pregledajte komentar administratora.
-          </span>
-          <q-icon name="chevron_right" size="15px" class="returned-alert__chevron" />
-        </div>
-
         <!-- Cards grid -->
         <section class="card-grid">
 
@@ -96,7 +82,6 @@
                   {{ recentRows[0].status_name }}
                 </span>
                 <div class="featured-header__row">
-                  <span class="featured-number" :style="{ color: buildRequestStyle(recentRows[0]).badge.color }">{{ recentRows[0].request_number }}</span>
                   <span class="featured-amount">{{ formatCurrency(recentRows[0].total_amount) }}</span>
                 </div>
               </div>
@@ -120,6 +105,11 @@
               <!-- Footer -->
               <div class="featured-footer">
                 <div class="featured-footer__meta">
+                  <span class="fmeta-item fmeta-item--id">
+                    <q-icon name="tag" size="12px" />
+                    {{ recentRows[0].request_number }}
+                  </span>
+                  <span class="fmeta-sep">·</span>
                   <span class="fmeta-item">
                     <q-icon name="calendar_today" size="12px" />
                     {{ formatDate(featuredCreatedAt) }}

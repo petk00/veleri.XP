@@ -413,7 +413,7 @@
         <h3 class="cancel-dialog__title">Odustajete od zahtjeva?</h3>
         <p class="cancel-dialog__message">Uneseni podaci neće biti spremljeni.</p>
         <div class="cancel-dialog__actions">
-          <button class="btn btn--primary cancel-dialog__btn-continue" @click="showCancelDialog = false">
+          <button class="btn btn--primary cancel-dialog__btn-continue" @click="onDialogStay">
             <span>Nastavi unos</span>
           </button>
           <button class="btn btn--ghost cancel-dialog__btn-leave" @click="onCancelConfirmed">
@@ -557,23 +557,34 @@ onMounted(() => window.addEventListener('beforeunload', handleBeforeUnload));
 onUnmounted(() => window.removeEventListener('beforeunload', handleBeforeUnload));
 
 const showCancelDialog = ref(false);
+const routeLeaveResolve = ref(null);
+
 const confirmCancel = () => { showCancelDialog.value = true; };
+
+const onDialogStay = () => {
+  showCancelDialog.value = false;
+  if (routeLeaveResolve.value) {
+    routeLeaveResolve.value(false);
+    routeLeaveResolve.value = null;
+  }
+};
+
 const onCancelConfirmed = () => {
   showCancelDialog.value = false;
-  submitted.value = true;
-  router.push('/dashboard');
+  if (routeLeaveResolve.value) {
+    routeLeaveResolve.value(true);
+    routeLeaveResolve.value = null;
+  } else {
+    submitted.value = true;
+    router.push('/dashboard');
+  }
 };
 
 onBeforeRouteLeave(() => {
   if (!isDirty.value) return true;
+  showCancelDialog.value = true;
   return new Promise((resolve) => {
-    $q.dialog({
-      title: 'Napuštanje stranice',
-      message: 'Imate nespremljene podatke. Jeste li sigurni da želite napustiti stranicu?',
-      cancel: { label: 'Ostani', flat: true, color: 'primary' },
-      ok: { label: 'Napusti', color: 'negative', flat: true },
-      persistent: true,
-    }).onOk(() => resolve(true)).onCancel(() => resolve(false));
+    routeLeaveResolve.value = resolve;
   });
 });
 
