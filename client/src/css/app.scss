@@ -1,5 +1,9 @@
 // app global css in SCSS form
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   background: #f8f9fa;
   min-height: 100vh;

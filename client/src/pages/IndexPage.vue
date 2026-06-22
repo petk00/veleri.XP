@@ -37,44 +37,38 @@
           <!-- Gornji red: kvadratne kartice -->
           <div class="square-row">
             <button class="dash-card dash-card--offer" @click="$router.push('/zahtjevi/novi')">
-              <!-- Dekorativni SVG pozadina -->
+              <!-- Dekorativni SVG pozadina (dolje desno, iza svega) -->
               <img src="/solarlinear_NOVIZAHTJEV.svg" alt="" class="offer-deco" />
 
-              <!-- Header -->
+              <img src="/forward-2-svgrepo-com.svg" alt="" class="offer-title-icon" />
               <span class="card-label">Novi zahtjev</span>
-              <span class="card-sub">Pokrenite postupak nabave u par koraka</span>
-
-              <!-- Koraci -->
+              <!-- Koraci s vertikalnom linijom -->
               <ol class="offer-steps">
                 <li class="offer-step">
-                  <div class="offer-step__icon">
-                    <img src="/solarlinear_NABAVA.svg" alt="" />
+                  <div class="offer-step__track">
+                    <div class="offer-step__dot">
+                      <img src="/solarlinear_NABAVA.svg" alt="" />
+                    </div>
+                    <div class="offer-step__line" />
                   </div>
-                  <span class="offer-step__text">Izaberite predmete koje naručujete</span>
+                  <span class="offer-step__text">Recite što trebate i zašto</span>
                 </li>
                 <li class="offer-step">
-                  <div class="offer-step__icon">
-                    <img src="/solarlinear_FINANCIRANJE.svg" alt="" />
+                  <div class="offer-step__track">
+                    <div class="offer-step__dot">
+                      <img src="/solarlinear_FINANCIRANJE.svg" alt="" />
+                    </div>
+                    <div class="offer-step__line" />
                   </div>
-                  <span class="offer-step__text">Priložite ponudu dobavljača <em>(opcionalno)</em></span>
+                  <span class="offer-step__text">Priložite ponudu ili navedite stavke</span>
                 </li>
                 <li class="offer-step">
-                  <div class="offer-step__icon">
-                    <img src="/solarlinear_POSLOVNEGODINE.svg" alt="" />
+                  <div class="offer-step__track">
+                    <div class="offer-step__dot">
+                      <img src="/solarlinear_MOJIZAHTJEVI.svg" alt="" />
+                    </div>
                   </div>
-                  <span class="offer-step__text">Odaberite odjel ili projekt</span>
-                </li>
-                <li class="offer-step">
-                  <div class="offer-step__icon">
-                    <img src="/solarlinear_KORISNICI.svg" alt="" />
-                  </div>
-                  <span class="offer-step__text">Pošaljite zahtjev na obradu</span>
-                </li>
-                <li class="offer-step">
-                  <div class="offer-step__icon">
-                    <img src="/solarlinear_MOJIZAHTJEVI.svg" alt="" />
-                  </div>
-                  <span class="offer-step__text">Pratite status u stvarnom vremenu</span>
+                  <span class="offer-step__text">Pošaljite i pratite status u stvarnom vremenu</span>
                 </li>
               </ol>
             </button>
@@ -429,79 +423,104 @@ onMounted(async () => {
   transform: scale(1.02);
 }
 
+.offer-title-icon {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 60px;
+  height: 60px;
+  z-index: 1;
+  pointer-events: none;
+}
+
 .offer-deco {
   position: absolute;
-  bottom: -20px;
-  right: -10px;
-  width: 260px;
-  height: 260px;
+  bottom: -94px;
+  right: -65px;
+  width: 380px;
+  height: 380px;
   opacity: 0.08;
+  transform: rotate(-18deg);
   pointer-events: none;
+  z-index: 0;
 }
 
 .offer-steps {
   list-style: none;
-  margin: 12px 0 0;
+  margin: 16px 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
   position: relative;
   z-index: 1;
 }
 
 .offer-step {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: flex-start;
+  gap: 14px;
 }
 
-.offer-step__icon {
-  width: 32px;
-  height: 32px;
+/* Track = stupac s krugom i linijom */
+.offer-step__track {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.offer-step__dot {
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  background: rgba(0, 175, 219, 0.12);
-  border: 1px solid rgba(0, 175, 219, 0.25);
+  background: rgba(255, 255, 255, 0.75);
+  border: 1.5px solid rgba(0, 175, 219, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0, 175, 219, 0.1);
 }
 
-.offer-step__icon img {
-  width: 18px;
-  height: 18px;
-  opacity: 0.7;
+.offer-step__dot img {
+  width: 24px;
+  height: 24px;
+  opacity: 0.75;
+}
+
+.offer-step__line {
+  width: 2px;
+  flex: 1;
+  min-height: 20px;
+  background: rgba(0, 175, 219, 0.2);
+  margin: 3px 0;
 }
 
 .offer-step__text {
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: 0.875rem;
+  font-weight: 600;
   color: #1b2d59;
-  line-height: 1.3;
+  line-height: 1.35;
+  padding-top: 8px;
 }
 
 .offer-step__text em {
   font-style: normal;
-  opacity: 0.6;
-  font-size: 0.75rem;
-}
-
-.offer-step__arrow {
-  padding: 2px 0 2px 15px;
-  color: rgba(0, 175, 219, 0.5);
-  font-size: 0.75rem;
-  line-height: 1;
+  opacity: 0.55;
+  font-size: 0.8125rem;
 }
 
 .dash-card--offer .card-label {
   color: #1b2d59;
-  font-size: 2rem;
+  font-size: 2.375rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   position: relative;
   z-index: 1;
+  width: 100%;
+  text-align: center;
 }
 
 .dash-card--offer .card-sub {

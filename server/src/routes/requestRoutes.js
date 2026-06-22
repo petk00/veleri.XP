@@ -349,6 +349,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
         CONCAT(u.first_name, ' ', u.last_name) AS created_by,
         pr.total_amount,
         pr.justification,
+        pr.comment,
         pr.created_at,
         pr.updated_at
       FROM PurchaseRequest pr
@@ -429,6 +430,7 @@ router.post('/', authenticateToken, async (req, res) => {
     fk_department,
     justification,
     estimated_amount,
+    comment,
     items,
   } = req.body;
 
@@ -544,12 +546,14 @@ router.post('/', authenticateToken, async (req, res) => {
 
     const requestNumber = `${prefix}${String(nextSeq).padStart(4, '0')}`;
 
+    const commentValue = comment && comment.trim() ? comment.trim() : null;
+
     const [insertResult] = await connection.query(
       `
       INSERT INTO PurchaseRequest
         (request_number, fk_fiscal_year, fk_department, fk_request_status,
-         fk_created_by_user, total_amount, justification)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+         fk_created_by_user, total_amount, justification, comment)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         requestNumber,
@@ -559,6 +563,7 @@ router.post('/', authenticateToken, async (req, res) => {
         userId,
         estimated_amount === '' || estimated_amount === undefined ? null : estimated_amount,
         justification.trim(),
+        commentValue,
       ]
     );
 
