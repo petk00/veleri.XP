@@ -157,11 +157,24 @@ git clone https://github.com/petk00/veleri.XP
 cd veleri.XP
 ```
 
-3. Kreirati `.env` datoteku u korijenu projekta s JWT tajnim ključem:
+3. Kreirati `.env` datoteku u korijenu projekta s JWT tajnim ključem.
 
-```bash
-echo "JWT_SECRET=$(openssl rand -base64 48)" > .env
-```
+   **macOS / Linux / Git Bash:**
+   ```bash
+   echo "JWT_SECRET=$(openssl rand -base64 48)" > .env
+   ```
+
+   **Windows PowerShell:**
+   ```powershell
+   "JWT_SECRET=$([System.Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(48)))" | Out-File .env -Encoding utf8NoBOM
+   ```
+
+   **Ručno (bilo koji OS):** kreirati datoteku `.env` u korijenu projekta s ovim sadržajem (zamijeniti `PROMIJENI_OVO` s bilo kojim nizom od minimalno 32 nasumična znaka):
+   ```
+   JWT_SECRET=PROMIJENI_OVO_minimum_32_znaka_dugacak_kljuc_ovdje
+   ```
+
+   > **Napomena za Windows CMD:** koristiti Git Bash ili PowerShell umjesto CMD — `echo` u CMD-u ne evaluira `$(...)` i kreira neispravnu datoteku.
 
    Bez `JWT_SECRET` backend odbija pokrenuti se. Za produkciju promijeniti i MySQL lozinke u `docker-compose.yml`.
 

@@ -69,6 +69,7 @@ CREATE TABLE `Department` (
   `department_limit` decimal(14,2) NOT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`id_department`),
+  UNIQUE KEY `uq_dept_name_per_year` (`fk_fiscal_year`, `name`),
   KEY `fk_department_fiscalyear` (`fk_fiscal_year`),
   CONSTRAINT `fk_department_fiscalyear` FOREIGN KEY (`fk_fiscal_year`) REFERENCES `FiscalYear` (`id_fiscal_year`)
     ON DELETE RESTRICT ON UPDATE CASCADE
