@@ -2,9 +2,7 @@
   <q-page class="page">
     <div class="page-shell">
 
-      <!-- ─────────────────────────────────
-           Page header
-           ───────────────────────────────── -->
+      <!-- Page header -->
       <header class="page-header">
         <div class="page-header__main" />
         <button class="btn btn--ghost" @click="confirmCancel">
@@ -13,9 +11,7 @@
         </button>
       </header>
 
-      <!-- ─────────────────────────────────
-           Loading
-           ───────────────────────────────── -->
+      <!-- Loading -->
       <div v-if="loadingReferenceData" class="loading-block">
         <q-spinner color="primary" size="32px" />
       </div>
@@ -35,37 +31,12 @@
         </button>
       </div>
 
-      <!-- ─────────────────────────────────
-           Wizard
-           ───────────────────────────────── -->
+      <!-- Wizard -->
       <div v-else class="wizard">
 
-        <!-- Sidebar steps -->
-        <aside class="wizard__sidebar">
-          <ol class="step-list">
-            <li
-              v-for="s in currentSteps"
-              :key="s.key"
-              class="step-list__item"
-              :class="{
-                'step-list__item--active': step === s.step,
-                'step-list__item--done': step > s.step,
-              }"
-            >
-              <div class="step-list__indicator">
-                <q-icon v-if="step > s.step" name="check" size="14px" />
-                <span v-else>{{ s.step }}</span>
-              </div>
-              <div class="step-list__body">
-                <div class="step-list__label">{{ s.title }}</div>
-                <div class="step-list__hint">{{ s.hint }}</div>
-              </div>
-            </li>
-          </ol>
-        </aside>
-
-        <!-- Content card -->
+        <!-- ── Content ── -->
         <div class="wizard__content">
+
           <div class="wizard__progress">
             <div class="wizard__progress-fill" :style="{ width: progressBarWidth }" />
           </div>
@@ -73,300 +44,183 @@
           <div class="wizard__inner">
             <transition name="step-fade" mode="out-in">
 
-              <!-- ───── STEP 1: Department ───── -->
-              <div v-if="step === 1" key="1" class="step">
-                <div class="step__head">
-                  <div class="step__caption">Korak 1 od {{ currentSteps.length }}</div>
-                  <h2 class="step__title">Odabir odjela, službe ili projekta kojem pripadate</h2>
+              <!-- ──────────── ODJEL ──────────── -->
+              <div v-if="currentStep === 'odjel'" key="odjel" class="hero-card hero-card--compact">
+                <div class="hero-card__head">
+                  <h2 class="hero-card__title hero-card__title--lg">Kojem odjelu, službi ili projektu pripadate?</h2>
                 </div>
-
-                <div class="step__body">
-                  <div class="field">
-                    <label class="field__label">Odjel / Služba / Projekt</label>
-                    <q-select
-                      v-model="form.department"
-                      :options="departmentOptions"
-                      outlined dense
-                      emit-value map-options
-                      placeholder="Odaberite iz popisa..."
-                      class="field__input"
+                <div class="hero-card__body">
+                  <div class="dept-search-box" :class="{ 'dept-search-box--open': deptOpen && !form.department, 'dept-search-box--done': !!form.department }">
+                    <q-icon :name="form.department ? 'check_circle' : 'search'" size="20px" class="dept-search-box__icon" :class="{ 'dept-search-box__icon--done': !!form.department }" />
+                    <input
+                      v-if="!form.department"
+                      v-model="deptSearch"
+                      type="text"
+                      placeholder="Upišite naziv vašeg odjela, službe ili projekta..."
+                      class="dept-search-box__input"
+                      autocomplete="off"
+                      @focus="deptOpen = true"
+                      @blur="onDeptBlur"
+                    />
+                    <span v-else class="dept-search-box__chosen">{{ selectedDepartmentLabel }}</span>
+                    <button v-if="form.department" class="dept-search-box__clear" @click="clearDept">
+                      <q-icon name="close" size="14px" />
+                    </button>
+                    <template v-else>
+                      <q-icon v-if="deptOpen" name="expand_less" size="18px" class="dept-search-box__arrow" />
+                      <q-icon v-else name="expand_more" size="18px" class="dept-search-box__arrow" />
+                    </template>
+                  </div>
+                  <div v-if="!form.department && deptOpen" class="dept-results">
+                    <button
+                      v-for="opt in filteredDepartmentOptions"
+                      :key="opt.value"
+                      type="button"
+                      class="dept-result-item"
+                      @mousedown.prevent
+                      @click="selectDept(opt)"
                     >
-                      <template #prepend>
-                        <q-icon name="business" size="16px" />
-                      </template>
-                    </q-select>
+                      {{ opt.label }}
+                    </button>
+                    <div v-if="filteredDepartmentOptions.length === 0" class="dept-results__empty">
+                      Nema rezultata za „{{ deptSearch }}"
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <!-- ───── STEP 2: Has offer? ───── -->
-              <div v-else-if="step === 2" key="2" class="step">
-                <div class="step__head">
-                  <div class="step__caption">Korak 2 od {{ currentSteps.length }}</div>
-                  <h2 class="step__title">Imate li ponudu ili račun?</h2>
-                  <p class="step__desc">
-                    Ovisno o odgovoru, prilagodit ćemo nastavak obrasca.
-                  </p>
+              <!-- ──────────── SVRHA ──────────── -->
+              <div v-else-if="currentStep === 'svrha'" key="svrha" class="hero-card hero-card--compact">
+                <div class="hero-card__head">
+                  <h2 class="hero-card__title hero-card__title--lg">Zašto nabavljate?</h2>
                 </div>
+                <div class="hero-card__body">
+                  <div class="svrha-box">
+                    <textarea
+                      v-model="form.reasonName"
+                      rows="4"
+                      maxlength="1000"
+                      placeholder="Opišite svrhu nabave — npr. Nabava prijenosnog računala za novog zaposlenika u odjelu razvoja..."
+                      class="svrha-box__input"
+                    />
+                  </div>
+                </div>
+              </div>
 
-                <div class="step__body">
-                  <div class="choice-list">
+              <!-- ──────────── PONUDA ──────────── -->
+              <div v-else-if="currentStep === 'ponuda'" key="ponuda" class="hero-card hero-card--compact">
+                <div class="hero-card__head">
+                  <h2 class="hero-card__title hero-card__title--lg">Imate li ponudu dobavljača?</h2>
+                </div>
+                <div class="hero-card__body">
+                  <div class="offer-choice-list">
                     <button
                       type="button"
-                      class="choice"
-                      :class="{ 'choice--selected': form.hasOffer === true }"
+                      class="offer-choice"
+                      :class="{ 'offer-choice--selected': form.hasOffer === true }"
                       @click="selectHasOffer(true)"
                     >
-                      <div class="choice__icon">
-                        <q-icon name="receipt_long" size="20px" />
-                      </div>
-                      <div class="choice__body">
-                        <div class="choice__title">Da, imam ponudu ili račun</div>
-                        <div class="choice__desc">Priložit ću jednu ili više ponuda</div>
-                      </div>
-                      <div class="choice__radio">
-                        <q-icon v-if="form.hasOffer === true" name="check_circle" size="18px" />
-                      </div>
+                      <img src="/clipboard-check-svgrepo-com.svg" alt="" class="offer-choice__svg" />
+                      <span class="offer-choice__label">Da, imam ponudu ili račun</span>
+                      <q-icon v-if="form.hasOffer === true" name="check_circle" size="18px" class="offer-choice__check" />
                     </button>
-
                     <button
                       type="button"
-                      class="choice"
-                      :class="{ 'choice--selected': form.hasOffer === false }"
+                      class="offer-choice"
+                      :class="{ 'offer-choice--selected': form.hasOffer === false }"
                       @click="selectHasOffer(false)"
                     >
-                      <div class="choice__icon">
-                        <q-icon name="format_list_bulleted" size="20px" />
-                      </div>
-                      <div class="choice__body">
-                        <div class="choice__title">Nemam ponudu</div>
-                        <div class="choice__desc">Unijet ću popis stavki koje trebam nabaviti</div>
-                      </div>
-                      <div class="choice__radio">
-                        <q-icon v-if="form.hasOffer === false" name="check_circle" size="18px" />
-                      </div>
+                      <img src="/clipboard-remove-svgrepo-com.svg" alt="" class="offer-choice__svg" />
+                      <span class="offer-choice__label">Nemam ponudu, ali znam što mi treba</span>
+                      <q-icon v-if="form.hasOffer === false" name="check_circle" size="18px" class="offer-choice__check" />
                     </button>
                   </div>
                 </div>
               </div>
 
-              <!-- ───── STEP 3a: WITH offer ───── -->
-              <div v-else-if="step === 3 && form.hasOffer === true" key="3a" class="step">
-                <div class="step__head">
-                  <div class="step__caption">Korak 3 od {{ currentSteps.length }}</div>
-                  <h2 class="step__title">Detalji nabave</h2>
-                  <p class="step__desc">
-                    Priložite ponudu, unesite iznos i opišite svrhu nabave.
-                  </p>
+              <!-- ──────────── UPLOAD ──────────── -->
+              <div v-else-if="currentStep === 'upload'" key="upload" class="hero-card">
+                <div class="hero-card__head">
+                  <h2 class="hero-card__title hero-card__title--lg">Dodajte ponudu:</h2>
                 </div>
+                <div class="hero-card__body">
+                  <label class="upload-zone">
+                    <img src="/file-send-svgrepo-com.svg" alt="" class="upload-zone__icon" />
+                    <span class="upload-zone__text">Klikni ili povuci datoteku ovdje</span>
+                    <span class="upload-zone__hint">PDF, Word, Excel, slike — najviše 10 MB po datoteci</span>
+                    <q-file
+                      v-model="newOfferFile"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt,.zip"
+                      style="display: none"
+                      @update:model-value="onAddOffer"
+                    />
+                  </label>
+                  <ul v-if="form.offerFiles.length > 0" class="file-list">
+                    <li v-for="(file, index) in form.offerFiles" :key="index" class="file-list__item">
+                      <div class="file-list__icon"><img src="/solarlinear_MOJIZAHTJEVI.svg" alt="" class="file-list__svg" /></div>
+                      <div class="file-list__name">{{ file.name }}</div>
+                      <div class="file-list__size">{{ formatFileSize(file.size) }}</div>
+                      <button class="icon-btn" @click="removeOffer(index)">
+                        <q-icon name="close" size="16px" />
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </div>
 
-                <div class="step__body">
-                  <!-- Offer files -->
-                  <div class="field">
-                    <label class="field__label">Ponude / računi *</label>
-                    <label class="upload-zone">
-                      <q-icon name="upload_file" size="28px" class="upload-zone__icon" />
-                      <span class="upload-zone__text">Klikni ili povuci datoteku ovdje</span>
-                      <span class="upload-zone__hint">PDF, Word, Excel, slike — najviše 10 MB po datoteci</span>
-                      <q-file
-                        v-model="newOfferFile"
-                        accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt,.zip"
-                        style="display: none"
-                        @update:model-value="onAddOffer"
+              <!-- ──────────── KATEGORIJA ──────────── -->
+              <div v-else-if="currentStep === 'kategorija'" key="kategorija" class="hero-card hero-card--compact">
+                <div class="hero-card__head">
+                  <h2 class="hero-card__title hero-card__title--lg">Upišite iznos i odaberite kategoriju:</h2>
+                </div>
+                <div class="hero-card__body">
+                  <div class="kat-box-group">
+                    <div class="kat-amount-box">
+                      <img src="/hand-money-svgrepo-com.svg" alt="" class="kat-amount-box__icon" />
+                      <input
+                        v-model="displayAmount"
+                        type="text" inputmode="decimal"
+                        placeholder="Upišite iznos s ponude, ili zbroj ako ih imate više"
+                        class="kat-amount-box__input"
+                        @focus="onAmountFocus"
+                        @blur="onAmountBlur"
                       />
-                    </label>
-
-                    <ul v-if="form.offerFiles.length > 0" class="file-list">
-                      <li v-for="(file, index) in form.offerFiles" :key="index" class="file-list__item">
-                        <div class="file-list__icon">
-                          <q-icon name="description" size="16px" />
-                        </div>
-                        <div class="file-list__name">{{ file.name }}</div>
-                        <div class="file-list__size">{{ formatFileSize(file.size) }}</div>
-                        <button class="icon-btn" @click="removeOffer(index)">
-                          <q-icon name="close" size="16px" />
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <!-- Amount + category -->
-                  <div class="field-grid">
-                    <div class="field">
-                      <label class="field__label">Ukupni iznos *</label>
-                      <q-input
-                        v-model.number="form.estimatedAmount"
-                        type="number" min="0" step="0.01"
-                        outlined dense
-                        placeholder="0,00"
-                        class="field__input"
-                        suffix="EUR"
-                      />
-                      <div class="field__hint">
-                        <span v-if="form.offerFiles.length > 1">
-                          Imate {{ form.offerFiles.length }} ponuda — upišite ukupni zbroj.
-                        </span>
-                        <span v-else>
-                          Iznos s ponude. Administrator može korigirati naknadno.
-                        </span>
-                      </div>
                     </div>
-
-                    <div class="field">
-                      <label class="field__label">Kategorija nabave *</label>
+                    <div class="kat-select-wrap">
+                      <img src="/box-svgrepo-com.svg" alt="" class="kat-select-icon" />
                       <q-select
                         v-model="form.category"
                         :options="categoryOptions"
-                        outlined dense
                         emit-value map-options
-                        placeholder="Odaberite kategoriju..."
-                        class="field__input"
-                      >
-                        <template #prepend>
-                          <q-icon name="category" size="16px" />
-                        </template>
-                      </q-select>
-                    </div>
-                  </div>
-
-                  <!-- Justification -->
-                  <div class="field">
-                    <label class="field__label">Svrha nabave *</label>
-                    <q-input
-                      v-model="form.reasonName"
-                      type="textarea"
-                      outlined autogrow rows="4"
-                      counter maxlength="1000"
-                      placeholder="Opišite zašto se ova nabava vrši i čemu služi..."
-                      class="field__input field__input--textarea"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <!-- ───── STEP 3b: WITHOUT offer ───── -->
-              <div v-else-if="step === 3 && form.hasOffer === false" key="3b" class="step">
-                <div class="step__head">
-                  <div class="step__caption">Korak 3 od {{ currentSteps.length }}</div>
-                  <h2 class="step__title">Stavke i svrha nabave</h2>
-                  <p class="step__desc">
-                    Navedite što trebate nabaviti i zašto.
-                  </p>
-                </div>
-
-                <div class="step__body">
-                  <div class="field">
-                    <label class="field__label">Svrha nabave *</label>
-                    <q-input
-                      v-model="form.reasonName"
-                      type="textarea"
-                      outlined autogrow rows="3"
-                      counter maxlength="1000"
-                      placeholder="Opišite zašto se ova nabava vrši i čemu služi..."
-                      class="field__input field__input--textarea"
-                    />
-                  </div>
-
-                  <div class="field">
-                    <label class="field__label">Stavke zahtjeva *</label>
-
-                    <div class="add-item">
-                      <div class="add-item__labels">
-                        <span class="add-item__label add-item__label--category">Kategorija</span>
-                        <span class="add-item__label add-item__label--name">Naziv artikla / usluge</span>
-                        <span class="add-item__label add-item__label--qty">Količina</span>
-                      </div>
-                      <div class="add-item__row">
-                        <q-select
-                          v-model="itemForm.category"
-                          :options="categoryOptions"
-                          placeholder="Odaberi..."
-                          outlined dense
-                          emit-value map-options
-                          class="add-item__category"
-                        />
-                        <q-input
-                          v-model="itemForm.item_name"
-                          placeholder="Unesite naziv..."
-                          outlined dense
-                          class="add-item__name"
-                          @keyup.enter="addItem"
-                        />
-                        <q-input
-                          v-model.number="itemForm.quantity"
-                          placeholder="1"
-                          type="number" min="1"
-                          outlined dense
-                          class="add-item__qty"
-                        />
-                        <button class="btn btn--primary add-item__btn" @click="addItem">
-                          <q-icon name="add" size="16px" />
-                          <span>Dodaj</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div v-if="form.items.length === 0" class="empty-block">
-                      <q-icon name="inventory_2" size="24px" class="empty-block__icon" />
-                      <div class="empty-block__text">Još nema dodanih stavki.</div>
-                      <div class="empty-block__hint">Unesite kategoriju, naziv i količinu te kliknite Dodaj.</div>
-                    </div>
-
-                    <ul v-else class="item-list">
-                      <li v-for="(item, index) in form.items" :key="index" class="item-list__row">
-                        <div class="item-list__index">{{ index + 1 }}</div>
-                        <div class="item-list__content">
-                          <div class="item-list__name">{{ item.item_name }}</div>
-                          <div class="item-list__category">{{ item.category_label }}</div>
-                        </div>
-                        <div class="item-list__qty">× {{ item.quantity }}</div>
-                        <button class="icon-btn" @click="removeItem(index)">
-                          <q-icon name="close" size="16px" />
-                        </button>
-                      </li>
-                    </ul>
-
-                    <div v-if="form.items.length > 0" class="item-list__footer">
-                      Ukupno {{ form.items.length }} {{ form.items.length === 1 ? 'stavka' : 'stavki' }}
-                    </div>
-
-                    <div class="field__hint field__hint--info" style="margin-top: 10px;">
-                      <q-icon name="info_outline" size="14px" />
-                      Cijena će biti određena nakon što dobavljač dostavi ponudu.
+                        :display-value="form.category === null ? 'Odaberite kategoriju...' : undefined"
+                        :class="['kat-select', { 'kat-select--empty': form.category === null }]"
+                      />
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- ───── STEP 4: Review ───── -->
-              <div v-else-if="step === 4" key="4" class="step">
-                <div class="step__head">
-                  <div class="step__caption">Korak {{ currentSteps.length }} od {{ currentSteps.length }}</div>
-                  <h2 class="step__title">Pregled prije slanja</h2>
-                  <p class="step__desc">
-                    Provjerite unesene podatke. Klikom na "Pošalji na obradu" zahtjev se šalje na obradu.
-                  </p>
+              <!-- ──────────── POTVRDA (zadnji korak) ──────────── -->
+              <div v-else-if="currentStep === 'potvrda'" key="potvrda" class="hero-card hero-card--compact">
+                <div class="hero-card__head">
+                  <h2 class="hero-card__title hero-card__title--lg">To je to?</h2>
                 </div>
-
-                <div class="step__body">
+                <div class="hero-card__body">
                   <div class="review">
-
                     <div class="review__field">
-                      <span class="review__label">Odjel / Služba / Projekt</span>
+                      <span class="review__label">Odjel / Projekt</span>
                       <span class="review__value">{{ selectedDepartmentLabel || '—' }}</span>
-                      <button class="review__edit" type="button" @click="step = 1">
+                      <button class="review__edit" type="button" @click="goToStep('odjel')">
                         <q-icon name="edit" size="12px" /> Uredi
                       </button>
                     </div>
-
                     <div class="review__field">
                       <span class="review__label">Svrha nabave</span>
                       <span class="review__value review__value--prose">{{ form.reasonName || '—' }}</span>
-                      <button class="review__edit" type="button" @click="step = 3">
+                      <button class="review__edit" type="button" @click="goToStep('svrha')">
                         <q-icon name="edit" size="12px" /> Uredi
                       </button>
                     </div>
-
                     <div v-if="form.hasOffer === true" class="review__field">
                       <span class="review__label">Ponude / računi</span>
                       <span class="review__value">
@@ -374,41 +228,38 @@
                           <span class="review__file">
                             <q-icon name="attach_file" size="14px" />
                             <span :title="form.offerFiles.map(f => f.name).join(', ')">
-                              {{ form.offerFiles.length === 1 ? form.offerFiles[0].name.length > 40 ? form.offerFiles[0].name.slice(0, 38) + '…' : form.offerFiles[0].name : `${form.offerFiles.length} priložene datoteke` }}
+                              {{ form.offerFiles.length === 1
+                                ? (form.offerFiles[0].name.length > 40 ? form.offerFiles[0].name.slice(0,38)+'…' : form.offerFiles[0].name)
+                                : `${form.offerFiles.length} priložene datoteke` }}
                             </span>
                           </span>
                         </template>
                         <span v-else class="review__muted">Bez ponude</span>
                       </span>
-                      <button class="review__edit" type="button" @click="step = 3">
+                      <button class="review__edit" type="button" @click="goToStep('upload')">
                         <q-icon name="edit" size="12px" /> Uredi
                       </button>
                     </div>
-
                     <div v-if="form.hasOffer === true" class="review__field">
                       <span class="review__label">Ukupni iznos</span>
                       <span class="review__value review__value--amount">
                         {{ form.estimatedAmount ? formatCurrency(form.estimatedAmount) : '—' }}
                       </span>
-                      <button class="review__edit" type="button" @click="step = 3">
+                      <button class="review__edit" type="button" @click="goToStep('kategorija')">
                         <q-icon name="edit" size="12px" /> Uredi
                       </button>
                     </div>
-
                     <div v-if="form.hasOffer === false" class="review__field">
                       <span class="review__label">Iznos</span>
                       <span class="review__value review__muted">Bit će određen nakon obrade zahtjeva</span>
                     </div>
-
                     <div class="review__field">
                       <span class="review__label">
                         <template v-if="form.hasOffer === false">Stavke ({{ form.items.length }})</template>
                         <template v-else>Kategorija</template>
                       </span>
                       <span class="review__value">
-                        <template v-if="form.hasOffer === true">
-                          {{ selectedCategoryLabel || '—' }}
-                        </template>
+                        <template v-if="form.hasOffer === true">{{ selectedCategoryLabel || '—' }}</template>
                         <ul v-else class="review__items">
                           <li v-for="(item, index) in form.items" :key="index">
                             <span class="review__item-name">{{ index + 1 }}. {{ item.item_name }}</span>
@@ -416,24 +267,114 @@
                           </li>
                         </ul>
                       </span>
-                      <button class="review__edit" type="button" @click="step = 3">
+                      <button class="review__edit" type="button" @click="goToStep(form.hasOffer === true ? 'kategorija' : 'stavke')">
                         <q-icon name="edit" size="12px" /> Uredi
                       </button>
                     </div>
-
+                    <div class="review__field">
+                      <span class="review__label">Napomena</span>
+                      <span class="review__value review__value--prose">{{ form.comment || '—' }}</span>
+                      <button class="review__edit" type="button" @click="goToStep('komentar')">
+                        <q-icon name="edit" size="12px" /> Uredi
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
 
+              <!-- ──────────── STAVKE ──────────── -->
+              <div v-else-if="currentStep === 'stavke'" key="stavke" class="hero-card">
+                <div class="hero-card__head">
+                  <h2 class="hero-card__title hero-card__title--lg">Što trebate?</h2>
+                </div>
+                <div class="hero-card__body">
+                  <div class="add-item">
+                    <div class="add-item__grid">
+                      <q-select
+                        v-model="itemForm.category"
+                        :options="categoryOptions"
+                        :display-value="itemForm.category === null ? 'Odaberite kategoriju...' : undefined"
+                        outlined dense
+                        emit-value map-options
+                        :class="['add-item__category', { 'add-item__category--empty': itemForm.category === null }]"
+                      />
+                      <q-input
+                        v-model="itemForm.item_name"
+                        placeholder="Npr. laptop, stolica, papir za printer..."
+                        outlined dense
+                        class="add-item__name"
+                        @keyup.enter="addItem"
+                      />
+                      <q-input
+                        v-model.number="itemForm.quantity"
+                        placeholder="1"
+                        type="number" min="1"
+                        outlined dense
+                        class="add-item__qty"
+                        @keyup.enter="addItem"
+                      />
+                      <button class="btn btn--ghost add-item__btn" @click="addItem">
+                        <q-icon name="add" size="16px" />
+                        <span>Dodaj</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div v-if="form.items.length === 0" class="empty-block">
+                    <img src="/solarlinear_MOJIZAHTJEVI.svg" alt="" class="empty-block__icon" />
+                    <div class="empty-block__text">Još nema dodanih stavki.</div>
+                    <div class="empty-block__hint">Unesite kategoriju, naziv i količinu te kliknite Dodaj.</div>
+                  </div>
+
+                  <ul v-else class="item-list">
+                    <li v-for="(item, index) in form.items" :key="index" class="item-list__row">
+                      <div class="item-list__index">{{ index + 1 }}</div>
+                      <div class="item-list__content">
+                        <div class="item-list__name">{{ item.item_name }}</div>
+                        <div class="item-list__category">{{ item.category_label }}</div>
+                      </div>
+                      <div class="item-list__qty">× {{ item.quantity }}</div>
+                      <button class="icon-btn" @click="removeItem(index)">
+                        <q-icon name="close" size="16px" />
+                      </button>
+                    </li>
+                  </ul>
+
+                  <div v-if="form.items.length > 0" class="item-list__footer">
+                    Ukupno {{ form.items.length }} {{ form.items.length === 1 ? 'stavka' : 'stavki' }}
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- ──────────── KOMENTAR ──────────── -->
+              <div v-else-if="currentStep === 'komentar'" key="komentar" class="hero-card hero-card--compact">
+                <div class="hero-card__head">
+                  <h2 class="hero-card__title hero-card__title--lg">Imate li kakvu napomenu?</h2>
+                </div>
+                <div class="hero-card__body">
+                  <div class="svrha-box">
+                    <textarea
+                      v-model="form.comment"
+                      rows="5"
+                      maxlength="500"
+                      placeholder="Opcionalna napomena za administratora — možete preskočiti."
+                      class="svrha-box__input"
+                    />
+                  </div>
+                </div>
+              </div>
+
+
             </transition>
 
-            <!-- Wizard nav -->
+            <!-- Nav -->
             <div class="wizard__nav">
               <button
-                v-if="step > 1"
+                v-if="currentStep !== 'odjel'"
                 class="btn btn--ghost"
                 :disabled="submitting"
-                @click="step--"
+                @click="goBack"
               >
                 <q-icon name="arrow_back" size="16px" />
                 <span>Natrag</span>
@@ -441,9 +382,10 @@
               <span v-else />
 
               <button
-                v-if="step < 4"
+                v-if="currentStep !== 'potvrda'"
                 class="btn btn--primary"
-                @click="nextStep"
+                :disabled="!canProceed"
+                @click="goNext"
               >
                 <span>Dalje</span>
                 <q-icon name="arrow_forward" size="16px" />
@@ -464,11 +406,28 @@
       </div>
 
     </div>
+
+    <!-- Cancel dialog -->
+    <q-dialog v-model="showCancelDialog" persistent>
+      <div class="cancel-dialog">
+        <h3 class="cancel-dialog__title">Odustajete od zahtjeva?</h3>
+        <p class="cancel-dialog__message">Uneseni podaci neće biti spremljeni.</p>
+        <div class="cancel-dialog__actions">
+          <button class="btn btn--primary cancel-dialog__btn-continue" @click="showCancelDialog = false">
+            <span>Nastavi unos</span>
+          </button>
+          <button class="btn btn--ghost cancel-dialog__btn-leave" @click="onCancelConfirmed">
+            <span>Odustani</span>
+          </button>
+        </div>
+      </div>
+    </q-dialog>
+
   </q-page>
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { onBeforeRouteLeave, useRouter } from 'vue-router';
 import { api } from 'boot/axios';
@@ -489,19 +448,103 @@ const ALLOWED_OFFER_MIME_TYPES = [
   'application/zip',
 ];
 
-const step = ref(1);
+/* ───────── State ───────── */
+
+const currentStep = ref('odjel');
 const loadingReferenceData = ref(false);
 const submitting = ref(false);
 const submitted = ref(false);
+
+const form = ref({
+  department: null,
+  hasOffer: null,
+  offerFiles: [],
+  estimatedAmount: null,
+  category: null,
+  reasonName: '',
+  comment: '',
+  items: [],
+});
+
+const itemForm = ref({ category: null, item_name: '', quantity: 1 });
+const newOfferFile = ref(null);
+const deptSearch = ref('');
+const deptOpen = ref(false);
+const onDeptBlur = () => { setTimeout(() => { deptOpen.value = false; }, 160); };
+const selectDept = (opt) => { form.value.department = opt.value; deptSearch.value = ''; deptOpen.value = false; };
+
+const activeFiscalYearId = ref(null);
+const noActiveFiscalYear = ref(false);
+const departmentOptions = ref([]);
+const categoryOptions = ref([]);
+
+/* ───────── Step sequences ───────── */
+
+const STEP_SEQUENCE_OFFER    = ['odjel','svrha','ponuda','upload','kategorija','komentar','potvrda'];
+const STEP_SEQUENCE_NO_OFFER = ['odjel','svrha','ponuda','stavke','komentar','potvrda'];
+const STEP_SEQUENCE_UNKNOWN  = ['odjel','svrha','ponuda','komentar','potvrda'];
+
+const SECTION3_STEPS = new Set(['ponuda','upload','kategorija','stavke']);
+
+const STEP_PROGRESS = {
+  odjel: 0, svrha: 0.17, ponuda: 0.34,
+  upload: 0.45, kategorija: 0.57,
+  stavke: 0.57,
+  komentar: 0.75, potvrda: 1.0,
+};
+
+const stepSequence = computed(() => {
+  if (form.value.hasOffer === true)  return STEP_SEQUENCE_OFFER;
+  if (form.value.hasOffer === false) return STEP_SEQUENCE_NO_OFFER;
+  return STEP_SEQUENCE_UNKNOWN;
+});
+
+const currentStepIndex = computed(() => stepSequence.value.indexOf(currentStep.value));
+
+const currentSection = computed(() => {
+  if (currentStep.value === 'odjel')    return 1;
+  if (currentStep.value === 'svrha')    return 2;
+  if (SECTION3_STEPS.has(currentStep.value)) return 3;
+  if (currentStep.value === 'komentar') return 4;
+  if (currentStep.value === 'pregled')  return 5;
+  return 1;
+});
+
+const progressBarWidth = computed(() => `${(STEP_PROGRESS[currentStep.value] ?? 0) * 100}%`);
+
+const isPastStep = (key) => {
+  const idx = stepSequence.value.indexOf(key);
+  return idx !== -1 && idx < currentStepIndex.value;
+};
+
+/* ───────── canProceed ───────── */
+
+const canProceed = computed(() => {
+  switch (currentStep.value) {
+    case 'odjel':      return !!form.value.department;
+    case 'svrha':      return !!form.value.reasonName.trim();
+    case 'ponuda':     return form.value.hasOffer !== null;
+    case 'upload':     return form.value.offerFiles.length > 0;
+    case 'kategorija': return !!form.value.category && !!form.value.estimatedAmount && form.value.estimatedAmount > 0;
+    case 'potvrda':    return true;
+    case 'stavke':     return form.value.items.length > 0;
+    case 'komentar':   return true;
+    case 'pregled':    return true;
+    default:           return true;
+  }
+});
+
+/* ───────── isDirty ───────── */
 
 const isDirty = computed(() => {
   if (submitted.value) return false;
   const f = form.value;
   return (
-    step.value > 1 ||
+    currentStep.value !== 'odjel' ||
     !!f.department ||
     f.hasOffer !== null ||
     !!f.reasonName ||
+    !!f.comment ||
     f.items.length > 0 ||
     f.offerFiles.length > 0
   );
@@ -513,17 +556,12 @@ const handleBeforeUnload = (e) => {
 onMounted(() => window.addEventListener('beforeunload', handleBeforeUnload));
 onUnmounted(() => window.removeEventListener('beforeunload', handleBeforeUnload));
 
-const confirmCancel = () => {
-  $q.dialog({
-    title: 'Odustajete od zahtjeva?',
-    message: 'Uneseni podaci neće biti spremljeni.',
-    cancel: { label: 'Nastavi unos', flat: true, color: 'primary' },
-    ok: { label: 'Odustani', color: 'negative', flat: true },
-    persistent: true,
-  }).onOk(() => {
-    submitted.value = true;
-    router.push('/dashboard');
-  });
+const showCancelDialog = ref(false);
+const confirmCancel = () => { showCancelDialog.value = true; };
+const onCancelConfirmed = () => {
+  showCancelDialog.value = false;
+  submitted.value = true;
+  router.push('/dashboard');
 };
 
 onBeforeRouteLeave(() => {
@@ -539,67 +577,6 @@ onBeforeRouteLeave(() => {
   });
 });
 
-const activeFiscalYearId = ref(null);
-const noActiveFiscalYear = ref(false);
-const departmentOptions = ref([]);
-const categoryOptions = ref([]);
-
-const newOfferFile = ref(null);
-
-const form = ref({
-  department: null,
-  hasOffer: null,
-  offerFiles: [],
-  estimatedAmount: null,
-  category: null,
-  reasonName: '',
-  items: [],
-});
-
-const itemForm = ref({ category: null, item_name: '', quantity: 1 });
-
-/* ───────── Wizard steps ───────── */
-
-const currentSteps = computed(() => {
-  const base = [
-    { key: 'odjel', step: 1, title: 'Odjel', hint: 'Odaberite odjel' },
-    { key: 'ponuda', step: 2, title: 'Ponuda', hint: 'Imate li ponudu?' },
-  ];
-  if (form.value.hasOffer === true) {
-    return [
-      ...base,
-      { key: 'detalji', step: 3, title: 'Detalji', hint: 'Iznos i kategorija' },
-      { key: 'pregled', step: 4, title: 'Pregled', hint: 'Potvrda i slanje' },
-    ];
-  }
-  if (form.value.hasOffer === false) {
-    return [
-      ...base,
-      { key: 'stavke', step: 3, title: 'Stavke', hint: 'Popis artikala' },
-      { key: 'pregled', step: 4, title: 'Pregled', hint: 'Potvrda i slanje' },
-    ];
-  }
-  return [
-    ...base,
-    { key: 'detalji', step: 3, title: 'Detalji', hint: 'Iznos i kategorija' },
-    { key: 'pregled', step: 4, title: 'Pregled', hint: 'Potvrda i slanje' },
-  ];
-});
-
-const progressBarWidth = computed(() => {
-  const total = currentSteps.value.length;
-  if (total <= 1) return '0%';
-  return `${((step.value - 1) / (total - 1)) * 100}%`;
-});
-
-const selectedDepartmentLabel = computed(() =>
-  departmentOptions.value.find((x) => x.value === form.value.department)?.label || ''
-);
-
-const selectedCategoryLabel = computed(() =>
-  categoryOptions.value.find((x) => x.value === form.value.category)?.label || ''
-);
-
 /* ───────── Reference data ───────── */
 
 const fetchReferenceData = async () => {
@@ -607,13 +584,12 @@ const fetchReferenceData = async () => {
   try {
     const fiscalYearRes = await api.get('/reference/active-fiscal-year');
     activeFiscalYearId.value = fiscalYearRes.data.id_fiscal_year;
-
     const [departmentsRes, categoriesRes] = await Promise.all([
       api.get('/reference/departments'),
       api.get('/reference/item-categories'),
     ]);
     departmentOptions.value = departmentsRes.data.map((d) => ({ label: d.name, value: d.id_department }));
-    categoryOptions.value = categoriesRes.data.map((c) => ({ label: c.name, value: c.id_item_category }));
+    categoryOptions.value   = categoriesRes.data.map((c) => ({ label: c.name, value: c.id_item_category }));
   } catch (error) {
     if (error?.response?.status === 404) {
       noActiveFiscalYear.value = true;
@@ -626,63 +602,46 @@ const fetchReferenceData = async () => {
   }
 };
 
-/* ───────── Validation ───────── */
+/* ───────── Navigation ───────── */
 
 const notifyError = (message) => $q.notify({ type: 'negative', message });
 
-const validateStep = (stepToValidate = step.value) => {
-  if (loadingReferenceData.value) {
-    notifyError('Pričekajte da se referentni podaci učitaju.');
-    return false;
+const goNext = () => {
+  if (!canProceed.value) {
+    notifyError('Ispunite obavezno polje prije nastavka.');
+    return;
   }
-  if (!activeFiscalYearId.value) {
-    notifyError('Aktivna fiskalna godina nije dostupna.');
-    return false;
-  }
-  if (stepToValidate >= 1 && !form.value.department) {
-    notifyError('Odaberite odjel, službu ili projekt.');
-    return false;
-  }
-  if (stepToValidate >= 2 && form.value.hasOffer === null) {
-    notifyError('Odaberite jednu od opcija.');
-    return false;
-  }
-  if (stepToValidate >= 3 && form.value.hasOffer === true) {
-    if (form.value.offerFiles.length === 0) {
-      notifyError('Priložite barem jednu ponudu.');
-      return false;
-    }
-    if (!form.value.estimatedAmount || form.value.estimatedAmount <= 0) {
-      notifyError('Ukupni iznos je obavezan.');
-      return false;
-    }
-    if (!form.value.category) {
-      notifyError('Odaberite kategoriju nabave.');
-      return false;
-    }
-    if (!form.value.reasonName.trim()) {
-      notifyError('Unesite svrhu nabave.');
-      return false;
-    }
-  }
-  if (stepToValidate >= 3 && form.value.hasOffer === false) {
-    if (!form.value.reasonName.trim()) {
-      notifyError('Unesite svrhu nabave.');
-      return false;
-    }
-    if (form.value.items.length === 0) {
-      notifyError('Dodajte barem jednu stavku.');
-      return false;
-    }
-  }
-  return true;
+  const seq = stepSequence.value;
+  const next = seq[currentStepIndex.value + 1];
+  if (next) currentStep.value = next;
 };
 
-/* ───────── File handling ───────── */
+const goBack = () => {
+  const seq = stepSequence.value;
+  const prev = seq[currentStepIndex.value - 1];
+  if (prev) currentStep.value = prev;
+};
+
+const goToStep = (key) => {
+  currentStep.value = key;
+};
+
+/* ───────── Form actions ───────── */
+
+const selectHasOffer = (hasOffer) => {
+  form.value.hasOffer = hasOffer;
+  if (!hasOffer) {
+    form.value.offerFiles = [];
+    form.value.estimatedAmount = null;
+    form.value.category = null;
+    newOfferFile.value = null;
+  } else {
+    form.value.items = [];
+  }
+};
 
 const onAddOffer = (file) => {
   if (!file) return;
-
   if (!ALLOWED_OFFER_MIME_TYPES.includes(file.type)) {
     notifyError('Odabrana datoteka nije podržanog tipa.');
     newOfferFile.value = null;
@@ -701,43 +660,14 @@ const onAddOffer = (file) => {
     newOfferFile.value = null;
     return;
   }
-
   form.value.offerFiles.push(file);
   newOfferFile.value = null;
 };
 
 const removeOffer = (index) => form.value.offerFiles.splice(index, 1);
 
-const formatFileSize = (bytes) => {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-};
-
-/* ───────── Step / form actions ───────── */
-
-const selectHasOffer = (hasOffer) => {
-  form.value.hasOffer = hasOffer;
-  if (!hasOffer) {
-    form.value.offerFiles = [];
-    form.value.estimatedAmount = null;
-    form.value.category = null;
-    newOfferFile.value = null;
-  }
-};
-
-const nextStep = () => {
-  if (!validateStep()) return;
-  if (step.value < 4) step.value++;
-};
-
 const addItem = () => {
-  if (
-    !itemForm.value.category
-    || !itemForm.value.item_name.trim()
-    || !itemForm.value.quantity
-    || itemForm.value.quantity < 1
-  ) {
+  if (!itemForm.value.category || !itemForm.value.item_name.trim() || !itemForm.value.quantity || itemForm.value.quantity < 1) {
     notifyError('Ispunite kategoriju, naziv i količinu.');
     return;
   }
@@ -753,19 +683,89 @@ const addItem = () => {
 
 const removeItem = (index) => form.value.items.splice(index, 1);
 
+/* ───────── Computed labels ───────── */
+
+const selectedDepartmentLabel = computed(() =>
+  departmentOptions.value.find((x) => x.value === form.value.department)?.label || ''
+);
+
+const selectedCategoryLabel = computed(() =>
+  categoryOptions.value.find((x) => x.value === form.value.category)?.label || ''
+);
+
+const filteredDepartmentOptions = computed(() => {
+  const q = deptSearch.value.trim().toLowerCase();
+  if (!q) return departmentOptions.value;
+  return departmentOptions.value.filter((x) => x.label.toLowerCase().includes(q));
+});
+
+const clearDept = () => { form.value.department = null; deptSearch.value = ''; };
+
+watch(deptSearch, (val) => {
+  const q = val.trim().toLowerCase();
+  if (!q) { form.value.department = null; return; }
+  const matches = departmentOptions.value.filter(x => x.label.toLowerCase().includes(q));
+  if (matches.length === 1) form.value.department = matches[0].value;
+  else form.value.department = null;
+});
+
+/* ───────── Formatters ───────── */
+
+const formatFileSize = (bytes) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
 const formatCurrency = (value) => {
   if (value == null || value === '') return '—';
   return new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(Number(value));
 };
 
+const displayAmount = ref('');
+const onAmountFocus = () => {
+  displayAmount.value = form.value.estimatedAmount != null ? String(form.value.estimatedAmount) : '';
+};
+const onAmountBlur = () => {
+  const raw = displayAmount.value.replace(/[^\d,.-]/g, '').replace(',', '.');
+  const num = parseFloat(raw);
+  if (!isNaN(num) && num > 0) {
+    form.value.estimatedAmount = num;
+    displayAmount.value = new Intl.NumberFormat('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num) + ' €';
+  } else {
+    form.value.estimatedAmount = null;
+    displayAmount.value = '';
+  }
+};
+watch(currentStep, (step) => {
+  if (step === 'kategorija' && form.value.estimatedAmount) {
+    displayAmount.value = new Intl.NumberFormat('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(form.value.estimatedAmount) + ' €';
+  }
+});
+
 /* ───────── Submit ───────── */
 
-const submitWizard = async () => {
-  if (!validateStep(4)) return;
+const validateAll = () => {
+  if (!activeFiscalYearId.value) { notifyError('Aktivna fiskalna godina nije dostupna.'); return false; }
+  if (!form.value.department)    { notifyError('Odaberite odjel, službu ili projekt.'); return false; }
+  if (!form.value.reasonName.trim()) { notifyError('Unesite svrhu nabave.'); return false; }
+  if (form.value.hasOffer === null)  { notifyError('Odaberite jednu od opcija.'); return false; }
+  if (form.value.hasOffer === true) {
+    if (form.value.offerFiles.length === 0) { notifyError('Priložite barem jednu ponudu.'); return false; }
+    if (!form.value.estimatedAmount || form.value.estimatedAmount <= 0) { notifyError('Ukupni iznos je obavezan.'); return false; }
+    if (!form.value.category) { notifyError('Odaberite kategoriju nabave.'); return false; }
+  }
+  if (form.value.hasOffer === false && form.value.items.length === 0) {
+    notifyError('Dodajte barem jednu stavku.');
+    return false;
+  }
+  return true;
+};
 
+const submitWizard = async () => {
+  if (!validateAll()) return;
   submitting.value = true;
 
-  // Ako ima ponudu — backend traži minimum 1 stavku, šaljemo kategoriju kao item
   const items = form.value.hasOffer === true
     ? [{ fk_item_category: form.value.category, item_name: selectedCategoryLabel.value, quantity: 1 }]
     : form.value.items.map((it) => ({
@@ -775,10 +775,11 @@ const submitWizard = async () => {
       }));
 
   const payload = {
-    fk_fiscal_year: activeFiscalYearId.value,
-    fk_department: form.value.department,
-    justification: form.value.reasonName.trim(),
+    fk_fiscal_year:   activeFiscalYearId.value,
+    fk_department:    form.value.department,
+    justification:    form.value.reasonName.trim(),
     estimated_amount: form.value.estimatedAmount || null,
+    comment:          form.value.comment.trim() || null,
     items,
   };
 
@@ -805,17 +806,12 @@ const submitWizard = async () => {
       }
     }
 
-    $q.notify({
-      type: 'positive',
-      message: `Zahtjev ${data.request_number} uspješno poslan na obradu.`,
-      timeout: 2500,
-    });
+    $q.notify({ type: 'positive', message: `Zahtjev ${data.request_number} uspješno poslan na obradu.`, timeout: 2500 });
     submitted.value = true;
     router.push('/dashboard');
   } catch (error) {
     console.error('Greška:', error);
-    const message = error.response?.data?.message || 'Greška pri kreiranju zahtjeva.';
-    $q.notify({ type: 'negative', message, timeout: 4000 });
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Greška pri kreiranju zahtjeva.', timeout: 4000 });
   } finally {
     submitting.value = false;
   }
@@ -825,909 +821,607 @@ onMounted(() => fetchReferenceData());
 </script>
 
 <style scoped>
-/* ─────────────────────────────────
-   Page
-   ───────────────────────────────── */
+/* ─── Page ─── */
 .page {
   background: transparent;
   padding: 38px 40px 32px;
   font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color: #111827;
 }
+.page-shell { max-width: 1400px; margin: 0 auto; }
 
-.page-shell {
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-/* ─────────────────────────────────
-   Page header
-   ───────────────────────────────── */
+/* ─── Page header ─── */
 .page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-
-.page-header__main { flex: 1; min-width: 240px; }
-
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.breadcrumb__item {
-  color: #6b7280;
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-
-.breadcrumb__back {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: none;
-  border: none;
-  padding: 0;
-  font-family: inherit;
-  font-size: 0.8125rem;
-  color: #6b7280;
-  cursor: pointer;
-  transition: color 0.15s;
-}
-
-.breadcrumb__back:hover { color: #00afdb; }
-
-.breadcrumb__sep {
-  color: #d1d5db;
-  font-size: 0.875rem;
-  user-select: none;
-}
-
-.breadcrumb__current {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #374151;
-}
-
-
-/* ─────────────────────────────────
-   Loading
-   ───────────────────────────────── */
-.loading-block {
-  display: flex;
-  justify-content: center;
-  padding: 48px 0;
-}
-
-/* ─────────────────────────────────
-   Buttons
-   ───────────────────────────────── */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 14px;
-  font-family: inherit;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  border-radius: 3px;
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-  color: #111827;
-  background: white;
-}
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.btn--primary {
-  background: #111827;
-  color: white;
-  border-color: #111827;
-}
-.btn--primary:hover:not(:disabled) { background: #000; border-color: #000; }
-
-.btn--ghost {
-  background: transparent;
-  color: #424242;
-  border-color: #d1d5db;
-}
-.btn--ghost:hover:not(:disabled) { background: #F8F8F8; border-color: #4b5563; }
-
-.icon-btn {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 3px;
-  background: transparent;
-  color: #4b5563;
-  cursor: pointer;
-  transition: all 0.15s;
-  flex-shrink: 0;
-}
-.icon-btn:hover { background: #f3f4f6; color: #A4262C; }
-
-/* ─────────────────────────────────
-   Wizard layout
-   ───────────────────────────────── */
-.wizard {
-  display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 16px;
-  align-items: start;
-  max-width: 1100px;
-}
-
-/* ─────────────────────────────────
-   Sidebar — step list
-   ───────────────────────────────── */
-.wizard__sidebar {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  padding: 12px;
-  position: sticky;
-  top: 72px;
-}
-
-.step-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  position: relative;
-}
-
-.step-list__item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 10px 8px;
-  border-radius: 4px;
-  position: relative;
-  transition: background 0.12s;
-}
-
-.step-list__item:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  left: 19px;
-  top: 36px;
-  bottom: -10px;
-  width: 1px;
-  background: #e5e7eb;
-}
-
-.step-list__item--done:not(:last-child)::after,
-.step-list__item--active:not(:last-child)::after {
-  background: #0067b8;
-}
-
-.step-list__indicator {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: white;
-  border: 1.5px solid #d1d5db;
-  color: #4b5563;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.18s;
-  position: relative;
-  z-index: 1;
-}
-
-.step-list__body { padding-top: 1px; flex: 1; min-width: 0; }
-
-.step-list__label {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: #4b5563;
-  letter-spacing: -0.005em;
-}
-
-.step-list__hint {
-  font-size: 0.6875rem;
-  color: #9ca3af;
-  margin-top: 1px;
-}
-
-/* Active step */
-.step-list__item--active .step-list__indicator {
-  background: #111827;
-  border-color: #111827;
-  color: white;
-}
-.step-list__item--active .step-list__label {
-  color: #111827;
-  font-weight: 600;
-}
-
-/* Done step */
-.step-list__item--done .step-list__indicator {
-  background: #0067b8;
-  border-color: #0067b8;
-  color: white;
-}
-.step-list__item--done .step-list__label { color: #424242; }
-
-/* ─────────────────────────────────
-   Content card
-   ───────────────────────────────── */
-.wizard__content {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  min-height: 480px;
-}
-
-.wizard__progress {
-  height: 2px;
-  background: #f3f4f6;
-  position: relative;
-}
-.wizard__progress-fill {
-  height: 100%;
-  background: #0067b8;
-  transition: width 0.3s ease;
-}
-
-.wizard__inner {
-  padding: 24px 28px 20px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ─────────────────────────────────
-   Step
-   ───────────────────────────────── */
-.step__head {
-  margin-bottom: 24px;
-}
-
-.step__caption {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #0067b8;
-  margin-bottom: 6px;
-}
-
-.step__title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #111827;
-  margin: 0 0 4px;
-  letter-spacing: -0.01em;
-  line-height: 1.3;
-}
-
-.step__desc {
-  font-size: 0.8125rem;
-  color: #4b5563;
-  margin: 0;
-  line-height: 1.5;
-}
-
-.step__body { flex: 1; }
-
-/* ─────────────────────────────────
-   Fields
-   ───────────────────────────────── */
-.field {
-  margin-bottom: 18px;
-}
-
-.field__label {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #424242;
-  margin-bottom: 6px;
-  letter-spacing: 0.01em;
-}
-
-.field__hint {
-  font-size: 0.75rem;
-  color: #4b5563;
-  margin-top: 6px;
-  line-height: 1.4;
-}
-
-.field__hint--info {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: #0e7490;
-  background: #e0f6fd;
-  border-radius: 4px;
-  padding: 5px 8px;
-  margin-top: 10px;
-  font-size: 0.75rem;
-}
-
-/* ─────────────────────────────────
-   Upload zone
-   ───────────────────────────────── */
-.upload-zone {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 24px 16px;
-  border: 2px dashed #d1d5db;
-  border-radius: 8px;
-  background: #fafafa;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-  text-align: center;
-}
-
-.upload-zone:hover {
-  border-color: #00afdb;
-  background: #f0fbfe;
-}
-
-.upload-zone__icon { color: #9ca3af; transition: color 0.15s; }
-.upload-zone:hover .upload-zone__icon { color: #00afdb; }
-
-.upload-zone__text {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-}
-
-.upload-zone__hint {
-  font-size: 0.75rem;
-  color: #9ca3af;
-}
-
-.field-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
-@media (max-width: 700px) {
-  .field-grid { grid-template-columns: 1fr; }
-}
-
-/* Quasar input styling */
-.field__input :deep(.q-field__control) {
-  height: 36px;
-  border-radius: 0;
-  background: white;
-}
-.field__input.q-field--filled :deep(.q-field__control),
-.field__input :deep(.q-field__control:before) {
-  border: 1px solid #d1d5db;
-  border-radius: 0;
-}
-.field__input :deep(.q-field__native) {
-  font-size: 0.8125rem;
-  color: #111827;
-}
-.field__input :deep(.q-field__prepend) { color: #4b5563; }
-.field__input :deep(.q-field__suffix) {
-  font-size: 0.75rem;
-  color: #4b5563;
-}
-
-.field__input--textarea :deep(.q-field__control) {
-  height: auto;
-  min-height: 80px;
-  padding-top: 6px;
-  padding-bottom: 6px;
-}
-.field__input--textarea :deep(textarea) {
-  font-size: 0.8125rem;
-  line-height: 1.5;
-  color: #111827;
-}
-
-/* ─────────────────────────────────
-   Choice cards (step 2)
-   ───────────────────────────────── */
-.choice-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-width: 540px;
-}
-
-.choice {
-  all: unset;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: white;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.choice:hover {
-  border-color: #111827;
-  background: #FAFAFA;
-}
-
-.choice--selected {
-  border-color: #00afdb;
-  background: #e0f6fd;
-  box-shadow: 0 0 0 1px #00afdb;
-}
-
-.choice__icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 4px;
-  background: #F5F5F5;
-  color: #4b5563;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.choice--selected .choice__icon {
-  background: #b3edf7;
-  color: #0e7490;
-}
-
-.choice--selected .choice__radio {
-  color: #00afdb;
-}
-
-.choice__body { flex: 1; }
-.choice__title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #111827;
-  letter-spacing: -0.005em;
-}
-.choice__desc {
-  font-size: 0.75rem;
-  color: #4b5563;
-  margin-top: 2px;
-}
-
-.choice__radio {
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #111827;
-  flex-shrink: 0;
-}
-
-.choice:not(.choice--selected) .choice__radio {
-  border: 1.5px solid #d1d5db;
-  border-radius: 50%;
-}
-
-/* ─────────────────────────────────
-   File list
-   ───────────────────────────────── */
-.file-list {
-  list-style: none;
-  margin: 12px 0 0;
-  padding: 0;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.file-list__item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-bottom: 1px solid #e5e7eb;
-}
-.file-list__item:last-child { border-bottom: none; }
-
-.file-list__icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
-  background: #dbeafe;
-  color: #111827;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.file-list__name {
-  flex: 1;
-  font-size: 0.8125rem;
-  color: #111827;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.file-list__size {
-  font-size: 0.6875rem;
-  color: #9ca3af;
-  font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
-}
-
-/* ─────────────────────────────────
-   Add item form (step 3b)
-   ───────────────────────────────── */
-.add-item {
-  background: #F8F8F8;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  padding: 12px;
   margin-bottom: 12px;
+  max-width: 976px;
+  margin-left: auto;
+  margin-right: auto;
 }
+.page-header__main { flex: 1; }
 
-.add-item__labels {
-  display: grid;
-  grid-template-columns: 1fr 1.4fr 80px;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.add-item__label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: #6b7280;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.add-item__row {
-  display: grid;
-  grid-template-columns: 1fr 1.4fr 80px auto;
-  gap: 8px;
-  align-items: stretch;
-}
-
-@media (max-width: 700px) {
-  .add-item__row {
-    grid-template-columns: 1fr 1fr;
-  }
-  .add-item__btn {
-    grid-column: 1 / -1;
-  }
-}
-
-.add-item__category :deep(.q-field__control),
-.add-item__name :deep(.q-field__control),
-.add-item__qty :deep(.q-field__control) {
-  height: 32px;
-  border-radius: 4px;
-  background: white;
-}
-.add-item__category :deep(.q-field__native),
-.add-item__name :deep(.q-field__native),
-.add-item__qty :deep(.q-field__native) {
-  font-size: 0.8125rem;
-}
-
-.add-item__btn { height: 32px; }
-
-/* ─────────────────────────────────
-   Item list
-   ───────────────────────────────── */
-.item-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  overflow: hidden;
-  background: white;
-}
-
-.item-list__row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-bottom: 1px solid #e5e7eb;
-}
-.item-list__row:last-child { border-bottom: none; }
-
-.item-list__index {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #dbeafe;
-  color: #111827;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-variant-numeric: tabular-nums;
-}
-
-.item-list__content { flex: 1; min-width: 0; }
-.item-list__name {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: #111827;
-  letter-spacing: -0.005em;
-}
-.item-list__category {
-  font-size: 0.6875rem;
-  color: #9ca3af;
-  margin-top: 1px;
-}
-
-.item-list__qty {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #1d4ed8;
-  background: #dbeafe;
-  padding: 2px 8px;
-  border-radius: 10px;
-  flex-shrink: 0;
-  font-variant-numeric: tabular-nums;
-}
-
-.item-list__footer {
-  font-size: 0.6875rem;
-  color: #4b5563;
-  text-align: right;
-  margin-top: 6px;
-}
-
-/* ─────────────────────────────────
-   Empty state (in items)
-   ───────────────────────────────── */
-.empty-block {
-  text-align: center;
-  padding: 32px 16px;
-  border: 1px dashed #e5e7eb;
-  border-radius: 4px;
-  background: #FAFAFA;
-}
-
-.empty-block__icon {
-  color: #9ca3af;
-  margin-bottom: 8px;
-}
-
-.empty-block__text {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: #424242;
-}
-
-.empty-block__hint {
-  font-size: 0.75rem;
-  color: #9ca3af;
-  margin-top: 2px;
-}
-
-/* ─────────────────────────────────
-   Review (step 4)
-   ───────────────────────────────── */
-.review {
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  background: #FAFAFA;
-  overflow: hidden;
-}
-
-.review__field {
-  display: grid;
-  grid-template-columns: 200px 1fr auto;
-  gap: 16px;
-  padding: 12px 16px;
-  border-bottom: 1px solid #e5e7eb;
-  align-items: flex-start;
-}
-.review__field:last-child { border-bottom: none; }
-
-.review__edit {
-  all: unset;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  color: #00afdb;
-  cursor: pointer;
-  white-space: nowrap;
-  opacity: 0.7;
-  transition: opacity 0.15s;
-}
-.review__edit:hover { opacity: 1; }
-
-@media (max-width: 700px) {
-  .review__field {
-    grid-template-columns: 1fr;
-    gap: 4px;
-  }
-}
-
-.review__label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #4b5563;
-  letter-spacing: 0.005em;
-}
-
-.review__value {
-  font-size: 0.8125rem;
-  color: #111827;
-  font-weight: 500;
-  word-break: break-word;
-}
-
-.review__value--prose {
-  font-weight: 400;
-  color: #424242;
-  white-space: pre-wrap;
-  line-height: 1.5;
-}
-
-.review__value--amount {
-  font-weight: 600;
-  color: #111827;
-  font-variant-numeric: tabular-nums;
-}
-
-.review__muted {
-  color: #9ca3af;
-  font-weight: 400;
-  font-style: italic;
-}
-
-.review__file {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: #059669;
-  font-size: 0.75rem;
-  font-weight: 500;
-  margin-right: 8px;
-  margin-bottom: 4px;
-}
-
-.review__items {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.review__items li {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 6px 0;
-  border-bottom: 1px solid #f3f4f6;
-}
-.review__items li:last-child { border-bottom: none; padding-bottom: 0; }
-
-.review__item-name {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: #111827;
-}
-
-.review__item-meta {
-  font-size: 0.6875rem;
-  color: #9ca3af;
-}
-
-/* ─────────────────────────────────
-   Wizard nav
-   ───────────────────────────────── */
-.wizard__nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 20px;
-  margin-top: 24px;
-  border-top: 1px solid #e5e7eb;
-}
-
-/* ─────────────────────────────────
-   Transitions
-   ───────────────────────────────── */
-.step-fade-enter-active,
-.step-fade-leave-active {
-  transition: all 0.18s ease;
-}
-.step-fade-enter-from { opacity: 0; transform: translateX(8px); }
-.step-fade-leave-to { opacity: 0; transform: translateX(-8px); }
-
-/* ─────────────────────────────────
-   Responsive
-   ───────────────────────────────── */
-@media (max-width: 900px) {
-  .wizard {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  .wizard__sidebar {
-    position: static;
-    padding: 8px;
-  }
-  .step-list {
-    display: flex;
-    overflow-x: auto;
-    gap: 4px;
-  }
-  .step-list__item {
-    flex: 0 0 auto;
-    padding: 6px 10px;
-  }
-  .step-list__item:not(:last-child)::after { display: none; }
-  .step-list__hint { display: none; }
-}
-
-@media (max-width: 600px) {
-  .page { padding: 24px 16px 24px; }
-  .wizard__inner { padding: 20px 16px 16px; }
-}
+/* ─── Loading / no-fy ─── */
+.loading-block { display: flex; justify-content: center; padding: 48px 0; }
 
 .no-fy-block {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 12px; max-width: 420px; margin: 64px auto 0; text-align: center;
+}
+.no-fy-block__icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 56px; height: 56px; border: 1px solid #e5e7eb;
+  border-radius: 50%; color: #4b5563;
+}
+.no-fy-block__title { font-size: 1rem; font-weight: 600; color: #111827; }
+.no-fy-block__body  { font-size: 0.875rem; color: #4b5563; line-height: 1.5; }
+
+/* ─── Buttons ─── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 7px; height: 44px; padding: 0 22px;
+  font-family: inherit; font-size: 0.9375rem; font-weight: 600;
+  border-radius: 12px; border: 1.5px solid transparent;
+  cursor: pointer; transition: all 0.18s; white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn--primary {
+  background: linear-gradient(135deg, #1b2d59 0%, #0091b8 100%);
+  color: white; border-color: transparent;
+  box-shadow: 0 2px 12px rgba(0, 145, 184, 0.3);
+}
+.btn--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #152247 0%, #007a9e 100%);
+  box-shadow: 0 4px 18px rgba(0, 145, 184, 0.42);
+  transform: translateY(-1px);
+}
+.btn--ghost {
+  background: rgba(255,255,255,0.72); color: #1b2d59;
+  border-color: rgba(0,175,219,0.35);
+  backdrop-filter: blur(4px);
+}
+.btn--ghost:hover:not(:disabled) {
+  background: rgba(255,255,255,0.92); border-color: #00afdb;
+  box-shadow: 0 0 0 3px rgba(0,175,219,0.1);
+}
+.btn--secondary {
+  background: rgba(255,255,255,0.8); color: #1b2d59;
+  border-color: rgba(0,175,219,0.3);
+}
+.btn--secondary:hover {
+  background: rgba(255,255,255,0.95); border-color: #00afdb;
+  box-shadow: 0 0 0 3px rgba(0,175,219,0.1);
+}
+
+.icon-btn {
+  width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: 4px; background: transparent;
+  color: #4b5563; cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+}
+.icon-btn:hover { background: #f3f4f6; color: #a4262c; }
+
+/* ─── Wizard layout ─── */
+.wizard { display: block; }
+
+/* ─── Wizard content ─── */
+.wizard__content {
+  display: flex; flex-direction: column; height: 600px;
+  max-width: 976px; margin: 0 auto; width: 100%;
+}
+
+.wizard__progress { height: 2px; background: #e5e7eb; border-radius: 2px; margin-bottom: 32px; }
+.wizard__progress-fill { height: 100%; background: linear-gradient(90deg, #00afdb, #1b2d59); border-radius: 2px; transition: width 0.4s ease; }
+
+.wizard__inner {
+  flex: 1; display: flex; flex-direction: column; align-items: stretch; gap: 24px;
+}
+
+/* ─── Hero card ─── */
+.hero-card {
+  width: 100%;
+  flex: 1; min-height: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  max-width: 420px;
-  margin: 64px auto 0;
-  text-align: center;
+  background: linear-gradient(145deg, #e8f6fd 0%, #cceef9 100%);
+  border: 1.5px solid #00afdb;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0, 175, 219, 0.12);
+  padding: 40px 44px;
+  position: relative;
+  overflow: hidden;
 }
 
-.no-fy-block__icon {
+
+.hero-card__head { margin-bottom: 28px; }
+
+.hero-card__title {
+  font-size: 1.75rem; font-weight: 800;
+  color: #1b2d59; margin: 0 0 8px;
+  letter-spacing: -0.02em; line-height: 1.15;
+}
+.hero-card__title--lg { font-size: 2.25rem; }
+
+.hero-card__sub {
+  font-size: 0.9375rem; color: #374151;
+  margin: 0; line-height: 1.5; opacity: 0.8;
+}
+
+.hero-card__body { position: relative; z-index: 1; flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+
+/* ─── Hero inputs ─── */
+.hero-input :deep(.q-field__control) {
+  height: 52px; border-radius: 12px; background: white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border: 1.5px solid rgba(0,175,219,0.2) !important;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.hero-input :deep(.q-field__control:hover) { border-color: rgba(0,175,219,0.5) !important; }
+.hero-input :deep(.q-field--focused .q-field__control) {
+  border-color: #00afdb !important;
+  box-shadow: 0 0 0 3px rgba(0,175,219,0.12) !important;
+}
+.hero-input :deep(.q-field__native) { font-size: 1rem; color: #111827; font-weight: 500; }
+.hero-input :deep(.q-field__prepend) { color: #0e7490; }
+.hero-input :deep(.q-field__suffix)  { font-size: 0.875rem; color: #6b7280; }
+
+.hero-input--textarea :deep(.q-field__control) { height: auto; min-height: 120px; padding: 10px 12px; border-radius: 12px; }
+.hero-input--textarea :deep(textarea)          { font-size: 1rem; line-height: 1.55; color: #111827; }
+
+/* ─── Kategorija ─── */
+.kat-box-group { display: flex; flex-direction: column; gap: 12px; }
+
+.kat-amount-box {
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(255,255,255,0.75); border: 1.5px solid rgba(0,175,219,0.3);
+  border-radius: 16px; padding: 0 24px; height: 68px;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.kat-amount-box:focus-within {
+  border-color: #00afdb; background: rgba(255,255,255,0.95);
+  box-shadow: 0 0 0 3px rgba(0,175,219,0.12);
+}
+.kat-amount-box__icon  { width: 30px; height: 30px; opacity: 0.7; flex-shrink: 0; display: block; }
+.kat-amount-box__input {
+  flex: 1; border: none; background: transparent; outline: none;
+  font-family: inherit; font-size: 1.25rem; color: #1b2d59; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.kat-amount-box__input::placeholder { color: #94a3b8; font-weight: 400; font-size: 1rem; }
+.kat-amount-box__input::-webkit-outer-spin-button,
+.kat-amount-box__input::-webkit-inner-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
+.kat-amount-box__input[type=number] { -moz-appearance: textfield; }
+.kat-amount-box__currency {
+  font-size: 0.875rem; font-weight: 600; color: #0e7490;
+  background: rgba(0,175,219,0.1); padding: 4px 12px; border-radius: 8px; flex-shrink: 0;
+}
+
+.kat-select :deep(.q-field__control) {
+  height: 68px; border-radius: 16px;
+  background: rgba(255,255,255,0.75);
+  border: 1.5px solid rgba(0,175,219,0.3) !important;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  padding: 0 !important;
+}
+.kat-select :deep(.q-field__control:hover) {
+  border-color: #00afdb !important; background: rgba(255,255,255,0.92);
+}
+.kat-select :deep(.q-field--focused .q-field__control) {
+  border-color: #00afdb !important; background: rgba(255,255,255,0.95);
+  box-shadow: 0 0 0 3px rgba(0,175,219,0.12) !important;
+}
+.kat-select :deep(.q-field__native),
+.kat-select :deep(.q-field__input) { font-size: 1rem !important; color: #1b2d59; font-weight: 600; }
+.kat-select-wrap { position: relative; }
+.kat-select-icon {
+  position: absolute; left: 24px; top: 50%; transform: translateY(-50%);
+  width: 30px; height: 30px; opacity: 0.7;
+  pointer-events: none; z-index: 1;
+}
+.kat-select :deep(.q-field__native),
+.kat-select :deep(.q-field__input) { padding-left: 68px !important; }
+.kat-select :deep(.q-field__append) { padding-right: 16px; color: #94a3b8; }
+.kat-select--empty :deep(.q-field__native span) { color: #94a3b8; font-weight: 400; }
+
+/* ─── Fields (inside hero card) ─── */
+.field { margin-bottom: 20px; }
+.field:last-child { margin-bottom: 0; }
+.field__label { display: block; font-size: 0.8125rem; font-weight: 700; color: #1b2d59; margin-bottom: 8px; letter-spacing: 0.02em; text-transform: uppercase; opacity: 0.75; }
+.field__hint  { font-size: 0.75rem; color: #4b5563; margin-top: 6px; line-height: 1.4; }
+.field__hint--info {
+  display: inline-flex; align-items: center; gap: 5px;
+  color: #0e7490; background: rgba(255,255,255,0.7);
+  border-radius: 6px; padding: 5px 10px; font-size: 0.75rem;
+}
+
+/* ─── Choice cards ─── */
+.choice-list { display: flex; flex-direction: column; gap: 12px; }
+
+.choice {
+  all: unset; display: flex; align-items: center; gap: 16px;
+  padding: 16px 20px; border: 1.5px solid rgba(0,175,219,0.25);
+  border-radius: 12px; background: rgba(255,255,255,0.75);
+  cursor: pointer; transition: all 0.15s;
+}
+.choice:hover { background: rgba(255,255,255,0.95); border-color: #00afdb; }
+.choice--selected { background: white; border-color: #00afdb; box-shadow: 0 0 0 1px #00afdb; }
+
+.choice__icon {
+  width: 44px; height: 44px; border-radius: 10px;
+  background: rgba(0,175,219,0.1); color: #0e7490;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.choice--selected .choice__icon { background: #b3edf7; color: #0e7490; }
+
+.choice__body { flex: 1; }
+.choice__title { font-size: 0.9375rem; font-weight: 600; color: #111827; }
+.choice__desc  { font-size: 0.8125rem; color: #4b5563; margin-top: 3px; }
+
+.choice__check { color: #00afdb; flex-shrink: 0; }
+.choice__radio {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 1.5px solid rgba(0,175,219,0.4); flex-shrink: 0;
+}
+
+/* ─── Upload zone ─── */
+.upload-zone {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 8px; padding: 32px 16px;
+  flex: 1;
+  border: 2px dashed rgba(0,175,219,0.4); border-radius: 12px;
+  background: rgba(255,255,255,0.6); cursor: pointer;
+  transition: border-color 0.15s, background 0.15s; text-align: center;
+}
+.upload-zone:hover { border-color: #00afdb; background: rgba(255,255,255,0.9); }
+.upload-zone__icon { width: 64px; height: 64px; opacity: 0.35; transition: opacity 0.15s; }
+.upload-zone:hover .upload-zone__icon { opacity: 0.6; }
+.upload-zone__text { font-size: 1.125rem; font-weight: 600; color: #1b2d59; }
+.upload-zone__hint { font-size: 0.875rem; color: #6b7280; }
+
+/* ─── File list ─── */
+.file-list {
+  list-style: none; margin: 12px 0 0; padding: 0;
+  border: 1px solid rgba(0,175,219,0.2); border-radius: 10px; overflow: hidden;
+  background: rgba(255,255,255,0.8);
+}
+.file-list__item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-bottom: 1px solid rgba(0,175,219,0.1);
+}
+.file-list__item:last-child { border-bottom: none; }
+.file-list__svg { width: 18px; height: 18px; opacity: 0.6; }
+.file-list__icon {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.file-list__name { flex: 1; font-size: 0.8125rem; font-weight: 500; color: #111827; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-list__size { font-size: 0.6875rem; color: #9ca3af; flex-shrink: 0; }
+
+/* ─── Confirm card ─── */
+.confirm-card {
+  background: rgba(255,255,255,0.8); border: 1px solid rgba(0,175,219,0.2);
+  border-radius: 12px; overflow: hidden; margin-bottom: 20px;
+}
+.confirm-card__row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px; border-bottom: 1px solid rgba(0,175,219,0.1);
+}
+.confirm-card__row:last-child { border-bottom: none; }
+.confirm-card__label { font-size: 0.8125rem; color: #6b7280; }
+.confirm-card__value { font-size: 0.9375rem; font-weight: 600; color: #1b2d59; }
+.confirm-card__value--amount { color: #059669; }
+
+.confirm-msg {
+  font-size: 0.875rem; color: #374151; line-height: 1.55;
+  background: rgba(255,255,255,0.6); border-radius: 10px;
+  padding: 14px 18px; margin: 0;
+}
+.confirm-msg strong { color: #1b2d59; }
+
+/* ─── Add item form ─── */
+.add-item {
+  background: rgba(255,255,255,0.8); border: 1.5px solid rgba(0,175,219,0.25);
+  border-radius: 16px; padding: 20px 22px; margin-bottom: 16px;
+  box-shadow: 0 1px 6px rgba(0,175,219,0.07);
+}
+.add-item__grid {
+  display: grid; grid-template-columns: 1fr 1.4fr 72px auto;
+  gap: 8px; align-items: stretch;
+}
+.add-item__category :deep(.q-field__control),
+.add-item__name     :deep(.q-field__control),
+.add-item__qty      :deep(.q-field__control) {
+  height: 56px; border-radius: 14px !important;
+  background: rgba(255,255,255,0.75) !important;
+  border: 1.5px solid rgba(0,175,219,0.3) !important;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  padding: 0 16px !important;
+}
+.add-item__category :deep(.q-field__control:hover),
+.add-item__name     :deep(.q-field__control:hover),
+.add-item__qty      :deep(.q-field__control:hover) {
+  border-color: #00afdb !important; background: rgba(255,255,255,0.9) !important;
+}
+.add-item__category :deep(.q-field--focused .q-field__control),
+.add-item__name     :deep(.q-field--focused .q-field__control),
+.add-item__qty      :deep(.q-field--focused .q-field__control) {
+  border-color: #00afdb !important; background: rgba(255,255,255,0.95) !important;
+  box-shadow: 0 0 0 3px rgba(0,175,219,0.12) !important;
+}
+.add-item__category :deep(.q-field__native),
+.add-item__name     :deep(.q-field__native),
+.add-item__qty      :deep(.q-field__native) {
+  font-size: 1rem !important; color: #1b2d59; font-weight: 500;
+}
+.add-item__qty :deep(.q-field__native) { text-align: center; }
+.add-item__btn {
+  height: 56px; border-radius: 14px !important;
+  background: rgba(0,175,219,0.08) !important;
+  border-color: rgba(0,175,219,0.4) !important;
+  color: #0e7490 !important;
+}
+.add-item__btn:hover:not(:disabled) {
+  background: rgba(0,175,219,0.16) !important;
+  border-color: #00afdb !important;
+  box-shadow: 0 0 0 3px rgba(0,175,219,0.1);
+}
+.add-item__category--empty :deep(.q-field__native span) { color: #94a3b8; font-weight: 400; }
+
+/* ─── Item list ─── */
+.item-list {
+  list-style: none; margin: 0; padding: 0;
+  border: 1.5px solid rgba(0,175,219,0.2); border-radius: 14px;
+  overflow: hidden; background: rgba(255,255,255,0.85);
+  box-shadow: 0 1px 4px rgba(0,175,219,0.06);
+}
+.item-list__row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-bottom: 1px solid rgba(0,175,219,0.08);
+}
+.item-list__row:last-child { border-bottom: none; }
+.item-list__index {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(0,175,219,0.12); color: #0e7490;
+  font-size: 0.6875rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-variant-numeric: tabular-nums;
+}
+.item-list__content { flex: 1; min-width: 0; }
+.item-list__name     { font-size: 0.875rem; font-weight: 500; color: #111827; }
+.item-list__category { font-size: 0.6875rem; color: #9ca3af; margin-top: 1px; }
+.item-list__qty {
+  font-size: 0.75rem; font-weight: 600; color: #0e7490;
+  background: rgba(0,175,219,0.1); padding: 3px 10px; border-radius: 20px;
+  flex-shrink: 0; font-variant-numeric: tabular-nums;
+}
+.item-list__footer { font-size: 0.6875rem; color: #4b5563; text-align: right; margin-top: 8px; }
+
+/* ─── Empty state ─── */
+.empty-block {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; padding: 24px 16px;
+  border: 1.5px dashed rgba(0,175,219,0.3); border-radius: 16px;
+  background: rgba(255,255,255,0.55);
+  margin-top: 12px;
+}
+.empty-block__icon  { width: 40px; height: 40px; opacity: 0.4; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto; }
+.empty-block__text  { font-size: 0.875rem; font-weight: 500; color: #1b2d59; }
+.empty-block__hint  { font-size: 0.75rem; color: #9ca3af; margin-top: 2px; }
+
+/* ─── Review ─── */
+/* ─── Step head (review wrapper) ─── */
+.step__head { margin-bottom: 24px; }
+.step__title { font-size: 1.125rem; font-weight: 600; color: #111827; margin: 0 0 4px; letter-spacing: -0.01em; line-height: 1.3; }
+.step__desc  { font-size: 0.8125rem; color: #4b5563; margin: 0; line-height: 1.5; }
+.step__body  { flex: 1; }
+
+/* ─── Review ─── */
+.review {
+  background: rgba(255,255,255,0.65);
+  border: 1.5px solid rgba(0,175,219,0.2);
+  border-radius: 12px; overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,175,219,0.06);
+}
+.review__field {
+  display: grid; grid-template-columns: 160px 1fr auto;
+  gap: 16px; padding: 11px 16px;
+  border-bottom: 1px solid rgba(0,175,219,0.1); align-items: flex-start;
+}
+.review__field:last-child { border-bottom: none; }
+.review__label  { font-size: 0.75rem; font-weight: 600; color: #1b2d59; letter-spacing: 0.005em; opacity: 0.7; }
+.review__value  { font-size: 0.8125rem; color: #111827; font-weight: 500; word-break: break-word; }
+.review__value--prose  { font-weight: 400; color: #374151; white-space: pre-wrap; line-height: 1.5; }
+.review__value--amount { font-weight: 600; color: #111827; font-variant-numeric: tabular-nums; }
+.review__muted  { color: #9ca3af; font-weight: 400; font-style: italic; }
+.review__file   { display: inline-flex; align-items: center; gap: 4px; color: #059669; font-size: 0.75rem; font-weight: 500; margin-right: 8px; margin-bottom: 4px; }
+.review__edit   {
+  all: unset; display: inline-flex; align-items: center; gap: 3px;
+  font-size: 0.6875rem; font-weight: 500; color: #00afdb;
+  cursor: pointer; white-space: nowrap; opacity: 0.7; transition: opacity 0.15s;
+}
+.review__edit:hover { opacity: 1; }
+.review__items  { list-style: none; margin: 0; padding: 0; }
+.review__items li { display: flex; flex-direction: column; gap: 2px; padding: 6px 0; border-bottom: 1px solid rgba(0,175,219,0.08); }
+.review__items li:last-child { border-bottom: none; padding-bottom: 0; }
+.review__item-name { font-size: 0.8125rem; font-weight: 500; color: #111827; }
+.review__item-meta { font-size: 0.6875rem; color: #6b7280; }
+.review__notice {
+  display: flex; align-items: center; gap: 5px;
+  margin-top: auto; padding-top: 16px;
+  font-size: 0.75rem; color: #94a3b8; line-height: 1;
+  align-self: flex-end;
+}
+.review__notice-icon { color: rgba(0,175,219,0.45); flex-shrink: 0; }
+
+/* ─── Hero card deco SVG ─── */
+.hero-card__deco {
+  position: absolute; top: -40px; left: -40px;
+  width: 140px; height: 140px;
+  opacity: 0.07; transform: none;
+  pointer-events: none; z-index: 0;
+}
+
+/* ─── Department search box ─── */
+.dept-search-box {
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(255,255,255,0.75); border: 1.5px solid rgba(0,175,219,0.3);
+  border-radius: 16px; padding: 0 24px; height: 68px;
+  position: relative; z-index: 1;
+  transition: border-color 0.15s, background 0.15s;
+}
+.dept-search-box:focus-within {
+  border-color: #00afdb; background: rgba(255,255,255,0.95);
+  box-shadow: 0 0 0 3px rgba(0,175,219,0.12);
+}
+.dept-search-box--open { border-color: #00afdb; background: rgba(255,255,255,0.95); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.dept-search-box--done { border-color: rgba(0,175,219,0.45); background: rgba(255,255,255,0.88); }
+.dept-search-box__icon { color: rgba(0,175,219,0.6); flex-shrink: 0; }
+.dept-search-box__icon--done { color: #00afdb; }
+.dept-search-box__arrow { color: #94a3b8; flex-shrink: 0; }
+.dept-search-box__input {
+  flex: 1; border: none; background: transparent; outline: none;
+  font-family: inherit; font-size: 1rem; color: #1b2d59; font-weight: 500;
+}
+.dept-search-box__input::placeholder { color: #94a3b8; font-weight: 400; }
+.dept-search-box__chosen { flex: 1; font-size: 1rem; font-weight: 600; color: #1b2d59; }
+.dept-search-box__clear {
+  all: unset; cursor: pointer; color: #94a3b8; display: flex; align-items: center;
+  border-radius: 4px; padding: 2px; transition: color 0.12s;
+}
+.dept-search-box__clear:hover { color: #4b5563; }
+
+.dept-results {
+  display: flex; flex-direction: column;
+  background: rgba(255,255,255,0.95);
+  border: 1.5px solid #00afdb; border-top: none;
+  border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;
+  overflow: hidden; position: relative; z-index: 2;
+}
+.dept-result-item {
+  all: unset; padding: 12px 20px; cursor: pointer; font-size: 0.9375rem;
+  font-weight: 500; color: #1b2d59;
+  border-bottom: 1px solid rgba(0,175,219,0.08); transition: background 0.12s;
+}
+.dept-result-item:last-child { border-bottom: none; }
+.dept-result-item:hover { background: #e8f6fd; }
+.dept-results__empty { padding: 14px 20px; font-size: 0.875rem; color: #9ca3af; }
+
+/* ─── Offer choice ─── */
+.offer-choice-list { display: flex; flex-direction: column; gap: 12px; }
+.offer-choice {
+  all: unset; display: flex; align-items: center; gap: 16px;
+  background: rgba(255,255,255,0.75); border: 1.5px solid rgba(0,175,219,0.3);
+  border-radius: 16px; padding: 16px 22px; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.offer-choice:hover {
+  border-color: #00afdb; background: rgba(255,255,255,0.92);
+}
+.offer-choice--selected {
+  border-color: #00afdb; background: rgba(255,255,255,0.95);
+  box-shadow: 0 0 0 3px rgba(0,175,219,0.12);
+}
+.offer-choice__svg { width: 36px; height: 36px; opacity: 0.65; flex-shrink: 0; }
+.offer-choice__label { flex: 1; font-size: 1rem; font-weight: 600; color: #1b2d59; }
+.offer-choice__check { color: #00afdb; flex-shrink: 0; }
+
+/* ─── Svrha box ─── */
+.svrha-box {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  border: 1px solid #e5e7eb;
-  color: #9ca3af;
-  margin-bottom: 4px;
+  background: rgba(255,255,255,0.75); border: 1.5px solid rgba(0,175,219,0.3);
+  border-radius: 16px; padding: 20px 24px;
+  transition: border-color 0.15s, background 0.15s;
 }
-
-.no-fy-block__title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #111827;
+.svrha-box:focus-within {
+  border-color: #00afdb; background: rgba(255,255,255,0.95);
+  box-shadow: 0 0 0 3px rgba(0,175,219,0.12);
 }
-
-.no-fy-block__body {
-  font-size: 0.875rem;
-  color: #6b7280;
+.svrha-box__input {
+  flex: 1; border: none; background: transparent; outline: none; resize: none;
+  font-family: inherit; font-size: 1rem; color: #1b2d59; font-weight: 500;
   line-height: 1.6;
-  margin-bottom: 4px;
+}
+.svrha-box__input::placeholder { color: #94a3b8; font-weight: 400; }
+
+/* ─── Wizard nav ─── */
+.wizard__nav {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%;
+}
+.wizard__nav .btn { min-width: 140px; }
+.wizard__nav .btn--primary {
+  background: rgba(0,175,219,0.08) !important;
+  border-color: rgba(0,175,219,0.4) !important;
+  color: #0e7490 !important;
+  box-shadow: none !important;
+}
+.wizard__nav .btn--primary:hover:not(:disabled) {
+  background: rgba(0,175,219,0.16) !important;
+  border-color: #00afdb !important;
+  box-shadow: 0 0 0 3px rgba(0,175,219,0.1) !important;
+  transform: none !important;
+}
+.page-header .btn { min-width: 140px; }
+
+/* ─── Transitions ─── */
+.step-fade-enter-active, .step-fade-leave-active { transition: all 0.2s ease; }
+.step-fade-enter-from { opacity: 0; transform: translateY(8px); }
+.step-fade-leave-to   { opacity: 0; transform: translateY(-8px); }
+
+/* ─── Responsive ─── */
+@media (max-width: 600px) {
+  .page { padding: 24px 16px; }
+  .hero-card { padding: 28px 24px; }
+  .hero-card__title { font-size: 1.375rem; }
+  .add-item__row { grid-template-columns: 1fr 1fr; }
+  .add-item__btn { grid-column: 1 / -1; }
+  .review__field { grid-template-columns: 1fr; gap: 4px; }
+}
+
+/* ─── Cancel dialog ─── */
+.cancel-dialog {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.1);
+  padding: 36px 36px 28px;
+  min-width: 340px; max-width: 420px;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+.cancel-dialog__title {
+  font-size: 2.25rem; font-weight: 700; color: #1b2d59;
+  margin: 0 0 10px; letter-spacing: -0.01em; line-height: 1.2;
+}
+.cancel-dialog__message {
+  font-size: 0.9375rem; color: #4b5563; margin: 0 0 32px; line-height: 1.5;
+}
+.cancel-dialog__actions {
+  display: flex; gap: 12px; width: 100%; justify-content: center;
+}
+.cancel-dialog__actions .btn { min-width: 130px; }
+.cancel-dialog__btn-continue {
+  background: rgba(0,175,219,0.08) !important;
+  border-color: rgba(0,175,219,0.4) !important;
+  color: #0e7490 !important;
+}
+.cancel-dialog__btn-continue:hover {
+  background: rgba(0,175,219,0.16) !important;
+  border-color: #00afdb !important;
+  box-shadow: 0 0 0 3px rgba(0,175,219,0.1) !important;
+}
+.cancel-dialog__btn-leave {
+  background: rgba(185,28,28,0.06) !important;
+  border-color: rgba(185,28,28,0.3) !important;
+  color: #b91c1c !important;
+}
+.cancel-dialog__btn-leave:hover {
+  background: rgba(185,28,28,0.06) !important;
+  border-color: rgba(185,28,28,0.5) !important;
+  box-shadow: 0 0 0 3px rgba(185,28,28,0.08) !important;
 }
 </style>

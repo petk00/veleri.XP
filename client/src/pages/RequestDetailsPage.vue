@@ -244,6 +244,19 @@
             <div class="card__body">
               <p class="prose">{{ request.justification || 'Nema unesenog obrazloženja.' }}</p>
             </div>
+
+            <template v-if="request.comment">
+              <div class="card__divider" />
+              <div class="card__body">
+                <div class="comment-block">
+                  <div class="comment-block__label">
+                    <q-icon name="chat_bubble_outline" size="13px" />
+                    Napomena podnositelja
+                  </div>
+                  <p class="prose">{{ request.comment }}</p>
+                </div>
+              </div>
+            </template>
           </div>
         </div>
 
@@ -1613,6 +1626,18 @@ onMounted(() => {
   line-height: 1.6;
   margin: 0;
   white-space: pre-wrap;
+}
+
+.comment-block__label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
 }
 
 /* Items table */

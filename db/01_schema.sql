@@ -111,6 +111,7 @@ CREATE TABLE `PurchaseRequest` (
   `fk_created_by_user` int NOT NULL,
   `total_amount` decimal(14,2) DEFAULT NULL,
   `justification` text COLLATE utf8mb4_unicode_ci,
+  `comment` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id_purchase_request`),
