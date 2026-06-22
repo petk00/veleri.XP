@@ -101,9 +101,9 @@ export function useActionableRequestsNotifier() {
   const checkReturnedForRevision = async (userId) => {
     const ids = getIdSet('session', userId);
 
-    const { data } = await api.get('/requests', { params: { status: 'Vraćeno na dopunu/izmjenu', limit: 500 } });
+    const { data } = await api.get('/requests', { params: { status: 'Zahtjeva izmjene', limit: 500 } });
     const list = Array.isArray(data.data) ? data.data : [];
-    const returned = list.filter((r) => r.status_name === 'Vraćeno na dopunu/izmjenu');
+    const returned = list.filter((r) => r.status_name === 'Zahtjeva izmjene');
 
     for (const req of returned) {
       const key = `revision:${req.id_purchase_request}`;

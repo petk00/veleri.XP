@@ -3,19 +3,10 @@
     <div class="page-shell">
 
       <header class="page-header">
-        <div class="page-header__main">
-          <nav class="breadcrumb" aria-label="Breadcrumb">
-            <span class="breadcrumb__item">Administracija</span>
-            <span class="breadcrumb__sep">›</span>
-            <span class="breadcrumb__current">Poslovne godine</span>
-          </nav>
-        </div>
-        <div class="page-header__actions">
-          <button class="btn btn--cta" :disabled="hasOpenYear" @click="openCreateDialog">
-            <q-icon name="add" size="18px" />
-            <span>Nova poslovna godina</span>
-          </button>
-        </div>
+        <button class="btn btn--primary" :disabled="hasOpenYear" @click="openCreateDialog">
+          <q-icon name="add" size="16px" />
+          <span>Nova poslovna godina</span>
+        </button>
       </header>
 
       <div v-if="loading" class="loading-block">
@@ -25,13 +16,17 @@
       <template v-else>
 
         <!-- Lista poslovnih godina -->
-        <section class="list-surface" style="margin-bottom: 24px;">
-          <div class="surface-header">
-            <h2 class="surface-title">Sve poslovne godine</h2>
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="card__header">
+            <h2 class="card__title">
+              <q-icon name="calendar_month" size="16px" />
+              <span>Sve poslovne godine</span>
+            </h2>
+            <span class="card__count">{{ fiscalYears.length }}</span>
           </div>
 
           <div v-if="fiscalYears.length === 0" class="empty-state">
-            <div class="empty-state__icon"><q-icon name="calendar_today" size="28px" /></div>
+            <div class="empty-state__icon"><q-icon name="calendar_today" size="24px" /></div>
             <div class="empty-state__title">Nema poslovnih godina</div>
             <div class="empty-state__hint">Kreirajte prvu poslovnu godinu.</div>
           </div>
@@ -50,16 +45,16 @@
               </span>
               <div v-if="!fy.is_closed" class="fy-row__actions" @click.stop>
                 <button class="action-btn action-btn--danger" title="Zatvori godinu" @click="closeYear(fy)">
-                  <q-icon name="lock" size="15px" />
+                  <q-icon name="lock" size="14px" />
                   <span>Zatvori godinu</span>
                 </button>
               </div>
             </li>
           </ul>
-        </section>
+        </div>
 
         <!-- Detail odabrane godine -->
-        <div v-if="selected" class="year-detail">
+        <div v-if="selected">
 
           <div class="year-detail__header">
             <h2 class="year-detail__title">{{ selected.year }}</h2>
@@ -71,15 +66,18 @@
           <div class="detail-grid">
 
             <!-- Odjeli -->
-            <section class="list-surface">
-              <div class="surface-header">
-                <h3 class="surface-title">Odjeli</h3>
+            <div class="card">
+              <div class="card__header">
+                <h3 class="card__title">
+                  <q-icon name="business" size="16px" />
+                  <span>Odjeli</span>
+                </h3>
                 <button
                   v-if="!selected.is_closed"
-                  class="btn btn--sm btn--cta"
+                  class="btn btn--primary btn--sm"
                   @click="openDeptDialog()"
                 >
-                  <q-icon name="add" size="15px" />
+                  <q-icon name="add" size="14px" />
                   Dodaj
                 </button>
               </div>
@@ -97,27 +95,30 @@
                 <li v-for="d in departments" :key="d.id_department" class="ref-row">
                   <span class="ref-row__name">{{ d.name }}</span>
                   <div v-if="!selected.is_closed" class="ref-row__actions">
-                    <button class="action-btn" title="Uredi" @click="openDeptDialog(d)">
+                    <button class="icon-btn" title="Uredi" @click="openDeptDialog(d)">
                       <q-icon name="edit" size="15px" />
                     </button>
-                    <button class="action-btn action-btn--danger" title="Obriši" @click="deleteDept(d)">
+                    <button class="icon-btn icon-btn--danger" title="Obriši" @click="deleteDept(d)">
                       <q-icon name="delete_outline" size="15px" />
                     </button>
                   </div>
                 </li>
               </ul>
-            </section>
+            </div>
 
             <!-- Kategorije artikala -->
-            <section class="list-surface">
-              <div class="surface-header">
-                <h3 class="surface-title">Kategorije artikala</h3>
+            <div class="card">
+              <div class="card__header">
+                <h3 class="card__title">
+                  <q-icon name="category" size="16px" />
+                  <span>Kategorije artikala</span>
+                </h3>
                 <button
                   v-if="!selected.is_closed"
-                  class="btn btn--sm btn--cta"
+                  class="btn btn--primary btn--sm"
                   @click="openCatDialog()"
                 >
-                  <q-icon name="add" size="15px" />
+                  <q-icon name="add" size="14px" />
                   Dodaj
                 </button>
               </div>
@@ -135,16 +136,16 @@
                 <li v-for="c in categories" :key="c.id_item_category" class="ref-row">
                   <span class="ref-row__name">{{ c.name }}</span>
                   <div v-if="!selected.is_closed" class="ref-row__actions">
-                    <button class="action-btn" title="Uredi" @click="openCatDialog(c)">
+                    <button class="icon-btn" title="Uredi" @click="openCatDialog(c)">
                       <q-icon name="edit" size="15px" />
                     </button>
-                    <button class="action-btn action-btn--danger" title="Obriši" @click="deleteCat(c)">
+                    <button class="icon-btn icon-btn--danger" title="Obriši" @click="deleteCat(c)">
                       <q-icon name="delete_outline" size="15px" />
                     </button>
                   </div>
                 </li>
               </ul>
-            </section>
+            </div>
 
           </div>
         </div>
@@ -158,7 +159,7 @@
         <div class="dialog-header">
           <h2 class="dialog-title">Nova poslovna godina</h2>
           <button class="dialog-close" @click="createDialog.open = false">
-            <q-icon name="close" size="20px" />
+            <q-icon name="close" size="18px" />
           </button>
         </div>
         <form class="dialog-body" @submit.prevent="submitCreateYear">
@@ -172,8 +173,8 @@
           </p>
           <div v-if="createDialog.error" class="form-error">{{ createDialog.error }}</div>
           <div class="dialog-actions">
-            <button type="button" class="btn btn--secondary" @click="createDialog.open = false">Odustani</button>
-            <button type="submit" class="btn btn--cta" :disabled="createDialog.saving">
+            <button type="button" class="btn btn--ghost" @click="createDialog.open = false">Odustani</button>
+            <button type="submit" class="btn btn--primary" :disabled="createDialog.saving">
               <q-spinner v-if="createDialog.saving" size="14px" color="white" />
               <span v-else>Kreiraj</span>
             </button>
@@ -188,7 +189,7 @@
         <div class="dialog-header">
           <h2 class="dialog-title">{{ deptDialog.editId ? 'Uredi odjel' : 'Novi odjel' }}</h2>
           <button class="dialog-close" @click="deptDialog.open = false">
-            <q-icon name="close" size="20px" />
+            <q-icon name="close" size="18px" />
           </button>
         </div>
         <form class="dialog-body" @submit.prevent="submitDept">
@@ -198,8 +199,8 @@
           </div>
           <div v-if="deptDialog.error" class="form-error">{{ deptDialog.error }}</div>
           <div class="dialog-actions">
-            <button type="button" class="btn btn--secondary" @click="deptDialog.open = false">Odustani</button>
-            <button type="submit" class="btn btn--cta" :disabled="deptDialog.saving">
+            <button type="button" class="btn btn--ghost" @click="deptDialog.open = false">Odustani</button>
+            <button type="submit" class="btn btn--primary" :disabled="deptDialog.saving">
               <q-spinner v-if="deptDialog.saving" size="14px" color="white" />
               <span v-else>Spremi</span>
             </button>
@@ -214,7 +215,7 @@
         <div class="dialog-header">
           <h2 class="dialog-title">{{ catDialog.editId ? 'Uredi kategoriju' : 'Nova kategorija' }}</h2>
           <button class="dialog-close" @click="catDialog.open = false">
-            <q-icon name="close" size="20px" />
+            <q-icon name="close" size="18px" />
           </button>
         </div>
         <form class="dialog-body" @submit.prevent="submitCat">
@@ -224,8 +225,8 @@
           </div>
           <div v-if="catDialog.error" class="form-error">{{ catDialog.error }}</div>
           <div class="dialog-actions">
-            <button type="button" class="btn btn--secondary" @click="catDialog.open = false">Odustani</button>
-            <button type="submit" class="btn btn--cta" :disabled="catDialog.saving">
+            <button type="button" class="btn btn--ghost" @click="catDialog.open = false">Odustani</button>
+            <button type="submit" class="btn btn--primary" :disabled="catDialog.saving">
               <q-spinner v-if="catDialog.saving" size="14px" color="white" />
               <span v-else>Spremi</span>
             </button>
@@ -436,103 +437,219 @@ onMounted(loadYears);
 
 <style scoped>
 .page {
-  padding: 38px 40px 32px;
+  padding: 32px 40px;
   background: transparent;
   color: #111827;
   font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
-.page-shell { max-width: 960px; margin: 0 auto; }
 
-.page-header {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 24px; margin-bottom: 28px;
+.page-shell {
+  max-width: 960px;
+  margin: 0 auto;
 }
 
-.breadcrumb {
+/* ── Header ── */
+.page-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.breadcrumb__item {
-  color: #6b7280;
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 18px;
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn--primary {
+  background: rgba(0, 175, 219, 0.1);
+  color: #0e7490;
+  border-color: rgba(0, 175, 219, 0.45);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: rgba(0, 175, 219, 0.18);
+  border-color: #00afdb;
+  box-shadow: 0 0 0 3px rgba(0, 175, 219, 0.1);
+}
+
+.btn--ghost {
+  background: rgba(255, 255, 255, 0.8);
+  color: #1b2d59;
+  border-color: rgba(0, 175, 219, 0.3);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 175, 219, 0.55);
+}
+
+.btn--sm {
+  height: 30px;
+  padding: 0 12px;
   font-size: 0.8125rem;
+  gap: 5px;
+  border-radius: 8px;
+}
+
+/* ── Icon buttons ── */
+.icon-btn {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.icon-btn:hover { background: rgba(0, 175, 219, 0.08); color: #0e7490; }
+.icon-btn--danger:hover { background: #fef2f2; color: #c50f1f; }
+
+/* ── Card ── */
+.card {
+  margin-bottom: 0;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1.5px solid rgba(0, 175, 219, 0.18);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 175, 219, 0.07);
+}
+
+.card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(0, 175, 219, 0.1);
+  background: rgba(0, 175, 219, 0.03);
+}
+
+.card__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #111827;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.card__title .q-icon { color: #00afdb; }
+
+.card__count {
+  color: #6b7280;
+  font-size: 0.75rem;
   font-weight: 500;
 }
 
-.breadcrumb__sep {
-  color: #d1d5db;
-  font-size: 0.875rem;
-  user-select: none;
-}
-
-.breadcrumb__current {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #374151;
-}
-.page-header__title { margin: 0; color: #111827; font-size: 2.25rem; font-weight: 600; letter-spacing: -0.015em; line-height: 1.1; }
-.page-header__actions { flex-shrink: 0; }
-
-/* Buttons */
-.btn--cta {
-  display: inline-flex; align-items: center; gap: 8px;
-  min-height: 38px; padding: 0 20px; border: none; border-radius: 3px;
-  background: #0067b8; color: #fff; font: inherit; font-size: 0.9375rem;
-  font-weight: 600; cursor: pointer; transition: background 0.15s;
-}
-.btn--cta:hover:not(:disabled) { background: #005a9e; }
-.btn--cta:disabled { opacity: 0.45; cursor: not-allowed; }
-
-.btn--sm { min-height: 28px; padding: 0 12px; font-size: 0.8125rem; gap: 5px; }
-
-.btn--secondary {
-  display: inline-flex; align-items: center; gap: 8px;
-  min-height: 38px; padding: 0 20px; border: 1px solid #d1d5db;
-  border-radius: 3px; background: #fff; color: #374151;
-  font: inherit; font-size: 0.9375rem; font-weight: 500;
-  cursor: pointer; transition: background 0.15s;
-}
-.btn--secondary:hover { background: #f9fafb; }
-
+/* ── Loading ── */
 .loading-block { display: flex; justify-content: center; padding: 48px 0; }
 .loading-block--sm { padding: 24px 0; }
 
-/* List surface */
-.list-surface { border: 1px solid #e5e7eb; background: #fff; overflow: hidden; }
-.surface-header {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 16px; padding: 12px 20px; border-bottom: 1px solid #e5e7eb;
-}
-.surface-title { margin: 0; font-size: 0.8125rem; font-weight: 600; color: #111827; }
-
-/* Fiscal year list */
+/* ── Fiscal year list ── */
 .fy-list { list-style: none; margin: 0; padding: 0; }
+
 .fy-row {
-  display: flex; align-items: center; gap: 16px;
-  padding: 14px 20px; border-bottom: 1px solid #f3f4f6;
-  cursor: pointer; transition: background 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: background 0.12s;
 }
+
 .fy-row:last-child { border-bottom: none; }
-.fy-row:hover { background: #f9fafb; }
-.fy-row--active { background: #f0f7ff; }
-.fy-row__year { font-size: 1rem; font-weight: 600; color: #111827; flex: 1; }
+.fy-row:hover { background: #f0fbfe; }
+.fy-row--active { background: #e0f6fd; }
+.fy-row--active:hover { background: #d0f0f9; }
+
+.fy-row__year {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
 .fy-row__actions { margin-left: auto; }
 
 .fy-status {
-  font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em;
-  text-transform: uppercase; padding: 2px 8px; border-radius: 3px; flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
 }
-.fy-status--open { color: #065f46; background: #d1fae5; }
+
+.fy-status--open   { color: #065f46; background: #d1fae5; }
 .fy-status--closed { color: #6b7280; background: #f3f4f6; }
 
-/* Year detail */
-.year-detail { }
-.year-detail__header {
-  display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+/* ── Action button (zatvori godinu) ── */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1.5px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
-.year-detail__title { margin: 0; font-size: 1.25rem; font-weight: 600; color: #111827; }
+
+.action-btn:hover { background: rgba(0, 175, 219, 0.08); color: #0e7490; border-color: rgba(0, 175, 219, 0.2); }
+.action-btn--danger:hover { background: #fef2f2; color: #c50f1f; border-color: #fca5a5; }
+
+/* ── Year detail ── */
+.year-detail__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 0 4px;
+}
+
+.year-detail__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.01em;
+}
 
 .detail-grid {
   display: grid;
@@ -540,77 +657,154 @@ onMounted(loadYears);
   gap: 20px;
 }
 
-/* Ref list (odjeli / kategorije) */
+/* ── Ref list (odjeli / kategorije) ── */
 .ref-list { list-style: none; margin: 0; padding: 0; }
+
 .ref-row {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 20px; border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.1s;
 }
+
 .ref-row:last-child { border-bottom: none; }
+.ref-row:hover { background: #f9fafb; }
 .ref-row__name { flex: 1; font-size: 0.875rem; color: #111827; }
 .ref-row__actions { display: flex; gap: 2px; flex-shrink: 0; }
 
-/* Action buttons */
-.action-btn {
-  all: unset; display: inline-flex; align-items: center; gap: 5px;
-  height: 30px; padding: 0 8px; border-radius: 3px;
-  color: #6b7280; cursor: pointer; font-size: 0.8125rem;
-  transition: background 0.12s, color 0.12s;
+/* ── Empty state ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 24px;
+  text-align: center;
 }
-.action-btn:hover { background: #f3f4f6; color: #111827; }
-.action-btn--danger:hover { background: #fef2f2; color: #dc2626; }
 
-/* Empty state */
-.empty-state { display: flex; flex-direction: column; align-items: center; padding: 40px 24px; text-align: center; }
 .empty-state--sm { padding: 24px; }
+
 .empty-state__icon {
-  display: flex; width: 44px; height: 44px; align-items: center; justify-content: center;
-  margin-bottom: 12px; border: 1px solid #e5e7eb; color: #9ca3af;
+  display: flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(0, 175, 219, 0.2);
+  background: rgba(0, 175, 219, 0.05);
+  color: #00afdb;
 }
+
 .empty-state__title { margin: 0 0 4px; font-size: 0.9rem; font-weight: 600; color: #111827; }
 .empty-state__hint { color: #6b7280; font-size: 0.8125rem; line-height: 1.5; }
 
-/* Dialog */
+/* ── Dialog ── */
 .dialog-card {
-  width: 400px; max-width: 95vw;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  width: 420px;
+  max-width: 95vw;
+  background: #ffffff;
+  border: 1.5px solid rgba(0, 175, 219, 0.18);
   border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 175, 219, 0.12);
 }
-.dialog-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
-.dialog-title { margin: 0; font-size: 1rem; font-weight: 600; color: #111827; }
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 0;
+}
+
+.dialog-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
 .dialog-close {
-  all: unset; display: flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border-radius: 3px; color: #6b7280; cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
 }
+
 .dialog-close:hover { background: #f3f4f6; color: #111827; }
-.dialog-body { padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 16px; }
+
+.dialog-body {
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
 .field { display: flex; flex-direction: column; gap: 6px; }
-.field-label { font-size: 0.8125rem; font-weight: 500; color: #374151; }
-.text-input {
-  width: 100%; height: 38px; padding: 0 10px;
-  border: 1px solid #d1d5db; border-radius: 3px; outline: none;
-  background: #fff; color: #111827; font: inherit; font-size: 0.9375rem;
-  box-sizing: border-box; transition: border-color 0.15s, box-shadow 0.15s;
-}
-.text-input:focus { border-color: #00afdb; box-shadow: 0 0 0 3px rgba(0, 175, 219, 0.3); }
 
-.dialog-hint { margin: 0; font-size: 0.8125rem; color: #6b7280; line-height: 1.5; }
+.field-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.text-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1.5px solid rgba(0, 175, 219, 0.3);
+  border-radius: 12px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.85);
+  color: #1b2d59;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.text-input:focus {
+  border-color: #00afdb;
+  box-shadow: 0 0 0 3px rgba(0, 175, 219, 0.1);
+}
+
+.dialog-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
 
 .form-error {
-  padding: 9px 12px; border-left: 3px solid #c50f1f;
-  background: #fef2f2; color: #991b1b; font-size: 0.8125rem; line-height: 1.4;
+  padding: 9px 12px;
+  border-left: 3px solid #c50f1f;
+  border-radius: 0 6px 6px 0;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.8125rem;
+  line-height: 1.4;
 }
-.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* ── Responsive ── */
 @media (max-width: 760px) {
-  .page { padding: 24px 16px 24px; }
-  .page-header { flex-direction: column; align-items: stretch; gap: 16px; }
-  .page-header__title { font-size: 1.75rem; }
+  .page { padding: 24px 16px; }
+  .page-header { flex-direction: column; align-items: stretch; }
   .detail-grid { grid-template-columns: 1fr; }
 }
 </style>

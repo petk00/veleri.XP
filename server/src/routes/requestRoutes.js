@@ -20,7 +20,7 @@ const STATUS = {
 const STATUS_LABELS = {
   1: 'Poslano',
   2: 'Na odobrenju',
-  3: 'Vraćeno na dopunu/izmjenu',
+  3: 'Zahtjeva izmjene',
   4: 'Odobreno',
   5: 'Odbijeno',
   6: 'Naručeno',
@@ -150,10 +150,14 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 
     if (statusParam) {
-      const statusId = Object.entries(STATUS_LABELS).find(([, label]) => label === statusParam)?.[0];
-      if (statusId) {
-        filterConditions.push('pr.fk_request_status = ?');
-        filterParams.push(parseInt(statusId, 10));
+      if (statusParam === 'u_obradi') {
+        filterConditions.push(`pr.fk_request_status IN (${STATUS.POSLANO},${STATUS.NA_ODOBRENJU},${STATUS.VRACENO})`);
+      } else {
+        const statusId = Object.entries(STATUS_LABELS).find(([, label]) => label === statusParam)?.[0];
+        if (statusId) {
+          filterConditions.push('pr.fk_request_status = ?');
+          filterParams.push(parseInt(statusId, 10));
+        }
       }
     }
 
@@ -202,10 +206,13 @@ router.get('/', authenticateToken, async (req, res) => {
         COUNT(*) AS total,
         SUM(fk_request_status IN (${activeStatusIds.join(',')})) AS active,
         SUM(fk_request_status = ?) AS attention,
-        SUM(fk_request_status = ?) AS closed
+        SUM(fk_request_status = ?) AS closed,
+        SUM(fk_request_status = ?) AS na_odobrenju,
+        SUM(fk_request_status = ?) AS naruceno,
+        SUM(fk_request_status IN (${STATUS.POSLANO},${STATUS.NA_ODOBRENJU},${STATUS.VRACENO})) AS u_obradi
        FROM PurchaseRequest
        ${summaryWhere}`,
-      [attentionStatusId, STATUS.ZATVORENO, ...summaryParams]
+      [attentionStatusId, STATUS.ZATVORENO, STATUS.NA_ODOBRENJU, STATUS.NARUCENO, ...summaryParams]
     );
 
     const baseJoin = `
@@ -237,10 +244,13 @@ router.get('/', authenticateToken, async (req, res) => {
         CONCAT(u.first_name, ' ', u.last_name) AS created_by,
         pr.total_amount,
         pr.created_at,
-        lc.comment AS last_comment
+        pr.justification,
+        lc.comment AS last_comment,
+        EXISTS(SELECT 1 FROM Attachment a WHERE a.fk_purchase_request = pr.id_purchase_request AND a.document_type = 'Ponuda') AS has_ponuda,
+        EXISTS(SELECT 1 FROM Attachment a WHERE a.fk_purchase_request = pr.id_purchase_request AND a.document_type = 'Otpremnica') AS has_otpremnica
        ${baseJoin}
        ${filterWhere}
-       ORDER BY pr.created_at DESC, pr.id_purchase_request DESC
+       ORDER BY pr.created_at ${req.query.order === 'ASC' ? 'ASC' : 'DESC'}, pr.id_purchase_request ${req.query.order === 'ASC' ? 'ASC' : 'DESC'}
        LIMIT ? OFFSET ?`,
       [...filterParams, limit, offset]
     );
@@ -254,10 +264,13 @@ router.get('/', authenticateToken, async (req, res) => {
       page,
       limit,
       counts: {
-        total:     Number(summary.total)     || 0,
-        active:    Number(summary.active)    || 0,
-        attention: Number(summary.attention) || 0,
-        closed:    Number(summary.closed)    || 0,
+        total:        Number(summary.total)        || 0,
+        active:       Number(summary.active)       || 0,
+        attention:    Number(summary.attention)    || 0,
+        closed:       Number(summary.closed)       || 0,
+        na_odobrenju: Number(summary.na_odobrenju) || 0,
+        naruceno:     Number(summary.naruceno)     || 0,
+        u_obradi:     Number(summary.u_obradi)     || 0,
       },
     });
   } catch (error) {
@@ -773,7 +786,7 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
  */
 router.put('/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
-  const { fk_department, justification, estimated_amount, items } = req.body;
+  const { fk_department, justification, estimated_amount, items, comment } = req.body;
   const userId = req.user.id_user;
   const userIsAdmin = isAdmin(req.user);
 
@@ -886,6 +899,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
       SET fk_department = ?,
           justification = ?,
           total_amount = ?,
+          comment = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE id_purchase_request = ?
       `,
@@ -893,6 +907,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
         fk_department,
         justification.trim(),
         estimated_amount === '' || estimated_amount === undefined ? null : estimated_amount,
+        comment && comment.trim() ? comment.trim() : null,
         id,
       ]
     );

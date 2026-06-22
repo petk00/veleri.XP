@@ -22,7 +22,7 @@ INSERT INTO `Role` (`id_role`, `name`) VALUES
 INSERT INTO `RequestStatus` (`id_request_status`, `name`) VALUES
 (1, 'Poslano'),
 (2, 'Na odobrenju'),
-(3, 'Vraćeno na dopunu / izmjenu'),
+(3, 'Zahtjeva izmjene'),
 (4, 'Odobreno'),
 (5, 'Odbijeno'),
 (6, 'Naručeno'),

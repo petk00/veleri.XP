@@ -43,7 +43,7 @@
                 PDF je dostupan tek nakon odobrenja zahtjeva.
               </q-tooltip>
             </span>
-            <button v-if="canEdit" class="btn btn--ghost" @click="editRequest">
+            <button v-if="canEdit && !canResubmit" class="btn btn--ghost" @click="editRequest">
               <q-icon name="edit" size="16px" />
               <span>Uredi</span>
             </button>
@@ -234,29 +234,30 @@
             </div>
           </div>
 
-          <div class="card">
-            <div class="card__header card__header--no-divider">
-              <h2 class="card__title">
-                <q-icon name="subject" size="16px" />
-                <span>Svrha nabave</span>
-              </h2>
-            </div>
-            <div class="card__body">
-              <p class="prose">{{ request.justification || 'Nema unesenog obrazloženja.' }}</p>
+          <div class="info-col">
+            <div class="card">
+              <div class="card__header card__header--no-divider">
+                <h2 class="card__title">
+                  <q-icon name="subject" size="16px" />
+                  <span>Svrha nabave</span>
+                </h2>
+              </div>
+              <div class="card__body">
+                <p class="prose">{{ request.justification || 'Nema unesenog obrazloženja.' }}</p>
+              </div>
             </div>
 
-            <template v-if="request.comment">
-              <div class="card__divider" />
-              <div class="card__body">
-                <div class="comment-block">
-                  <div class="comment-block__label">
-                    <q-icon name="chat_bubble_outline" size="13px" />
-                    Napomena podnositelja
-                  </div>
-                  <p class="prose">{{ request.comment }}</p>
-                </div>
+            <div v-if="request.comment" class="card">
+              <div class="card__header card__header--no-divider">
+                <h2 class="card__title">
+                  <q-icon name="chat_bubble_outline" size="16px" />
+                  <span>Napomena podnositelja</span>
+                </h2>
               </div>
-            </template>
+              <div class="card__body">
+                <p class="prose">{{ request.comment }}</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1232,7 +1233,7 @@ const timelineTitle = (entry) => {
   const labels = {
     'Poslano': 'Zahtjev poslan',
     'Na odobrenju': 'Preuzeto na obradu',
-    'Vraćeno': 'Vraćeno na dopunu',
+    'Zahtjeva izmjene': 'Zahtjeva izmjene',
     'Naručeno': 'Odobreno i naručeno',
     'Zatvoreno': 'Zahtjev zatvoren',
   };
@@ -1354,82 +1355,88 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 34px;
-  padding: 0 16px;
+  gap: 7px;
+  height: 38px;
+  padding: 0 18px;
   font-family: inherit;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  border-radius: 3px;
-  border: 1px solid transparent;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: all 0.15s;
   white-space: nowrap;
-  color: #111827;
-  background: white;
+  letter-spacing: 0.01em;
 }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn--primary {
-  background: #111827;
-  color: white;
-  border-color: #111827;
+  background: rgba(0,175,219,0.1);
+  color: #0e7490;
+  border-color: rgba(0,175,219,0.45);
 }
-.btn--primary:hover:not(:disabled) { background: #000; border-color: #000; }
+.btn--primary:hover:not(:disabled) {
+  background: rgba(0,175,219,0.18);
+  border-color: #00afdb;
+  box-shadow: 0 0 0 3px rgba(0,175,219,0.1);
+}
 .btn--ghost {
-  background: white;
-  color: #374151;
-  border-color: #d1d5db;
+  background: rgba(255,255,255,0.8);
+  color: #1b2d59;
+  border-color: rgba(0,175,219,0.3);
 }
-.btn--ghost:hover:not(:disabled) { background: #f9fafb; border-color: #6b7280; }
+.btn--ghost:hover:not(:disabled) {
+  background: rgba(255,255,255,0.95);
+  border-color: rgba(0,175,219,0.55);
+}
 .pdf-locked {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 3px;
-  background: white;
+  height: 38px;
+  padding: 0 18px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.6);
   color: #9ca3af;
   font: inherit;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   cursor: default;
   user-select: none;
 }
 .btn--danger {
-  background: white;
+  background: rgba(197,15,31,0.05);
   color: #c50f1f;
-  border-color: #d1d5db;
+  border-color: rgba(197,15,31,0.25);
 }
 .btn--danger:hover:not(:disabled) {
-  background: #fef2f2;
-  border-color: #c50f1f;
+  background: rgba(197,15,31,0.1);
+  border-color: rgba(197,15,31,0.5);
 }
 .btn--warning {
-  background: white;
+  background: rgba(183,121,31,0.06);
   color: #B7791F;
-  border-color: #d1d5db;
+  border-color: rgba(183,121,31,0.3);
 }
 .btn--warning:hover:not(:disabled) {
-  background: #fff8e1;
+  background: rgba(183,121,31,0.12);
   border-color: #B7791F;
 }
 
 .icon-btn {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 3px;
+  border-radius: 8px;
   background: transparent;
-  color: #4b5563;
+  color: #6b7280;
   cursor: pointer;
   transition: all 0.15s;
   flex-shrink: 0;
 }
-.icon-btn:hover { background: #f3f4f6; color: #111827; }
+.icon-btn:hover { background: rgba(0,175,219,0.08); color: #0e7490; }
 .icon-btn--danger:hover { background: #fef2f2; color: #c50f1f; }
 
 /* Status badges */
@@ -1468,35 +1475,38 @@ onMounted(() => {
 
 /* Action banners */
 .action-banner {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-left: 3px solid #0067b8;
-  padding: 16px 18px;
+  background: rgba(255,255,255,0.85);
+  border: 1.5px solid rgba(0,175,219,0.25);
+  border-left: 4px solid #00afdb;
+  border-radius: 16px;
+  padding: 16px 20px;
   display: flex;
   align-items: flex-start;
   gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0,175,219,0.07);
 }
-.action-banner--neutral { border-left-color: #0067b8; }
-.action-banner--warning { border-left-color: #B7791F; background: #fffdf7; }
-.action-banner--info    { border-left-color: #0078d4; background: #f8fbff; }
-.action-banner--success { border-left-color: #107C10; background: #fbfffb; }
+.action-banner--neutral { border-left-color: #00afdb; }
+.action-banner--warning { border-left-color: #B7791F; border-color: rgba(183,121,31,0.25); background: #fffdf7; box-shadow: 0 2px 12px rgba(183,121,31,0.06); }
+.action-banner--info    { border-left-color: #00afdb; background: rgba(240,251,254,0.9); }
+.action-banner--success { border-left-color: #16a34a; border-color: rgba(22,163,74,0.2); background: #f6fff8; box-shadow: 0 2px 12px rgba(22,163,74,0.06); }
 
 .action-banner__icon {
-  width: 34px;
-  height: 34px;
-  border: 1px solid #dbeafe;
-  background: #eff6ff;
-  color: #0067b8;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(0,175,219,0.25);
+  background: rgba(0,175,219,0.08);
+  color: #0e7490;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
-.action-banner--warning .action-banner__icon { background: #fff8e1; border-color: #fde68a; color: #B7791F; }
-.action-banner--info .action-banner__icon { background: #eff6ff; border-color: #bfdbfe; color: #0078d4; }
-.action-banner--success .action-banner__icon { background: #f0fdf4; border-color: #bbf7d0; color: #107C10; }
+.action-banner--warning .action-banner__icon { background: rgba(183,121,31,0.1); border-color: rgba(183,121,31,0.3); color: #B7791F; }
+.action-banner--info .action-banner__icon { background: rgba(0,175,219,0.1); border-color: rgba(0,175,219,0.3); color: #0e7490; }
+.action-banner--success .action-banner__icon { background: rgba(22,163,74,0.1); border-color: rgba(22,163,74,0.3); color: #16a34a; }
 
 .action-banner__body { flex: 1; min-width: 220px; }
 .action-banner__title {
@@ -1527,9 +1537,10 @@ onMounted(() => {
 
 .return-comment {
   margin-top: 10px;
-  padding: 10px 12px;
-  background: white;
-  border: 1px solid #fde68a;
+  padding: 10px 14px;
+  background: rgba(255,248,225,0.6);
+  border: 1px solid rgba(183,121,31,0.25);
+  border-radius: 10px;
 }
 .return-comment__label {
   font-size: 0.6875rem;
@@ -1549,19 +1560,20 @@ onMounted(() => {
 /* Cards */
 .card {
   background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border: 1.5px solid rgba(0,175,219,0.18);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,175,219,0.07);
   overflow: hidden;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 .card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 18px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(0,175,219,0.1);
+  background: rgba(0,175,219,0.03);
 }
 .card__header--no-divider {
   border-bottom: none !important;
@@ -1576,7 +1588,7 @@ onMounted(() => {
   color: #111827;
   margin: 0;
 }
-.card__title .q-icon { color: #0067b8; }
+.card__title .q-icon { color: #00afdb; }
 .card__count {
   font-size: 0.75rem;
   font-weight: 500;
@@ -1600,6 +1612,11 @@ onMounted(() => {
   margin-bottom: 24px;
 }
 .info-grid .card { margin-bottom: 0; }
+.info-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
 @media (max-width: 800px) {
   .info-grid { grid-template-columns: 1fr; }
 }
@@ -1726,9 +1743,9 @@ onMounted(() => {
 .file-icon {
   width: 32px;
   height: 32px;
-  border: 1px solid #e5e7eb;
-  background: #fafafa;
-  color: #0067b8;
+  border: 1px solid rgba(0,175,219,0.2);
+  background: rgba(0,175,219,0.06);
+  color: #00afdb;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1896,13 +1913,13 @@ onMounted(() => {
 }
 .timeline-item--doc-add .timeline-dot { background: #f0fdf4; border-color: #bbf7d0; color: #107C10; }
 .timeline-item--doc-del .timeline-dot { background: #fef2f2; border-color: #fecaca; color: #c50f1f; }
-.timeline-item--edit .timeline-dot { background: #eff6ff; border-color: #bfdbfe; color: #0078d4; }
+.timeline-item--edit .timeline-dot { background: rgba(0,175,219,0.08); border-color: rgba(0,175,219,0.25); color: #0e7490; }
 .timeline-item--amount .timeline-dot { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
 .timeline-item--s-1 .timeline-dot { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
 .timeline-item--s-2 .timeline-dot { background: #fff8e1; border-color: #fde68a; color: #B7791F; }
 .timeline-item--s-3 .timeline-dot { background: #fff7ed; border-color: #fed7aa; color: #C2410C; }
 .timeline-item--s-5 .timeline-dot { background: #fef2f2; border-color: #fecaca; color: #c50f1f; }
-.timeline-item--s-6 .timeline-dot { background: #eff6ff; border-color: #bfdbfe; color: #0078d4; }
+.timeline-item--s-6 .timeline-dot { background: rgba(0,175,219,0.08); border-color: rgba(0,175,219,0.25); color: #0e7490; }
 .timeline-item--s-7 .timeline-dot { background: #f0fdf4; border-color: #bbf7d0; color: #107C10; }
 
 .timeline-content { flex: 1; min-width: 0; padding-top: 2px; }

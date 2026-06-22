@@ -2,43 +2,19 @@
   <q-page class="page">
     <div class="page-shell">
 
-      <header class="page-header">
-        <div class="page-header__main">
-          <nav class="breadcrumb" aria-label="Breadcrumb">
-            <span class="breadcrumb__item">Nabava</span>
-            <span class="breadcrumb__sep">›</span>
-            <span class="breadcrumb__current">{{ isAdmin ? 'Zahtjevi' : 'Moji zahtjevi' }}</span>
-          </nav>
-        </div>
-        <div class="page-header__actions">
-          <button class="btn btn--cta" @click="$router.push('/zahtjevi/novi')">
-            <q-icon name="add" size="20px" />
-            <span>Novi zahtjev</span>
-          </button>
-        </div>
-      </header>
-
-      <section class="summary-strip summary-strip--4col" aria-label="Sažetak zahtjeva">
-        <div class="summary-item summary-item--total">
-          <div class="summary-item__icon"><q-icon name="folder_open" size="15px" /></div>
-          <span class="summary-item__value">{{ counts.total }}</span>
-          <span class="summary-item__label">Ukupno zahtjeva</span>
-        </div>
-        <div class="summary-item summary-item--active">
-          <div class="summary-item__icon"><q-icon name="autorenew" size="15px" /></div>
-          <span class="summary-item__value">{{ counts.active }}</span>
-          <span class="summary-item__label">Aktivni</span>
-        </div>
-        <div class="summary-item summary-item--attention">
-          <div class="summary-item__icon"><q-icon name="inbox" size="15px" /></div>
-          <span class="summary-item__value">{{ counts.attention }}</span>
-          <span class="summary-item__label">{{ isAdmin ? 'Čeka pregled' : 'Vraćeno na dopunu' }}</span>
-        </div>
-        <div class="summary-item summary-item--closed">
-          <div class="summary-item__icon"><q-icon name="task_alt" size="15px" /></div>
-          <span class="summary-item__value">{{ counts.closed }}</span>
-          <span class="summary-item__label">Zatvoreno</span>
-        </div>
+      <section class="action-cards" aria-label="Brzi pregled">
+        <button class="action-card action-card--pending" @click="setStatusFilter('u_obradi')">
+          <div class="action-card__icon"><q-icon name="pending_actions" size="18px" /></div>
+          <span class="action-card__value">{{ counts.u_obradi }}</span>
+          <span class="action-card__label">U obradi</span>
+          <q-icon name="chevron_right" size="14px" class="action-card__arrow" />
+        </button>
+        <button class="action-card action-card--ordered" @click="setStatusFilter('Naručeno')">
+          <div class="action-card__icon"><q-icon name="local_shipping" size="18px" /></div>
+          <span class="action-card__value">{{ counts.naruceno }}</span>
+          <span class="action-card__label">Naručeno / u tijeku</span>
+          <q-icon name="chevron_right" size="14px" class="action-card__arrow" />
+        </button>
       </section>
 
       <section class="list-surface">
@@ -73,6 +49,7 @@
 
               <div class="toolbar__sep" />
 
+              <!-- Status -->
               <q-select
                 v-model="statusFilter"
                 :options="statusOptions"
@@ -81,15 +58,7 @@
                 class="toolbar__select"
               />
 
-              <q-select
-                v-if="fiscalYearOptions.length > 1"
-                v-model="fiscalYearFilter"
-                :options="fiscalYearOptions"
-                borderless dense
-                emit-value map-options
-                class="toolbar__select"
-              />
-
+              <!-- Odjel -->
               <q-select
                 v-if="isAdmin && departmentOptions.length > 1"
                 v-model="departmentFilter"
@@ -99,6 +68,17 @@
                 class="toolbar__select"
               />
 
+              <!-- Podnositelj -->
+              <q-select
+                v-if="isAdmin && userOptions.length > 1"
+                v-model="userFilter"
+                :options="userOptions"
+                borderless dense
+                emit-value map-options
+                class="toolbar__select"
+              />
+
+              <!-- Kategorija -->
               <q-select
                 v-if="categoryOptions.length > 1"
                 v-model="categoryFilter"
@@ -108,14 +88,17 @@
                 class="toolbar__select"
               />
 
+              <!-- Godina -->
               <q-select
-                v-if="isAdmin && userOptions.length > 1"
-                v-model="userFilter"
-                :options="userOptions"
+                v-if="fiscalYearOptions.length > 1"
+                v-model="fiscalYearFilter"
+                :options="fiscalYearOptions"
                 borderless dense
                 emit-value map-options
                 class="toolbar__select"
               />
+
+              <button class="toolbar__show-all" @click="showAll">Prikaži sve</button>
 
               <button v-if="hasActiveFilters" class="toolbar__reset" @click="resetFilters">
                 <q-icon name="close" size="12px" />
@@ -139,7 +122,8 @@
           <!-- Cell: status -->
           <template #body-cell-status_name="props">
             <q-td :props="props">
-              <span class="status" :class="statusClass(props.row.status_name)">
+              <span class="status-pill" :style="buildRequestStyle(props.row).badge">
+                <q-icon :name="statusIcon(props.row)" size="11px" class="pill-icon" />
                 {{ props.row.status_name }}
               </span>
             </q-td>
@@ -176,15 +160,15 @@
           <template #no-data>
             <div class="empty-state">
               <div class="empty-state__icon">
-                <q-icon name="folder_open" size="32px" />
+                <q-icon name="filter_list_off" size="28px" />
               </div>
-              <h3 class="empty-state__title">Nema zahtjeva</h3>
+              <h3 class="empty-state__title">Nema zahtjeva za odabrane filtere</h3>
               <p class="empty-state__hint">
-                Kreirajte novi zahtjev kako biste započeli s radom.
+                Pokušajte promijeniti kriterije pretrage ili prikažite sve zahtjeve.
               </p>
-              <button class="btn btn--primary" @click="$router.push('/zahtjevi/novi')">
-                <q-icon name="add" size="16px" />
-                <span>Novi zahtjev</span>
+              <button class="btn btn--primary" @click="showAll">
+                <q-icon name="list" size="16px" />
+                <span>Prikaži sve zahtjeve</span>
               </button>
             </div>
           </template>
@@ -217,7 +201,8 @@ const isAdmin     = ref(false);
 
 // Filteri
 const searchQuery      = ref('');
-const statusFilter     = ref('all');
+const statusFilter     = ref('u_obradi');
+const sortOrder        = ref('ASC');
 const departmentFilter = ref('all');
 const userFilter       = ref('all');
 const fiscalYearFilter = ref('all');
@@ -231,9 +216,10 @@ const pagination = ref({
 
 const statusOptions = [
   { label: 'Svi statusi',       value: 'all' },
+  { label: 'U obradi',          value: 'u_obradi' },
   { label: 'Poslano',           value: 'Poslano' },
   { label: 'Na odobrenju',      value: 'Na odobrenju' },
-  { label: 'Vraćeno na dopunu', value: 'Vraćeno na dopunu/izmjenu' },
+  { label: 'Zahtjeva izmjene',  value: 'Zahtjeva izmjene' },
   { label: 'Naručeno',          value: 'Naručeno' },
   { label: 'Zatvoreno',         value: 'Zatvoreno' },
   { label: 'Odbijeno',          value: 'Odbijeno' },
@@ -245,13 +231,13 @@ const fiscalYearOptions  = ref([{ label: 'Sve godine', value: 'all' }]);
 const categoryOptions    = ref([{ label: 'Svi predmeti', value: 'all' }]);
 
 const STATUS = {
-  POSLANO:          1,
-  NA_ODOBRENJU:     2,
+  POSLANO:           1,
+  NA_ODOBRENJU:      2,
   VRACENO_NA_DOPUNU: 3,
-  ODOBRENO:         4,
-  ODBIJENO:         5,
-  NARUCENO:         6,
-  ZATVORENO:        7,
+  ODOBRENO:          4,
+  ODBIJENO:          5,
+  NARUCENO:          6,
+  ZATVORENO:         7,
 };
 
 const STATUS_STYLES = {
@@ -264,21 +250,33 @@ const STATUS_STYLES = {
   [STATUS.ZATVORENO]:         { background: '#dcfce7', badge: '#166534', badgeBg: '#bbf7d0', border: '#4ade80' },
 };
 
+const STATUS_ICONS = {
+  [STATUS.POSLANO]:           'send',
+  [STATUS.NA_ODOBRENJU]:      'manage_accounts',
+  [STATUS.VRACENO_NA_DOPUNU]: 'assignment_return',
+  [STATUS.ODOBRENO]:          'verified',
+  [STATUS.ODBIJENO]:          'cancel',
+  [STATUS.NARUCENO]:          'local_shipping',
+  [STATUS.ZATVORENO]:         'task_alt',
+};
+
 const DEFAULT_STYLE = { background: '#f9fafb', badge: '#374151', badgeBg: '#f3f4f6', border: '#d1d5db' };
 
-function buildRequestStyle(row) {
+const buildRequestStyle = (row) => {
   const s = STATUS_STYLES[row.fk_request_status] ?? DEFAULT_STYLE;
   return {
     card:  { background: s.background, borderLeftColor: s.border },
     badge: { color: s.badge, background: s.badgeBg },
   };
-}
+};
 
+const statusIcon = (row) => STATUS_ICONS[row.fk_request_status] ?? 'circle';
 
+const DEFAULT_STATUS = 'u_obradi';
 
 const hasActiveFilters = computed(() =>
   searchQuery.value
-  || statusFilter.value !== 'all'
+  || statusFilter.value !== DEFAULT_STATUS
   || departmentFilter.value !== 'all'
   || userFilter.value !== 'all'
   || fiscalYearFilter.value !== 'all'
@@ -309,18 +307,19 @@ const fetchRequests = async () => {
     const params = {
       page:  pagination.value.page,
       limit: pagination.value.rowsPerPage,
+      order: sortOrder.value,
     };
-    if (searchQuery.value)                        params.search     = searchQuery.value;
-    if (statusFilter.value !== 'all')             params.status     = statusFilter.value;
-    if (departmentFilter.value !== 'all')         params.department = departmentFilter.value;
-    if (isAdmin.value && userFilter.value !== 'all') params.user    = userFilter.value;
-    if (fiscalYearFilter.value !== 'all')         params.fiscalYear = fiscalYearFilter.value;
-    if (categoryFilter.value !== 'all')           params.category   = categoryFilter.value;
+    if (searchQuery.value)                             params.search     = searchQuery.value;
+    if (statusFilter.value !== 'all')                  params.status     = statusFilter.value;
+    if (departmentFilter.value !== 'all')              params.department = departmentFilter.value;
+    if (isAdmin.value && userFilter.value !== 'all')   params.user       = userFilter.value;
+    if (fiscalYearFilter.value !== 'all')              params.fiscalYear = fiscalYearFilter.value;
+    if (categoryFilter.value !== 'all')                params.category   = categoryFilter.value;
 
     const { data } = await api.get('/requests', { params });
-    rows.value                 = Array.isArray(data.data) ? data.data : [];
+    rows.value                  = Array.isArray(data.data) ? data.data : [];
     pagination.value.rowsNumber = data.total || 0;
-    counts.value               = data.counts || { total: 0, active: 0, attention: 0, closed: 0 };
+    counts.value                = data.counts || { total: 0, active: 0, attention: 0, closed: 0 };
   } catch (error) {
     console.error('Greška:', error);
     errorMessage.value = error.response?.data?.message || 'Zahtjevi se trenutno ne mogu dohvatiti.';
@@ -368,12 +367,29 @@ const onTableRequest = async (props) => {
 
 const resetFilters = () => {
   searchQuery.value      = '';
+  statusFilter.value     = DEFAULT_STATUS;
+  departmentFilter.value = 'all';
+  userFilter.value       = 'all';
+  fiscalYearFilter.value = 'all';
+  categoryFilter.value   = 'all';
+  sortOrder.value        = 'ASC';
+  pagination.value.page  = 1;
+};
+
+const showAll = () => {
+  searchQuery.value      = '';
   statusFilter.value     = 'all';
   departmentFilter.value = 'all';
   userFilter.value       = 'all';
   fiscalYearFilter.value = 'all';
   categoryFilter.value   = 'all';
+  sortOrder.value        = 'DESC';
   pagination.value.page  = 1;
+};
+
+const setStatusFilter = (status) => {
+  statusFilter.value    = status;
+  pagination.value.page = 1;
 };
 
 let searchTimer = null;
@@ -404,22 +420,6 @@ const formatDate = (value) => {
   });
 };
 
-const normalizeStatus = (status) =>
-  (status || '').replace(/\s*\/\s*/g, '/').trim();
-
-const statusClass = (status) => {
-  switch (normalizeStatus(status).toLowerCase()) {
-    case 'poslano':                   return 'status--sent';
-    case 'na odobrenju':              return 'status--review';
-    case 'vraćeno na dopunu/izmjenu': return 'status--returned';
-    case 'odbijeno':                  return 'status--rejected';
-    case 'odobreno':                  return 'status--approved';
-    case 'naručeno':                  return 'status--ordered';
-    case 'zatvoreno':                 return 'status--closed';
-    default:                          return 'status--default';
-  }
-};
-
 onMounted(async () => {
   currentUser.value = getStoredUser();
   isAdmin.value     = currentUser.value?.role_name === 'Administrator';
@@ -429,7 +429,7 @@ onMounted(async () => {
 
 <style scoped>
 .page {
-  padding: 38px 40px 32px;
+  padding: 32px 40px;
   background: transparent;
   color: #111827;
   font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -440,436 +440,104 @@ onMounted(async () => {
   margin: 0 auto;
 }
 
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 28px;
-}
-
-.page-header__main {
-  min-width: 0;
-}
-
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.breadcrumb__item {
-  color: #6b7280;
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-
-.breadcrumb__sep {
-  color: #d1d5db;
-  font-size: 0.875rem;
-  user-select: none;
-}
-
-.breadcrumb__current {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #374151;
-}
-
-.page-header__title {
-  margin: 0;
-  color: #111827;
-  font-size: 2.25rem;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  line-height: 1.1;
-}
-
-.page-header__subtitle {
-  max-width: 640px;
-  margin: 10px 0 0;
-  color: #4b5563;
-  font-size: 0.9375rem;
-  line-height: 1.5;
-}
-
-.page-header__actions {
-  display: flex;
-  flex-shrink: 0;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 34px;
-  padding: 0 16px;
-  border: 1px solid #1f2937;
-  border-radius: 3px;
-  background: #fff;
-  color: #111827;
-  font: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.btn--primary {
-  background: #111827;
-  color: #fff;
-  border-color: #111827;
-}
-
-.btn--primary:hover {
-  background: #000;
-  border-color: #000;
-}
-
-.btn--cta {
-  min-height: 44px;
-  padding: 0 24px;
-  font-size: 0.9375rem;
-  gap: 10px;
-  background: #0067b8;
-  color: #fff;
-  border-color: #0067b8;
-  border-radius: 3px;
-}
-
-.btn--cta:hover {
-  background: #005a9e;
-  border-color: #005a9e;
-}
-
-.btn--ghost {
-  background: #fff;
-  color: #374151;
-  border-color: #d1d5db;
-}
-
-.btn--ghost:hover {
-  background: #f9fafb;
-  border-color: #6b7280;
-}
-
-.summary-strip {
+/* ── Action cards ── */
+.action-cards {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
-.summary-strip--4col { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.summary-strip--2col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
-/* ── Shared card base ── */
-.summary-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  min-height: 190px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  transition: all 0.2s ease;
-  font-family: inherit;
-  cursor: pointer;
-  text-align: left;
-}
-
-/* ── Dekorativni SVG ── */
-.card-deco {
-  position: absolute;
-  pointer-events: none;
-  user-select: none;
-}
-
-.card-deco--offer {
-  bottom: -22px;
-  right: -22px;
-  width: 140px;
-  height: 140px;
-  opacity: 0.13;
-  transform: rotate(-25deg) scale(1.1);
-}
-
-.card-deco--no-offer {
-  bottom: -16px;
-  right: -20px;
-  width: 130px;
-  height: 130px;
-  opacity: 0.13;
-  transform: rotate(18deg) scale(1.05);
-}
-
-.card-deco--status {
-  bottom: -14px;
-  right: -14px;
-  width: 130px;
-  height: 130px;
-  opacity: 0.09;
-  transform: rotate(15deg);
-}
-
-/* ── Kartica: Sa ponudom (indigo) ── */
-.summary-card--offer {
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  background: linear-gradient(145deg, #eef2ff 0%, #e0e7ff 100%);
-  border: 1.5px solid #c7d2fe;
-  box-shadow: 0 4px 24px rgba(99, 102, 241, 0.10);
-}
-
-.summary-card--offer:hover {
-  background: linear-gradient(145deg, #e0e7ff 0%, #c7d2fe 100%);
-  border-color: #818cf8;
-  box-shadow: 0 10px 32px rgba(99, 102, 241, 0.22);
-  transform: scale(1.02);
-}
-
-.summary-card--offer .new-card__label { color: #3730a3; }
-.summary-card--offer .new-card__sub   { color: #6366f1; }
-.summary-card--offer:hover .new-card__icon-wrap { opacity: 1; }
-
-/* ── Kartica: Bez ponude (emerald) ── */
-.summary-card--no-offer {
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  background: linear-gradient(145deg, #ecfdf5 0%, #d1fae5 100%);
-  border: 1.5px solid #a7f3d0;
-  box-shadow: 0 4px 24px rgba(16, 185, 129, 0.10);
-}
-
-.summary-card--no-offer:hover {
-  background: linear-gradient(145deg, #d1fae5 0%, #a7f3d0 100%);
-  border-color: #34d399;
-  box-shadow: 0 10px 32px rgba(16, 185, 129, 0.22);
-  transform: scale(1.02);
-}
-
-.summary-card--no-offer .new-card__label { color: #065f46; }
-.summary-card--no-offer .new-card__sub   { color: #059669; }
-.summary-card--no-offer:hover .new-card__icon-wrap { opacity: 1; }
-
-/* ── Zajednički elementi kartica ── */
-.new-card__icon-wrap {
+.action-card {
+  all: unset;
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 30%;
-  aspect-ratio: 1;
-  max-width: 72px;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
-}
-
-.new-card__icon {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.new-card__label {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  transition: color 0.2s ease;
-}
-
-.new-card__sub {
-  font-size: 0.75rem;
-  font-weight: 500;
-  opacity: 0.8;
-  letter-spacing: 0.01em;
-}
-
-/* ── Status kartica (desna) ── */
-.summary-card--status {
-  align-items: flex-start;
-  justify-content: center;
-  gap: 5px;
-  padding: 22px 24px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-left: 4px solid transparent;
-}
-
-.summary-card--wide {
-  grid-column: span 2;
-  min-height: 100px;
-}
-
-.summary-card--status:hover {
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.14);
-  transform: translateY(-2px);
-}
-
-.status-card__badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 9px;
-  border-radius: 6px;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
-
-.status-card__number {
-  font-size: 1.3rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: #111827;
-  line-height: 1.15;
-}
-
-.status-card__amount {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #374151;
-  font-variant-numeric: tabular-nums;
-}
-
-.status-card__date {
-  font-size: 0.75rem;
-  color: #6b7280;
-  font-weight: 500;
-  margin-top: 2px;
-}
-
-.status-card__chevron {
-  position: absolute;
-  bottom: 18px;
-  right: 18px;
-  color: rgba(0, 0, 0, 0.2);
-  transition: color 0.2s ease, transform 0.2s ease;
-}
-
-.summary-card--status:hover .status-card__chevron {
-  color: rgba(0, 0, 0, 0.5);
-  transform: translateX(3px);
-}
-
-/* ── Prazna kartica ── */
-.summary-card--empty {
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  background: rgba(255, 255, 255, 0.4);
-  border-style: dashed;
-  border-color: rgba(0, 0, 0, 0.1);
-  box-shadow: none;
-  cursor: default;
-}
-
-.empty-card__icon { color: #d1d5db; }
-
-.empty-card__label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #9ca3af;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.summary-item {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  padding: 18px 20px 16px;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  gap: 14px;
+  padding: 18px 20px;
   border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
+  border: 1.5px solid transparent;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: all 0.15s;
 }
 
-.summary-item__icon {
+.action-card__icon {
   display: inline-flex;
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  margin-bottom: 12px;
+  border-radius: 10px;
   flex-shrink: 0;
 }
 
-.summary-item--total    .summary-item__icon { background: #f0f2f8; color: #1b2d59; }
-.summary-item--active   .summary-item__icon { background: #e0f6fd; color: #00afdb; }
-.summary-item--attention .summary-item__icon { background: #fff7ed; color: #d97706; }
-.summary-item--closed   .summary-item__icon { background: #f0fdf4; color: #16a34a; }
-
-.summary-item--combined {
-  flex-direction: row;
-  align-items: stretch;
-  padding: 0;
-  gap: 0;
-}
-
-.combined-stat {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 18px 20px 16px;
-}
-
-.summary-item__icon--total     { background: #f0f2f8; color: #1b2d59; }
-.summary-item__icon--active    { background: #e0f6fd; color: #00afdb; }
-.summary-item__icon--attention { background: #fff7ed; color: #d97706; }
-.summary-item__icon--closed    { background: #f0fdf4; color: #16a34a; }
-
-.summary-item__value--active    { color: #00afdb; }
-.summary-item__value--attention { color: #d97706; }
-.summary-item__value--closed    { color: #16a34a; }
-
-.combined-divider {
-  width: 1px;
-  background: rgba(0, 0, 0, 0.07);
-  margin: 18px 0;
-  flex-shrink: 0;
-}
-
-.summary-item__value {
+.action-card__value {
   font-size: 2rem;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
-  margin-bottom: 4px;
-  color: #111827;
 }
 
-.summary-item--active   .summary-item__value { color: #00afdb; }
-.summary-item--attention .summary-item__value { color: #d97706; }
-.summary-item--closed   .summary-item__value { color: #16a34a; }
-
-.summary-item__label {
-  color: #6b7280;
-  font-size: 0.75rem;
+.action-card__label {
+  font-size: 0.8125rem;
   font-weight: 500;
+  color: #6b7280;
+  flex: 1;
 }
 
+.action-card__arrow {
+  color: #d1d5db;
+  flex-shrink: 0;
+  transition: transform 0.15s, color 0.15s;
+}
+
+.action-card--pending {
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+.action-card--pending .action-card__icon { background: #fef3c7; color: #b45309; }
+.action-card--pending .action-card__value { color: #b45309; }
+.action-card--pending:hover { background: #fef3c7; border-color: #f59e0b; }
+.action-card--pending:hover .action-card__arrow { color: #b45309; transform: translateX(3px); }
+
+.action-card--ordered {
+  background: #faf5ff;
+  border-color: #c4b5fd;
+}
+.action-card--ordered .action-card__icon { background: #ede9fe; color: #7c3aed; }
+.action-card--ordered .action-card__value { color: #7c3aed; }
+.action-card--ordered:hover { background: #ede9fe; border-color: #a78bfa; }
+.action-card--ordered:hover .action-card__arrow { color: #7c3aed; transform: translateX(3px); }
+
+/* ── List surface (card) ── */
 .list-surface {
   overflow: hidden;
-  border: 1px solid #e5e7eb;
-  border-top: 2px solid #00afdb;
-  background: #fff;
+  background: #ffffff;
+  border: 1.5px solid rgba(0, 175, 219, 0.18);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 175, 219, 0.07);
 }
 
+/* ── Error banner ── */
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 18px;
+  padding: 10px 12px;
+  border-left: 3px solid #c50f1f;
+  border-radius: 6px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.8125rem;
+}
+
+/* ── Toolbar ── */
 .data-table :deep(.q-table__top) {
   padding: 0 20px;
-  border-bottom: 1px solid #e5e7eb;
-  min-height: 46px;
+  border-bottom: 1px solid rgba(0, 175, 219, 0.12);
+  min-height: 52px;
 }
 
 .toolbar {
@@ -877,7 +545,7 @@ onMounted(async () => {
   align-items: center;
   gap: 4px;
   width: 100%;
-  min-height: 46px;
+  min-height: 52px;
 }
 
 .toolbar__search-icon {
@@ -902,75 +570,72 @@ onMounted(async () => {
   min-width: 150px;
 }
 
+.toolbar__show-all {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  padding: 3px 10px;
+  border: 1px solid rgba(0, 175, 219, 0.3);
+  border-radius: 20px;
+  background: transparent;
+  color: #0e7490;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.toolbar__show-all:hover {
+  background: rgba(0, 175, 219, 0.08);
+  border-color: #00afdb;
+}
+
 .toolbar__reset {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   margin-left: 4px;
-  padding: 3px 8px;
+  padding: 3px 10px;
   border: none;
-  border-radius: 3px;
-  background: none;
-  color: #9ca3af;
+  border-radius: 20px;
+  background: #f3f4f6;
+  color: #6b7280;
   font: inherit;
   font-size: 0.75rem;
   cursor: pointer;
   white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
 }
 
 .toolbar__reset:hover {
-  background: #f3f4f6;
+  background: #e5e7eb;
   color: #374151;
 }
 
-.toolbar :deep(.q-field__control) {
-  background: transparent;
-}
-
+.toolbar :deep(.q-field__control) { background: transparent; }
 .toolbar :deep(.q-field__native),
-.toolbar :deep(.q-field__input) {
-  color: #111827;
-  font-size: 0.8125rem;
-}
+.toolbar :deep(.q-field__input) { color: #111827; font-size: 0.8125rem; }
+.toolbar :deep(.q-field__append) { color: #9ca3af; }
 
-.toolbar :deep(.q-field__append) {
-  color: #9ca3af;
-}
+/* ── Table ── */
+.data-table { border-radius: 0; }
 
-.error-banner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 14px 18px;
-  padding: 10px 12px;
-  border-left: 3px solid #c50f1f;
-  background: #fef2f2;
-  color: #991b1b;
-  font-size: 0.8125rem;
-}
-
-.data-table {
-  border-radius: 0;
-}
-
-.data-table :deep(.q-table__middle) {
-  overflow: hidden;
-}
+.data-table :deep(.q-table__middle) { overflow: hidden; }
 
 .data-table :deep(.q-table) {
   border-collapse: separate;
   border-spacing: 0;
 }
 
-.data-table :deep(thead tr) {
-  background: #fff;
-}
+.data-table :deep(thead tr) { background: #fafeff; }
 
 .data-table :deep(thead th) {
   height: 44px;
   padding: 0 20px;
-  border-bottom: 1px solid #d1d5db;
-  color: #4b5563;
+  border-bottom: 1px solid rgba(0, 175, 219, 0.12);
+  color: #6b7280;
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -978,25 +643,19 @@ onMounted(async () => {
   text-transform: uppercase;
 }
 
-.data-table :deep(thead th.sortable:hover) {
-  color: #111827;
-}
-
 .data-table :deep(tbody tr) {
   cursor: pointer;
   transition: background 0.12s;
 }
 
-.data-table :deep(tbody tr:hover) {
-  background: #f9fafb;
-}
+.data-table :deep(tbody tr:hover) { background: #f0fbfe; }
 
 .data-table :deep(tbody tr:hover td:first-child) {
   box-shadow: inset 3px 0 0 #00afdb;
 }
 
 .data-table :deep(tbody td) {
-  height: 52px;
+  height: 56px;
   padding: 8px 20px;
   border-bottom: 1px solid #f3f4f6;
   color: #111827;
@@ -1004,22 +663,17 @@ onMounted(async () => {
   vertical-align: middle;
 }
 
-.data-table :deep(tbody tr:last-child td) {
-  border-bottom: none;
-}
+.data-table :deep(tbody tr:last-child td) { border-bottom: none; }
 
 .data-table :deep(.q-table__bottom) {
   min-height: 46px;
   padding: 8px 20px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid rgba(0, 175, 219, 0.1);
   color: #6b7280;
   font-size: 0.75rem;
 }
 
-.cell-number {
-  min-width: 160px;
-}
-
+/* ── Cells ── */
 .request-cell__number {
   color: #00afdb;
   font-size: 0.875rem;
@@ -1039,9 +693,7 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
-.cell-muted {
-  color: #4b5563 !important;
-}
+.cell-muted { color: #4b5563 !important; }
 
 .cell-chevron {
   width: 38px;
@@ -1054,35 +706,33 @@ onMounted(async () => {
   transform: translateX(2px);
 }
 
-.status {
+/* ── Status pill ── */
+.status-pill {
   display: inline-flex;
   align-items: center;
-  min-height: 20px;
-  padding: 2px 8px;
-  border-radius: 3px;
-  background: #f3f4f6;
-  color: #374151;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  justify-content: center;
+  gap: 5px;
+  width: 160px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
-.status--sent     { color: #1d4ed8; background: #dbeafe; }
-.status--review   { color: #92400e; background: #fef3c7; }
-.status--returned { color: #9a3412; background: #ffedd5; }
-.status--rejected { color: #991b1b; background: #fee2e2; }
-.status--approved { color: #1b2d59; background: #e0e7f5; }
-.status--ordered  { color: #7c3aed; background: #ede9fe; }
-.status--closed   { color: #166534; background: #dcfce7; }
-.status--default  { color: #374151; background: #f3f4f6; }
+.pill-icon {
+  opacity: 0.85;
+  flex-shrink: 0;
+}
 
+/* ── Empty state ── */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 72px 24px;
+  padding: 64px 24px;
   text-align: center;
 }
 
@@ -1093,8 +743,10 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   margin-bottom: 16px;
-  border: 1px solid #e5e7eb;
-  color: #9ca3af;
+  border-radius: 12px;
+  border: 1.5px solid rgba(0, 175, 219, 0.2);
+  background: rgba(0, 175, 219, 0.05);
+  color: #00afdb;
 }
 
 .empty-state__title {
@@ -1112,32 +764,40 @@ onMounted(async () => {
   line-height: 1.5;
 }
 
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 18px;
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.btn--primary {
+  background: rgba(0, 175, 219, 0.1);
+  color: #0e7490;
+  border-color: rgba(0, 175, 219, 0.45);
+}
+
+.btn--primary:hover {
+  background: rgba(0, 175, 219, 0.18);
+  border-color: #00afdb;
+  box-shadow: 0 0 0 3px rgba(0, 175, 219, 0.1);
+}
+
+/* ── Responsive ── */
 @media (max-width: 760px) {
-  .page {
-    padding: 24px 16px 24px;
-  }
+  .page { padding: 24px 16px; }
 
-  .page-header {
-    gap: 16px;
-  }
-
-  .page-header,
-  .page-header__actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .page-header__title {
-    font-size: 1.8rem;
-  }
-
-  .summary-strip--4col {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .summary-strip--2col {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  .action-cards { grid-template-columns: 1fr; }
 
   .toolbar {
     flex-wrap: wrap;
@@ -1146,19 +806,9 @@ onMounted(async () => {
     gap: 8px;
   }
 
-  .toolbar__search {
-    width: 100%;
-    flex: none;
-  }
-
-  .toolbar__sep {
-    display: none;
-  }
-
-  .toolbar__select {
-    flex: 1;
-    min-width: 130px;
-  }
+  .toolbar__search { width: 100%; flex: none; }
+  .toolbar__sep { display: none; }
+  .toolbar__select { flex: 1; min-width: 130px; }
 
   .data-table :deep(thead th),
   .data-table :deep(tbody td) {
