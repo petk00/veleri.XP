@@ -1,45 +1,233 @@
-// app global css in SCSS form
-
-html {
-  scrollbar-gutter: stable;
-}
+// ── Base ────────────────────────────────────────────────────────────────────
+html { scrollbar-gutter: stable; }
 
 body {
   background: #f8f9fa;
   min-height: 100vh;
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #111827;
 }
 
-// ── Glassmorphism card surface ──────────────────
-.list-surface {
-  background: #ffffff !important;
-  border: 1px solid #e5e7eb !important;
-  border-radius: 12px !important;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06) !important;
+// ── Design tokens ────────────────────────────────────────────────────────────
+:root {
+  --accent:         #00afdb;
+  --accent-light:   rgba(0, 175, 219, 0.1);
+  --accent-border:  rgba(0, 175, 219, 0.18);
+  --accent-hover:   rgba(0, 175, 219, 0.18);
+  --navy:           #1b2d59;
+  --text-primary:   #111827;
+  --text-secondary: #6b7280;
+  --text-muted:     #9ca3af;
+  --border-default: #e5e7eb;
+  --radius-card:    16px;
+  --radius-btn:     12px;
 }
 
-// ── Primary button ──────────────────────────────
-.btn--cta {
-  background: #1b2d59 !important;
-  border-radius: 8px !important;
-  color: #fff !important;
-  border: none !important;
-  transition: background 0.2s ease !important;
+// ── Page shell ───────────────────────────────────────────────────────────────
+.page-shell {
+  margin: 0 auto;
+  width: 100%;
 }
 
-.btn--cta:hover:not(:disabled) {
-  background: #16294e !important;
+// ── Loading ──────────────────────────────────────────────────────────────────
+.loading-block {
+  display: flex;
+  justify-content: center;
+  padding: 64px 0;
 }
 
-// ── Secondary button ────────────────────────────
-.btn--secondary {
-  background: #ffffff !important;
-  border: 1px solid #d1d5db !important;
-  border-radius: 8px !important;
-  color: #374151 !important;
-  transition: background 0.2s ease, border-color 0.2s ease !important;
+// ── Buttons ──────────────────────────────────────────────────────────────────
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 18px;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-btn);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  letter-spacing: 0.01em;
+}
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn--primary {
+  background: rgba(0, 175, 219, 0.1);
+  color: #0e7490;
+  border-color: rgba(0, 175, 219, 0.45);
+}
+.btn--primary:hover:not(:disabled) {
+  background: rgba(0, 175, 219, 0.18);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 175, 219, 0.1);
 }
 
-.btn--secondary:hover {
-  background: #f9fafb !important;
-  border-color: #9ca3af !important;
+.btn--ghost {
+  background: transparent;
+  color: #374151;
+  border-color: var(--border-default);
 }
+.btn--ghost:hover:not(:disabled) {
+  background: #f9fafb;
+  color: var(--text-primary);
+  border-color: #d1d5db;
+}
+
+.btn--sm {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 0.8125rem;
+  border-radius: 8px;
+}
+
+// ── Icon buttons ─────────────────────────────────────────────────────────────
+.icon-btn {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.icon-btn:hover { background: #f3f4f6; color: var(--text-primary); }
+.icon-btn--danger:hover { background: #fef2f2; color: #dc2626; }
+
+// ── Cards ────────────────────────────────────────────────────────────────────
+.card {
+  background: #ffffff;
+  border: 1.5px solid var(--accent-border);
+  border-radius: var(--radius-card);
+  box-shadow: 0 2px 12px rgba(0, 175, 219, 0.07);
+  overflow: hidden;
+}
+
+.card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(0, 175, 219, 0.1);
+  background: rgba(0, 175, 219, 0.02);
+}
+
+.card__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.card__title .q-icon { color: var(--accent); }
+
+.card__count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.card__body { padding: 18px 20px; }
+
+// ── Breadcrumb ───────────────────────────────────────────────────────────────
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.breadcrumb__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.breadcrumb__back:hover { color: var(--accent); }
+.breadcrumb__item  { color: #6b7280; font-size: 0.8125rem; font-weight: 500; }
+.breadcrumb__sep   { color: #d1d5db; font-size: 0.875rem; user-select: none; }
+.breadcrumb__current { font-size: 0.8125rem; font-weight: 600; color: #374151; }
+
+// ── Dialogs ──────────────────────────────────────────────────────────────────
+.dialog-card {
+  width: 480px;
+  max-width: 95vw;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid var(--accent-border);
+  border-radius: var(--radius-card);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 0;
+}
+.dialog-title { margin: 0; font-size: 1rem; font-weight: 600; color: var(--text-primary); }
+.dialog-close {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.dialog-close:hover { background: #f3f4f6; color: var(--text-primary); }
+.dialog-body { padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 16px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+
+// ── Form error ───────────────────────────────────────────────────────────────
+.form-error {
+  padding: 9px 12px;
+  border-left: 3px solid #c50f1f;
+  border-radius: 4px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+// ── Empty state ──────────────────────────────────────────────────────────────
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 64px 24px;
+  text-align: center;
+}
+.empty-state__icon {
+  display: flex;
+  width: 52px;
+  height: 52px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(0, 175, 219, 0.2);
+  background: rgba(0, 175, 219, 0.05);
+  color: var(--accent);
+}
+.empty-state__title { margin: 0 0 6px; font-size: 1rem; font-weight: 600; color: var(--text-primary); }
+.empty-state__hint  { max-width: 340px; margin: 0 0 18px; color: #6b7280; font-size: 0.875rem; line-height: 1.5; }

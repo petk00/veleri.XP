@@ -34,6 +34,12 @@ app.use(helmet({
     includeSubDomains: true,
     preload: false,
   },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:    ["'none'"],
+      frameAncestors: ["'none'"],
+    },
+  },
 }));
 
 const loginLimiter = rateLimit({

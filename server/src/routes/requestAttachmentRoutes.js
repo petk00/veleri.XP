@@ -115,6 +115,14 @@ router.post('/:id/attachments', authenticateToken, upload.single('file'), async 
     return res.status(400).json({ message: 'Fajl nije uploadan ili tip nije dozvoljen.' });
   }
 
+  // Verify actual file magic bytes — prevents MIME spoofing
+  const { fileTypeFromFile } = await import('file-type');
+  const detected = await fileTypeFromFile(req.file.path);
+  if (!detected || !ALLOWED_TYPES.includes(detected.mime)) {
+    cleanupUploadedFile(req.file.path);
+    return res.status(415).json({ message: 'Tip fajla nije dozvoljen.' });
+  }
+
   const { id } = req.params;
   const { document_type } = req.body;
   const userId = req.user.id_user;
