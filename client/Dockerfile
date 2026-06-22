@@ -4,7 +4,8 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install -g @quasar/cli && npm install --ignore-scripts
+# npm ci koristi lock file točno; postinstall automatski pokreće quasar prepare
+RUN npm ci
 
 COPY . .
 
@@ -12,7 +13,7 @@ COPY . .
 ARG API_URL
 ENV API_URL=$API_URL
 
-RUN quasar prepare && quasar build
+RUN npm run build
 
 # ── Serve stage ───────────────────────────────────────────────
 FROM nginx:1.27-alpine

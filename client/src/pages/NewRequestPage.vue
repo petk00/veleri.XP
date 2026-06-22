@@ -26,7 +26,7 @@
           Trenutno nije otvorena nijedna poslovna godina.<br />
           Obratite se administratoru da otvori novu poslovnu godinu.
         </div>
-        <button class="btn btn--secondary" @click="$router.push('/dashboard')">
+        <button class="btn btn--ghost" @click="$router.push('/dashboard')">
           Povratak na nadzornu ploču
         </button>
       </div>
@@ -869,52 +869,6 @@ onMounted(() => fetchReferenceData());
 }
 .no-fy-block__title { font-size: 1rem; font-weight: 600; color: #111827; }
 .no-fy-block__body  { font-size: 0.875rem; color: #4b5563; line-height: 1.5; }
-
-/* ─── Buttons ─── */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: 7px; height: 44px; padding: 0 22px;
-  font-family: inherit; font-size: 0.9375rem; font-weight: 600;
-  border-radius: 12px; border: 1.5px solid transparent;
-  cursor: pointer; transition: all 0.18s; white-space: nowrap;
-  letter-spacing: 0.01em;
-}
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn--primary {
-  background: linear-gradient(135deg, #1b2d59 0%, #0091b8 100%);
-  color: white; border-color: transparent;
-  box-shadow: 0 2px 12px rgba(0, 145, 184, 0.3);
-}
-.btn--primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #152247 0%, #007a9e 100%);
-  box-shadow: 0 4px 18px rgba(0, 145, 184, 0.42);
-  transform: translateY(-1px);
-}
-.btn--ghost {
-  background: rgba(255,255,255,0.72); color: #1b2d59;
-  border-color: rgba(0,175,219,0.35);
-  backdrop-filter: blur(4px);
-}
-.btn--ghost:hover:not(:disabled) {
-  background: rgba(255,255,255,0.92); border-color: #00afdb;
-  box-shadow: 0 0 0 3px rgba(0,175,219,0.1);
-}
-.btn--secondary {
-  background: rgba(255,255,255,0.8); color: #1b2d59;
-  border-color: rgba(0,175,219,0.3);
-}
-.btn--secondary:hover {
-  background: rgba(255,255,255,0.95); border-color: #00afdb;
-  box-shadow: 0 0 0 3px rgba(0,175,219,0.1);
-}
-
-.icon-btn {
-  width: 28px; height: 28px;
-  display: inline-flex; align-items: center; justify-content: center;
-  border: none; border-radius: 4px; background: transparent;
-  color: #4b5563; cursor: pointer; transition: all 0.15s; flex-shrink: 0;
-}
-.icon-btn:hover { background: #f3f4f6; color: #a4262c; }
 
 /* ─── Wizard layout ─── */
 .wizard { display: block; }

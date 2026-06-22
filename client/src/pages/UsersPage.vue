@@ -3,32 +3,24 @@
     <div class="page-shell">
 
       <header class="page-header">
-        <div class="page-header__main">
-          <nav class="breadcrumb" aria-label="Breadcrumb">
-            <span class="breadcrumb__item">Administracija</span>
-            <span class="breadcrumb__sep">›</span>
-            <span class="breadcrumb__current">Korisnici</span>
-          </nav>
-        </div>
-        <div class="page-header__actions">
-          <button class="btn btn--cta" type="button" @click="openCreateDialog">
-            <q-icon name="person_add" size="18px" />
-            <span>Novi korisnik</span>
-          </button>
-        </div>
+        <button class="btn btn--primary" type="button" @click="openCreateDialog">
+          <q-icon name="person_add" size="16px" />
+          <span>Novi korisnik</span>
+        </button>
       </header>
 
       <div v-if="loading" class="loading-block">
         <q-spinner color="primary" size="28px" />
       </div>
 
-      <section v-else class="list-surface">
+      <div v-else class="card">
 
-        <div class="surface-header">
-          <div class="surface-header__left">
-            <h2 class="surface-title">Svi korisnici</h2>
-            <span class="surface-count">{{ filteredUsers.length }}</span>
-          </div>
+        <div class="card__header">
+          <h2 class="card__title">
+            <q-icon name="group" size="16px" />
+            <span>Svi korisnici</span>
+          </h2>
+          <span class="card__count">{{ filteredUsers.length }}</span>
           <div class="toolbar">
             <q-icon name="search" size="15px" class="toolbar__search-icon" />
             <input
@@ -40,7 +32,7 @@
           </div>
         </div>
 
-        <div v-if="filteredUsers.length === 0" class="empty-state">
+        <div v-if="filteredUsers.length === 0" class="empty-state" style="padding: 48px 24px">
           <div class="empty-state__icon"><q-icon name="group" size="28px" /></div>
           <div class="empty-state__title">{{ users.length === 0 ? 'Nema korisnika' : 'Nema rezultata' }}</div>
           <div class="empty-state__hint">{{ users.length === 0 ? 'Dodajte prvog korisnika klikom na "Novi korisnik".' : 'Pokušajte s drugim pojmom.' }}</div>
@@ -60,27 +52,27 @@
               {{ u.is_active ? 'Aktivan' : 'Neaktivan' }}
             </span>
             <div class="user-actions">
-              <button class="action-btn" title="Uredi" @click="openEditDialog(u)">
+              <button class="icon-btn" title="Uredi" @click="openEditDialog(u)">
                 <q-icon name="edit" size="16px" />
               </button>
-              <button class="action-btn" title="Pošalji link za postavljanje lozinke" @click="resetLink(u)">
+              <button class="icon-btn" title="Pošalji link za postavljanje lozinke" @click="resetLink(u)">
                 <q-icon name="key" size="16px" />
               </button>
               <button
-                class="action-btn"
+                class="icon-btn"
                 :title="u.is_active ? 'Deaktiviraj' : 'Aktiviraj'"
                 @click="toggleStatus(u)"
               >
                 <q-icon :name="u.is_active ? 'person_off' : 'person'" size="16px" />
               </button>
-              <button class="action-btn action-btn--danger" title="Obriši korisnika" @click="deleteUser(u)" style="margin-left: 6px;">
+              <button class="icon-btn icon-btn--danger" title="Obriši korisnika" @click="deleteUser(u)" style="margin-left: 4px;">
                 <q-icon name="delete_outline" size="16px" />
               </button>
             </div>
           </li>
         </ul>
 
-      </section>
+      </div>
     </div>
 
     <!-- Dialog: invite link -->
@@ -105,8 +97,8 @@
             <span class="invite-link-text">{{ inviteDialog.link }}</span>
           </div>
           <div class="dialog-actions" style="margin-top: 0;">
-            <button type="button" class="btn btn--secondary" @click="inviteDialog.open = false">Zatvori</button>
-            <button type="button" class="btn btn--cta" @click="copyLink">
+            <button type="button" class="btn btn--ghost" @click="inviteDialog.open = false">Zatvori</button>
+            <button type="button" class="btn btn--primary" @click="copyLink">
               <q-icon :name="inviteDialog.copied ? 'check' : 'content_copy'" size="16px" />
               <span>{{ inviteDialog.copied ? 'Kopirano!' : 'Kopiraj link' }}</span>
             </button>
@@ -154,8 +146,8 @@
           <div v-if="dialog.error" class="form-error">{{ dialog.error }}</div>
 
           <div class="dialog-actions">
-            <button type="button" class="btn btn--secondary" @click="closeDialog">Odustani</button>
-            <button type="submit" class="btn btn--cta" :disabled="dialog.saving">
+            <button type="button" class="btn btn--ghost" @click="closeDialog">Odustani</button>
+            <button type="submit" class="btn btn--primary" :disabled="dialog.saving">
               <q-spinner v-if="dialog.saving" size="14px" color="white" />
               <span v-else>{{ dialog.isEdit ? 'Spremi' : 'Kreiraj korisnika' }}</span>
             </button>
@@ -341,143 +333,23 @@ onMounted(async () => {
 
 <style scoped>
 .page {
-  padding: 38px 40px 32px;
+  padding: 32px 40px;
   background: transparent;
-  color: #111827;
-  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-.page-shell { max-width: 900px; margin: 0 auto; }
+.page-shell { max-width: 1280px; margin: 0 auto; }
 
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 28px;
-}
+.page-header { margin-bottom: 24px; }
 
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.breadcrumb__item {
-  color: #6b7280;
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-
-.breadcrumb__sep {
-  color: #d1d5db;
-  font-size: 0.875rem;
-  user-select: none;
-}
-
-.breadcrumb__current {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #374151;
-}
-
-.page-header__eyebrow {
-  margin-bottom: 8px;
-  color: #00afdb;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.page-header__title {
-  margin: 0;
-  color: #111827;
-  font-size: 2.25rem;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  line-height: 1.1;
-}
-
-.page-header__actions { flex-shrink: 0; }
-
-.btn--cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 0 20px;
-  border: none;
-  border-radius: 8px;
-  background: #1b2d59;
-  color: #fff;
-  font: inherit;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.btn--cta:hover:not(:disabled) { background: #16294e; }
-.btn--cta:disabled { opacity: 0.55; cursor: not-allowed; }
-
-.btn--secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 0 20px;
-  border: 1px solid #d1d5db;
-  border-radius: 3px;
-  background: #fff;
-  color: #374151;
-  font: inherit;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.btn--secondary:hover { background: #f9fafb; }
-
-.loading-block { display: flex; justify-content: center; padding: 64px 0; }
-
-/* ── List surface ── */
-.list-surface {
-  border: 1px solid #e5e7eb;
-  border-top: 2px solid #00afdb;
-  background: #fff;
-  overflow: hidden;
-  border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-}
-
-.surface-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px 20px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.surface-header__left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.surface-title { margin: 0; font-size: 0.8125rem; font-weight: 600; color: #111827; }
-.surface-count { color: #6b7280; font-size: 0.75rem; }
-
+/* ── Toolbar (search inside card header) ── */
 .toolbar {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex: 1;
-  max-width: 320px;
+  margin-left: auto;
+  max-width: 280px;
 }
-
 .toolbar__search-icon { color: #9ca3af; flex-shrink: 0; }
-
 .toolbar__search {
   flex: 1;
   border: none;
@@ -488,7 +360,6 @@ onMounted(async () => {
   color: #111827;
   min-width: 0;
 }
-
 .toolbar__search::placeholder { color: #9ca3af; }
 
 /* ── User list ── */
@@ -500,8 +371,10 @@ onMounted(async () => {
   gap: 14px;
   padding: 12px 20px;
   border-bottom: 1px solid #f3f4f6;
+  transition: background 0.12s;
 }
 .user-row:last-child { border-bottom: none; }
+.user-row:hover { background: #f0fbfe; }
 
 .user-avatar {
   width: 34px;
@@ -516,24 +389,9 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  flex: 1;
-  min-width: 0;
-}
-
-.user-name {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #111827;
-}
-
-.user-email {
-  font-size: 0.75rem;
-  color: #6b7280;
-}
+.user-info { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.user-name  { font-size: 0.875rem; font-weight: 600; color: #111827; }
+.user-email { font-size: 0.75rem; color: #6b7280; }
 
 .user-role {
   font-size: 0.75rem;
@@ -544,142 +402,51 @@ onMounted(async () => {
 
 .user-status {
   font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  padding: 2px 8px;
-  border-radius: 3px;
+  padding: 3px 10px;
+  border-radius: 20px;
   flex-shrink: 0;
 }
-.user-status--active { color: #065f46; background: #d1fae5; }
+.user-status--active   { color: #065f46; background: #d1fae5; }
 .user-status--inactive { color: #6b7280; background: #f3f4f6; }
 
 .user-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
-.action-btn {
-  all: unset;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 3px;
-  color: #6b7280;
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s;
-}
-.action-btn:hover { background: #f3f4f6; color: #111827; }
-.action-btn--danger:hover { background: #fef2f2; color: #dc2626; }
-
-/* ── Empty state ── */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 56px 24px;
-  text-align: center;
-}
-.empty-state__icon {
-  display: flex;
-  width: 48px;
-  height: 48px;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 14px;
-  border: 1px solid #e5e7eb;
-  color: #9ca3af;
-}
-.empty-state__title { margin: 0 0 6px; font-size: 0.9375rem; font-weight: 600; color: #111827; }
-.empty-state__hint { max-width: 300px; color: #6b7280; font-size: 0.8125rem; line-height: 1.5; }
-
-/* ── Dialog ── */
-.dialog-card {
-  width: 480px;
-  max-width: 95vw;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-}
-
-.dialog-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px 0;
-}
-
-.dialog-title { margin: 0; font-size: 1rem; font-weight: 600; color: #111827; }
-
-.dialog-close {
-  all: unset;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 3px;
-  color: #6b7280;
-  cursor: pointer;
-}
-.dialog-close:hover { background: #f3f4f6; color: #111827; }
-
-.dialog-body { padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 16px; }
-
+/* ── Dialog fields ── */
 .field-row { display: flex; gap: 12px; }
 .field-row .field { flex: 1; }
-
 .field { display: flex; flex-direction: column; gap: 6px; }
-
 .field-label { font-size: 0.8125rem; font-weight: 500; color: #374151; }
 
 .text-input {
   width: 100%;
   height: 38px;
   padding: 0 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 3px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
   outline: none;
   background: #fff;
   color: #111827;
   font: inherit;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   box-sizing: border-box;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-.text-input:focus { border-color: #00afdb; box-shadow: 0 0 0 3px rgba(0, 175, 219, 0.3); }
-
-.form-error {
-  padding: 9px 12px;
-  border-left: 3px solid #c50f1f;
-  background: #fef2f2;
-  color: #991b1b;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-}
-
-.dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 4px;
+.text-input:focus {
+  border-color: #00afdb;
+  box-shadow: 0 0 0 3px rgba(0, 175, 219, 0.12);
 }
 
 /* ── Invite link ── */
-.invite-info {
-  margin: 0 0 12px;
-  font-size: 0.875rem;
-  color: #374151;
-  line-height: 1.5;
-}
+.invite-info { margin: 0 0 12px; font-size: 0.875rem; color: #374151; line-height: 1.5; }
 
 .invite-link-box {
   padding: 10px 12px;
   background: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  border-radius: 3px;
+  border: 1.5px solid var(--accent-border);
+  border-radius: 10px;
   margin-bottom: 16px;
   overflow-x: auto;
 }
@@ -692,11 +459,8 @@ onMounted(async () => {
   user-select: all;
 }
 
-/* ── Responsive ── */
 @media (max-width: 760px) {
-  .page { padding: 24px 16px 24px; }
-  .page-header { flex-direction: column; align-items: stretch; gap: 16px; }
-  .page-header__title { font-size: 1.75rem; }
+  .page { padding: 24px 16px; }
   .user-role { display: none; }
 }
 </style>
