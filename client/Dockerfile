@@ -4,7 +4,7 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN npm install --ignore-scripts
 
 COPY . .
 
@@ -12,7 +12,7 @@ COPY . .
 ARG API_URL
 ENV API_URL=$API_URL
 
-RUN npm run build
+RUN npx quasar prepare && npm run build
 
 # ── Serve stage ───────────────────────────────────────────────
 FROM nginx:1.27-alpine
