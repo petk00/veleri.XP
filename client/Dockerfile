@@ -4,8 +4,7 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
-# npm ci koristi lock file točno; postinstall automatski pokreće quasar prepare
-RUN npm ci
+RUN npm install
 
 COPY . .
 
