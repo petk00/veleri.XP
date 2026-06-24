@@ -55,6 +55,7 @@ CREATE TABLE `FiscalYear` (
   `id_fiscal_year` int NOT NULL AUTO_INCREMENT,
   `year` int NOT NULL,
   `is_closed` tinyint(1) NOT NULL DEFAULT '0',
+  `total_budget` decimal(14,2) NOT NULL DEFAULT '0.00',
   PRIMARY KEY (`id_fiscal_year`),
   UNIQUE KEY `year` (`year`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

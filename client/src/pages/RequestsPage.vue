@@ -436,8 +436,7 @@ onMounted(async () => {
 }
 
 .page-shell {
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 /* ── Action cards ── */
@@ -454,7 +453,7 @@ onMounted(async () => {
   align-items: center;
   gap: 14px;
   padding: 18px 20px;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 1.5px solid transparent;
   box-sizing: border-box;
   cursor: pointer;
@@ -514,9 +513,8 @@ onMounted(async () => {
 .list-surface {
   overflow: hidden;
   background: #ffffff;
-  border: 1.5px solid rgba(0, 175, 219, 0.18);
-  border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0, 175, 219, 0.07);
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
 }
 
 /* ── Error banner ── */
@@ -536,7 +534,7 @@ onMounted(async () => {
 /* ── Toolbar ── */
 .data-table :deep(.q-table__top) {
   padding: 0 20px;
-  border-bottom: 1px solid rgba(0, 175, 219, 0.12);
+  border-bottom: 1px solid #e5e7eb;
   min-height: 52px;
 }
 
@@ -629,13 +627,13 @@ onMounted(async () => {
   border-spacing: 0;
 }
 
-.data-table :deep(thead tr) { background: #fafeff; }
+.data-table :deep(thead tr) { background: #f9fafb; }
 
 .data-table :deep(thead th) {
   height: 44px;
   padding: 0 20px;
-  border-bottom: 1px solid rgba(0, 175, 219, 0.12);
-  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+  color: #9ca3af;
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -668,7 +666,7 @@ onMounted(async () => {
 .data-table :deep(.q-table__bottom) {
   min-height: 46px;
   padding: 8px 20px;
-  border-top: 1px solid rgba(0, 175, 219, 0.1);
+  border-top: 1px solid #e5e7eb;
   color: #6b7280;
   font-size: 0.75rem;
 }
