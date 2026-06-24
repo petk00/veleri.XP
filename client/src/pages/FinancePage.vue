@@ -57,8 +57,8 @@
               </div>
               <div class="budget-summary__item budget-summary__item--full">
                 <div class="budget-bar budget-bar--stacked">
-                  <div class="budget-bar__fill budget-bar__fill--allocated" :style="{ width: Math.min(allocationPercent, 100) + '%' }" />
                   <div class="budget-bar__fill budget-bar__fill--spent" :style="{ width: Math.min(spentPercent, 100) + '%' }" />
+                  <div class="budget-bar__fill budget-bar__fill--allocated" :style="{ width: Math.max(0, Math.min(allocationPercent, 100) - Math.min(spentPercent, 100)) + '%' }" />
                 </div>
                 </div>
             </div>
@@ -121,7 +121,7 @@
               </div>
               <div class="fy-stat-wrap">
                 <div class="budget-summary__year-pct-row">
-                  <div class="fy-stat__number">{{ spentPercent }}<span class="fy-stat__pct">%</span></div>
+                  <div class="fy-stat__number">{{ remainingPercent }}<span class="fy-stat__pct">%</span></div>
                   <span class="budget-summary__year-suffix">preostalog budžeta u <strong>{{ selected.year }}</strong>. godini</span>
                 </div>
               </div>
@@ -160,15 +160,15 @@
                 <span class="dept-col dept-col--bar">
                   <div class="budget-bar">
                     <div
+                      v-if="deptPct(d) !== null"
                       class="budget-bar__fill"
-                      :class="[deptBarClass(d), (!isFinite(deptPct(d)) || deptPct(d) > 100) ? 'budget-bar__fill--striped' : '']"
-                      :style="{ width: isFinite(deptPct(d)) ? Math.min(deptPct(d), 100) + '%' : '100%' }"
+                      :class="[deptBarClass(d), deptPct(d) > 100 ? 'budget-bar__fill--striped' : '']"
+                      :style="{ width: Math.min(deptPct(d), 100) + '%' }"
                     />
                   </div>
                 </span>
                 <span class="dept-col dept-col--pct">
-                  <template v-if="!isFinite(deptPct(d))">
-                    <q-icon name="warning" size="14px" color="negative" />
+                  <template v-if="deptPct(d) === null">
                     <span class="dept-no-limit">Nema limita</span>
                   </template>
                   <template v-else-if="deptPct(d) > 100">
@@ -402,18 +402,20 @@ const totalSpent = computed(() => departments.value.reduce((s, d) => s + Number(
 const totalFree = computed(() => fyBudget.value - totalAllocated.value);
 const allocationPercent = computed(() => fyBudget.value > 0 ? Math.round(totalAllocated.value / fyBudget.value * 100) : 0);
 const spentPercent = computed(() => fyBudget.value > 0 ? Math.round(totalSpent.value / fyBudget.value * 100) : 0);
+const remainingPercent = computed(() => fyBudget.value > 0 ? Math.max(0, Math.round((fyBudget.value - totalSpent.value) / fyBudget.value * 100)) : 0);
 
 const deptPct = (d) => {
   const limit = Number(d.department_limit);
   const spent = Number(d.spent_amount || 0);
-  if (limit === 0) return spent > 0 ? Infinity : 0;
+  if (!limit || limit <= 0) return null;
   return Math.round(spent / limit * 100);
 };
 
 const deptBarClass = (d) => {
   const pct = deptPct(d);
-  if (!isFinite(pct) || pct >= 100) return 'budget-bar__fill--critical';
-  if (pct >= 80) return 'budget-bar__fill--warn';
+  if (pct === null) return '';
+  if (pct > 100) return 'budget-bar__fill--critical';
+  if (pct === 100) return 'budget-bar__fill--warn';
   return 'budget-bar__fill--ok';
 };
 
@@ -421,8 +423,8 @@ const sortedDepartments = computed(() =>
   [...departments.value].sort((a, b) => {
     const pa = deptPct(a);
     const pb = deptPct(b);
-    if (!isFinite(pb)) return 1;
-    if (!isFinite(pa)) return -1;
+    if (pb === null) return -1;
+    if (pa === null) return 1;
     return pb - pa;
   })
 );
@@ -1111,8 +1113,8 @@ onMounted(loadYears);
   position: relative;
 }
 
-.budget-bar--stacked { height: 10px; }
-.budget-bar--stacked .budget-bar__fill { position: absolute; top: 0; left: 0; }
+.budget-bar--stacked { height: 10px; display: flex; }
+.budget-bar--stacked .budget-bar__fill { border-radius: 0; flex-shrink: 0; }
 
 .budget-bar__fill {
   height: 100%;
@@ -1144,9 +1146,11 @@ onMounted(loadYears);
 
 .dept-no-limit {
   font-size: 0.75rem;
-  font-weight: 600;
-  color: #dc2626;
+  font-weight: 500;
+  color: #6b7280;
 }
+
+.dept-col--bar .budget-bar { background: #e5e7eb; }
 
 /* ── Department table ── */
 .dept-table { }

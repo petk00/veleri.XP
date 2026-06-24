@@ -144,14 +144,37 @@ router.get('/', authenticateToken, async (req, res) => {
 
     if (search) {
       filterConditions.push(
-        "(pr.request_number LIKE ? OR CONCAT(u.first_name, ' ', u.last_name) LIKE ? OR d.name LIKE ?)"
+        `(pr.request_number LIKE ? OR CONCAT(u.first_name, ' ', u.last_name) LIKE ? OR d.name LIKE ?
+          OR CASE pr.fk_request_status
+            WHEN 1 THEN 'Poslano'
+            WHEN 2 THEN 'Na odobrenju'
+            WHEN 3 THEN 'Zahtjeva izmjene'
+            WHEN 4 THEN 'Odobreno'
+            WHEN 5 THEN 'Odbijeno'
+            WHEN 6 THEN 'Naručeno'
+            WHEN 7 THEN 'Zatvoreno'
+          END LIKE ?)`
       );
-      filterParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      filterParams.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     if (statusParam) {
       if (statusParam === 'u_obradi') {
         filterConditions.push(`pr.fk_request_status IN (${STATUS.POSLANO},${STATUS.NA_ODOBRENJU},${STATUS.VRACENO})`);
+      } else if (statusParam === 'ceka_otpremnicu') {
+        filterConditions.push(
+          `pr.fk_request_status = ? AND NOT EXISTS (
+            SELECT 1 FROM Attachment a WHERE a.fk_purchase_request = pr.id_purchase_request AND a.document_type = 'Otpremnica'
+          )`
+        );
+        filterParams.push(STATUS.NARUCENO);
+      } else if (statusParam === 'spremno_za_zatvaranje') {
+        filterConditions.push(
+          `pr.fk_request_status = ? AND EXISTS (
+            SELECT 1 FROM Attachment a WHERE a.fk_purchase_request = pr.id_purchase_request AND a.document_type = 'Otpremnica'
+          )`
+        );
+        filterParams.push(STATUS.NARUCENO);
       } else {
         const statusId = Object.entries(STATUS_LABELS).find(([, label]) => label === statusParam)?.[0];
         if (statusId) {
@@ -209,10 +232,16 @@ router.get('/', authenticateToken, async (req, res) => {
         SUM(fk_request_status = ?) AS closed,
         SUM(fk_request_status = ?) AS na_odobrenju,
         SUM(fk_request_status = ?) AS naruceno,
-        SUM(fk_request_status IN (${STATUS.POSLANO},${STATUS.NA_ODOBRENJU},${STATUS.VRACENO})) AS u_obradi
+        SUM(fk_request_status IN (${STATUS.POSLANO},${STATUS.NA_ODOBRENJU},${STATUS.VRACENO})) AS u_obradi,
+        SUM(fk_request_status = ? AND NOT EXISTS (
+          SELECT 1 FROM Attachment a WHERE a.fk_purchase_request = id_purchase_request AND a.document_type = 'Otpremnica'
+        )) AS ceka_otpremnicu,
+        SUM(fk_request_status = ? AND EXISTS (
+          SELECT 1 FROM Attachment a WHERE a.fk_purchase_request = id_purchase_request AND a.document_type = 'Otpremnica'
+        )) AS spremno_za_zatvaranje
        FROM PurchaseRequest
        ${summaryWhere}`,
-      [attentionStatusId, STATUS.ZATVORENO, STATUS.NA_ODOBRENJU, STATUS.NARUCENO, ...summaryParams]
+      [attentionStatusId, STATUS.ZATVORENO, STATUS.NA_ODOBRENJU, STATUS.NARUCENO, STATUS.NARUCENO, STATUS.NARUCENO, ...summaryParams]
     );
 
     const baseJoin = `
@@ -250,7 +279,7 @@ router.get('/', authenticateToken, async (req, res) => {
         EXISTS(SELECT 1 FROM Attachment a WHERE a.fk_purchase_request = pr.id_purchase_request AND a.document_type = 'Otpremnica') AS has_otpremnica
        ${baseJoin}
        ${filterWhere}
-       ORDER BY pr.created_at ${req.query.order === 'ASC' ? 'ASC' : 'DESC'}, pr.id_purchase_request ${req.query.order === 'ASC' ? 'ASC' : 'DESC'}
+       ORDER BY ${({ request_number: 'pr.request_number', department_name: 'd.name', created_by: 'u.last_name', total_amount: 'pr.total_amount', created_at: 'pr.created_at', status_name: 'pr.fk_request_status' }[req.query.sortBy] || 'pr.created_at')} ${req.query.order === 'ASC' ? 'ASC' : 'DESC'}, pr.id_purchase_request ${req.query.order === 'ASC' ? 'ASC' : 'DESC'}
        LIMIT ? OFFSET ?`,
       [...filterParams, limit, offset]
     );
@@ -264,13 +293,15 @@ router.get('/', authenticateToken, async (req, res) => {
       page,
       limit,
       counts: {
-        total:        Number(summary.total)        || 0,
-        active:       Number(summary.active)       || 0,
-        attention:    Number(summary.attention)    || 0,
-        closed:       Number(summary.closed)       || 0,
-        na_odobrenju: Number(summary.na_odobrenju) || 0,
-        naruceno:     Number(summary.naruceno)     || 0,
-        u_obradi:     Number(summary.u_obradi)     || 0,
+        total:            Number(summary.total)            || 0,
+        active:           Number(summary.active)           || 0,
+        attention:        Number(summary.attention)        || 0,
+        closed:           Number(summary.closed)           || 0,
+        na_odobrenju:     Number(summary.na_odobrenju)     || 0,
+        naruceno:         Number(summary.naruceno)         || 0,
+        u_obradi:         Number(summary.u_obradi)         || 0,
+        ceka_otpremnicu:       Number(summary.ceka_otpremnicu)       || 0,
+        spremno_za_zatvaranje: Number(summary.spremno_za_zatvaranje) || 0,
       },
     });
   } catch (error) {

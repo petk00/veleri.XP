@@ -2,20 +2,41 @@
   <q-page class="page">
     <div class="page-shell">
 
-      <section class="action-cards" aria-label="Brzi pregled">
+      <section class="action-cards" :class="{ 'action-cards--admin': isAdmin }" aria-label="Brzi pregled">
         <button class="action-card action-card--pending" @click="setStatusFilter('u_obradi')">
           <div class="action-card__icon"><q-icon name="pending_actions" size="18px" /></div>
           <span class="action-card__value">{{ counts.u_obradi }}</span>
           <span class="action-card__label">U obradi</span>
           <q-icon name="chevron_right" size="14px" class="action-card__arrow" />
         </button>
-        <button class="action-card action-card--ordered" @click="setStatusFilter('Naručeno')">
-          <div class="action-card__icon"><q-icon name="local_shipping" size="18px" /></div>
-          <span class="action-card__value">{{ counts.naruceno }}</span>
-          <span class="action-card__label">Naručeno / u tijeku</span>
+        <button class="action-card action-card--ordered" @click="setStatusFilter('ceka_otpremnicu')">
+          <div class="action-card__icon"><q-icon name="inbox" size="18px" /></div>
+          <span class="action-card__value">{{ counts.ceka_otpremnicu }}</span>
+          <span class="action-card__label">Čekaju otpremnicu</span>
+          <q-icon name="chevron_right" size="14px" class="action-card__arrow" />
+        </button>
+        <button v-if="isAdmin" class="action-card action-card--ready" @click="setStatusFilter('spremno_za_zatvaranje')">
+          <div class="action-card__icon"><q-icon name="task_alt" size="18px" /></div>
+          <span class="action-card__value">{{ counts.spremno_za_zatvaranje }}</span>
+          <span class="action-card__label">Spremno za zatvaranje</span>
           <q-icon name="chevron_right" size="14px" class="action-card__arrow" />
         </button>
       </section>
+
+      <!-- Toolbar (izvan kartice, kao na /korisnici) -->
+      <div class="req-toolbar">
+        <q-icon name="search" size="15px" class="topbar__search-icon" />
+        <input
+          v-model="searchQuery"
+          type="search"
+          class="topbar__search"
+          placeholder="Pretraži po broju, podnositelju, odjelu ili statusu..."
+        />
+        <button v-if="hasActiveFilters" class="toolbar__reset" @click="resetFilters">
+          <q-icon name="close" size="12px" />
+          <span>Poništi</span>
+        </button>
+      </div>
 
       <section class="list-surface">
 
@@ -37,75 +58,6 @@
           @request="onTableRequest"
           @row-click="(_, row) => openRequest(row.id_purchase_request)"
         >
-          <template #top>
-            <div class="toolbar">
-              <q-icon name="search" size="15px" class="toolbar__search-icon" />
-              <q-input
-                v-model="searchQuery"
-                borderless dense clearable
-                placeholder="Pretraži po broju, podnositelju ili odjelu..."
-                class="toolbar__search"
-              />
-
-              <div class="toolbar__sep" />
-
-              <!-- Status -->
-              <q-select
-                v-model="statusFilter"
-                :options="statusOptions"
-                borderless dense
-                emit-value map-options
-                class="toolbar__select"
-              />
-
-              <!-- Odjel -->
-              <q-select
-                v-if="isAdmin && departmentOptions.length > 1"
-                v-model="departmentFilter"
-                :options="departmentOptions"
-                borderless dense
-                emit-value map-options
-                class="toolbar__select"
-              />
-
-              <!-- Podnositelj -->
-              <q-select
-                v-if="isAdmin && userOptions.length > 1"
-                v-model="userFilter"
-                :options="userOptions"
-                borderless dense
-                emit-value map-options
-                class="toolbar__select"
-              />
-
-              <!-- Kategorija -->
-              <q-select
-                v-if="categoryOptions.length > 1"
-                v-model="categoryFilter"
-                :options="categoryOptions"
-                borderless dense
-                emit-value map-options
-                class="toolbar__select"
-              />
-
-              <!-- Godina -->
-              <q-select
-                v-if="fiscalYearOptions.length > 1"
-                v-model="fiscalYearFilter"
-                :options="fiscalYearOptions"
-                borderless dense
-                emit-value map-options
-                class="toolbar__select"
-              />
-
-              <button class="toolbar__show-all" @click="showAll">Prikaži sve</button>
-
-              <button v-if="hasActiveFilters" class="toolbar__reset" @click="resetFilters">
-                <q-icon name="close" size="12px" />
-                <span>Poništi</span>
-              </button>
-            </div>
-          </template>
 
           <!-- Cell: request number -->
           <template #body-cell-request_number="props">
@@ -194,15 +146,14 @@ const router = useRouter();
 const loading      = ref(false);
 const rows         = ref([]);
 const errorMessage = ref('');
-const counts       = ref({ total: 0, active: 0, attention: 0, closed: 0 });
+const counts       = ref({ total: 0, active: 0, attention: 0, closed: 0, u_obradi: 0, ceka_otpremnicu: 0, spremno_za_zatvaranje: 0 });
 
 const currentUser = ref(null);
 const isAdmin     = ref(false);
 
 // Filteri
 const searchQuery      = ref('');
-const statusFilter     = ref('u_obradi');
-const sortOrder        = ref('ASC');
+const statusFilter     = ref('all');
 const departmentFilter = ref('all');
 const userFilter       = ref('all');
 const fiscalYearFilter = ref('all');
@@ -210,8 +161,10 @@ const categoryFilter   = ref('all');
 
 const pagination = ref({
   page: 1,
-  rowsPerPage: 10,
+  rowsPerPage: 25,
   rowsNumber: 0,
+  sortBy: 'created_at',
+  descending: true,
 });
 
 const statusOptions = [
@@ -272,11 +225,9 @@ const buildRequestStyle = (row) => {
 
 const statusIcon = (row) => STATUS_ICONS[row.fk_request_status] ?? 'circle';
 
-const DEFAULT_STATUS = 'u_obradi';
-
 const hasActiveFilters = computed(() =>
   searchQuery.value
-  || statusFilter.value !== DEFAULT_STATUS
+  || statusFilter.value !== 'all'
   || departmentFilter.value !== 'all'
   || userFilter.value !== 'all'
   || fiscalYearFilter.value !== 'all'
@@ -284,13 +235,13 @@ const hasActiveFilters = computed(() =>
 );
 
 const allColumns = [
-  { name: 'request_number', label: 'Broj zahtjeva', field: 'request_number', align: 'left', sortable: false, style: 'min-width: 160px' },
-  { name: 'department_name', label: 'Odjel',        field: 'department_name', align: 'left', sortable: false, style: 'min-width: 160px' },
-  { name: 'status_name',    label: 'Status',        field: 'status_name',    align: 'left', sortable: false, style: 'min-width: 140px' },
-  { name: 'created_by',     label: 'Podnositelj',   field: 'created_by',     align: 'left', sortable: false, style: 'min-width: 140px' },
-  { name: 'total_amount',   label: 'Iznos',         field: 'total_amount',   align: 'left', sortable: false, style: 'min-width: 100px' },
-  { name: 'created_at',     label: 'Datum',         field: 'created_at',     align: 'left', sortable: false, style: 'min-width: 110px' },
-  { name: 'actions',        label: '',              field: 'actions',        align: 'right', style: 'width: 38px' },
+  { name: 'request_number', label: 'Broj zahtjeva', field: 'request_number', align: 'left', sortable: true, style: 'min-width: 160px' },
+  { name: 'department_name', label: 'Odjel',        field: 'department_name', align: 'left', sortable: true, style: 'min-width: 160px' },
+  { name: 'status_name',    label: 'Status',        field: 'status_name',    align: 'left', sortable: true, style: 'min-width: 140px' },
+  { name: 'created_by',     label: 'Podnositelj',   field: 'created_by',     align: 'left', sortable: true, style: 'min-width: 140px' },
+  { name: 'total_amount',   label: 'Iznos',         field: 'total_amount',   align: 'left', sortable: true, style: 'min-width: 100px' },
+  { name: 'created_at',     label: 'Datum',         field: 'created_at',     align: 'left', sortable: true, style: 'min-width: 110px' },
+  { name: 'actions',        label: '',              field: 'actions',        align: 'right', sortable: false, style: 'width: 38px' },
 ];
 
 const columns = computed(() =>
@@ -305,9 +256,10 @@ const fetchRequests = async () => {
 
   try {
     const params = {
-      page:  pagination.value.page,
-      limit: pagination.value.rowsPerPage,
-      order: sortOrder.value,
+      page:   pagination.value.page,
+      limit:  pagination.value.rowsPerPage,
+      sortBy: pagination.value.sortBy || 'created_at',
+      order:  pagination.value.descending ? 'DESC' : 'ASC',
     };
     if (searchQuery.value)                             params.search     = searchQuery.value;
     if (statusFilter.value !== 'all')                  params.status     = statusFilter.value;
@@ -362,29 +314,33 @@ const fetchMeta = async () => {
 const onTableRequest = async (props) => {
   pagination.value.page        = props.pagination.page;
   pagination.value.rowsPerPage = props.pagination.rowsPerPage;
+  pagination.value.sortBy      = props.pagination.sortBy;
+  pagination.value.descending  = props.pagination.descending;
   await fetchRequests();
 };
 
 const resetFilters = () => {
-  searchQuery.value      = '';
-  statusFilter.value     = DEFAULT_STATUS;
-  departmentFilter.value = 'all';
-  userFilter.value       = 'all';
-  fiscalYearFilter.value = 'all';
-  categoryFilter.value   = 'all';
-  sortOrder.value        = 'ASC';
-  pagination.value.page  = 1;
+  searchQuery.value           = '';
+  statusFilter.value          = 'all';
+  departmentFilter.value      = 'all';
+  userFilter.value            = 'all';
+  fiscalYearFilter.value      = 'all';
+  categoryFilter.value        = 'all';
+  pagination.value.page       = 1;
+  pagination.value.sortBy     = 'created_at';
+  pagination.value.descending = true;
 };
 
 const showAll = () => {
-  searchQuery.value      = '';
-  statusFilter.value     = 'all';
-  departmentFilter.value = 'all';
-  userFilter.value       = 'all';
-  fiscalYearFilter.value = 'all';
-  categoryFilter.value   = 'all';
-  sortOrder.value        = 'DESC';
-  pagination.value.page  = 1;
+  searchQuery.value           = '';
+  statusFilter.value          = 'all';
+  departmentFilter.value      = 'all';
+  userFilter.value            = 'all';
+  fiscalYearFilter.value      = 'all';
+  categoryFilter.value        = 'all';
+  pagination.value.page       = 1;
+  pagination.value.sortBy     = 'created_at';
+  pagination.value.descending = true;
 };
 
 const setStatusFilter = (status) => {
@@ -445,6 +401,9 @@ onMounted(async () => {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 24px;
+}
+.action-cards--admin {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .action-card {
@@ -509,6 +468,15 @@ onMounted(async () => {
 .action-card--ordered:hover { background: #ede9fe; border-color: #a78bfa; }
 .action-card--ordered:hover .action-card__arrow { color: #7c3aed; transform: translateX(3px); }
 
+.action-card--ready {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+.action-card--ready .action-card__icon { background: #dcfce7; color: #166534; }
+.action-card--ready .action-card__value { color: #166534; }
+.action-card--ready:hover { background: #dcfce7; border-color: #4ade80; }
+.action-card--ready:hover .action-card__arrow { color: #166534; transform: translateX(3px); }
+
 /* ── List surface (card) ── */
 .list-surface {
   overflow: hidden;
@@ -531,36 +499,34 @@ onMounted(async () => {
   font-size: 0.8125rem;
 }
 
-/* ── Toolbar ── */
-.data-table :deep(.q-table__top) {
-  padding: 0 20px;
-  border-bottom: 1px solid #e5e7eb;
-  min-height: 52px;
-}
-
-.toolbar {
+/* ── Toolbar (izvan kartice, kao /korisnici) ── */
+.req-toolbar {
   display: flex;
   align-items: center;
-  gap: 4px;
-  width: 100%;
-  min-height: 52px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
-.toolbar__search-icon {
-  color: #9ca3af;
-  flex-shrink: 0;
-}
+.topbar__search-icon { color: #9ca3af; flex-shrink: 0; }
 
-.toolbar__search {
+.topbar__search {
   flex: 1;
-  min-width: 180px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: #111827;
+  min-width: 0;
 }
+.topbar__search::placeholder { color: #9ca3af; }
+.topbar__search::-webkit-search-cancel-button { cursor: pointer; }
 
-.toolbar__sep {
+.req-toolbar__sep {
   width: 1px;
   height: 18px;
   background: #e5e7eb;
-  margin: 0 8px;
+  margin: 0 4px;
   flex-shrink: 0;
 }
 
@@ -612,10 +578,6 @@ onMounted(async () => {
   color: #374151;
 }
 
-.toolbar :deep(.q-field__control) { background: transparent; }
-.toolbar :deep(.q-field__native),
-.toolbar :deep(.q-field__input) { color: #111827; font-size: 0.8125rem; }
-.toolbar :deep(.q-field__append) { color: #9ca3af; }
 
 /* ── Table ── */
 .data-table { border-radius: 0; }
@@ -630,16 +592,25 @@ onMounted(async () => {
 .data-table :deep(thead tr) { background: #f9fafb; }
 
 .data-table :deep(thead th) {
-  height: 44px;
+  height: 40px;
   padding: 0 20px;
+  border-top: 1px solid #e5e7eb;
   border-bottom: 1px solid #e5e7eb;
   color: #9ca3af;
   font-size: 0.6875rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-align: left;
   text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: color 0.1s;
 }
+.data-table :deep(thead th:hover) { color: #6b7280; }
+.data-table :deep(thead th.sorted) { color: #111827; }
+.data-table :deep(.q-table__sort-icon) { opacity: 0.4; font-size: 11px; }
+.data-table :deep(thead th.sorted .q-table__sort-icon) { opacity: 1; }
 
 .data-table :deep(tbody tr) {
   cursor: pointer;
@@ -731,15 +702,14 @@ onMounted(async () => {
 
   .action-cards { grid-template-columns: 1fr; }
 
-  .toolbar {
+  .req-toolbar {
     flex-wrap: wrap;
     padding: 8px 0;
-    min-height: unset;
     gap: 8px;
   }
 
-  .toolbar__search { width: 100%; flex: none; }
-  .toolbar__sep { display: none; }
+  .topbar__search { width: 100%; flex: none; }
+  .req-toolbar__sep { display: none; }
   .toolbar__select { flex: 1; min-width: 130px; }
 
   .data-table :deep(thead th),

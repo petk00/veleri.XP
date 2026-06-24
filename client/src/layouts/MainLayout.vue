@@ -19,30 +19,21 @@
 
           <button
             class="nav-item"
-            :class="{ 'nav-item--active': route.path === '/' || route.path === '/dashboard' }"
-            @click="navigate('/')"
+            :class="{ 'nav-item--active': isActive('/novizahtjev') }"
+            @click="navigate('/novizahtjev')"
           >
-            <img src="/solarlinear_NABAVA.svg" width="20" height="20" class="nav-item__icon" />
-            <span>Nabava</span>
+            <img src="/solarlinear_NOVIZAHTJEV.svg" width="20" height="20" class="nav-item__icon" />
+            <span>Novi zahtjev</span>
           </button>
-
+          <button
+            class="nav-item"
+            :class="{ 'nav-item--active': isActive('/zahtjevi') }"
+            @click="navigate('/zahtjevi')"
+          >
+            <img src="/solarlinear_MOJIZAHTJEVI.svg" width="20" height="20" class="nav-item__icon" />
+            <span>Zahtjevi</span>
+          </button>
           <template v-if="isAdmin">
-            <button
-              class="nav-item"
-              :class="{ 'nav-item--active': isActive('/zahtjevi/novi') }"
-              @click="navigate('/zahtjevi/novi')"
-            >
-              <img src="/solarlinear_NOVIZAHTJEV.svg" width="20" height="20" class="nav-item__icon" />
-              <span>Novi zahtjev</span>
-            </button>
-            <button
-              class="nav-item"
-              :class="{ 'nav-item--active': isActive('/zahtjevi') }"
-              @click="navigate('/zahtjevi')"
-            >
-              <img src="/solarlinear_MOJIZAHTJEVI.svg" width="20" height="20" class="nav-item__icon" />
-              <span>Zahtjevi</span>
-            </button>
             <button
               class="nav-item"
               :class="{ 'nav-item--active': isActive('/financije') }"
@@ -50,17 +41,6 @@
             >
               <img src="/solarlinear_FINANCIRANJE.svg" width="20" height="20" class="nav-item__icon" />
               <span>Financije</span>
-            </button>
-          </template>
-
-          <template v-else>
-            <button
-              class="nav-item"
-              :class="{ 'nav-item--active': isActive('/zahtjevi/novi') }"
-              @click="navigate('/zahtjevi/novi')"
-            >
-              <img src="/solarlinear_NOVIZAHTJEV.svg" width="20" height="20" class="nav-item__icon" />
-              <span>Novi zahtjev</span>
             </button>
           </template>
 
@@ -161,7 +141,7 @@ const avatarColor = computed(() => {
 const isAdmin = computed(() => user.value?.role_name === 'Administrator');
 
 const isActive = (path) => {
-  if (path === '/zahtjevi') return route.path.startsWith('/zahtjevi') && !route.path.startsWith('/zahtjevi/novi');
+  if (path === '/zahtjevi') return route.path.startsWith('/zahtjevi') && !route.path.startsWith('/novizahtjev');
   return route.path === path;
 };
 
