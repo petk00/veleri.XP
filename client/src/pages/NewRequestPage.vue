@@ -835,7 +835,7 @@ onMounted(() => fetchReferenceData());
 /* ─── Page ─── */
 .page {
   background: transparent;
-  padding: 38px 40px 32px;
+  padding: 32px 40px;
   font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color: #111827;
 }
@@ -1340,7 +1340,7 @@ onMounted(() => fetchReferenceData());
 
 /* ─── Responsive ─── */
 @media (max-width: 600px) {
-  .page { padding: 24px 16px; }
+  .page { padding: 20px 16px; }
   .hero-card { padding: 28px 24px; }
   .hero-card__title { font-size: 1.375rem; }
   .add-item__row { grid-template-columns: 1fr 1fr; }

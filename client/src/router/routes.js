@@ -19,10 +19,10 @@ const routes = [
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      { path: '', redirect: '/dashboard' },
-      { path: 'home', redirect: '/dashboard' },
-      { path: 'nabava', redirect: '/dashboard' },
-      { path: 'dashboard', component: () => import('pages/IndexPage.vue') },
+      { path: '', component: () => import('pages/IndexPage.vue') },
+      { path: 'dashboard', redirect: '/' },
+      { path: 'home', redirect: '/' },
+      { path: 'nabava', redirect: '/' },
 
       { path: 'zahtjevi',          component: () => import('pages/RequestsPage.vue') },
       { path: 'zahtjevi/novi',     component: () => import('pages/NewRequestPage.vue') },
@@ -35,8 +35,8 @@ const routes = [
       { path: 'requests/:id',      redirect: to => `/zahtjevi/${to.params.id}` },
       { path: 'requests/:id/edit', redirect: to => `/zahtjevi/${to.params.id}/edit` },
 
-      { path: 'users',             component: () => import('pages/UsersPage.vue') },
-      { path: 'fiscal-years',      component: () => import('pages/FiscalYearPage.vue') },
+      { path: 'korisnici',          component: () => import('pages/UsersPage.vue') },
+      { path: 'financije',          component: () => import('pages/FinancePage.vue') },
     ],
   },
 
