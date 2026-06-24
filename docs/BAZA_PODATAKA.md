@@ -127,19 +127,20 @@ Tablica predstavlja poslovne godine.
 | `id_fiscal_year` | `int` | PK, AI | Jedinstveni identifikator poslovne godine. |
 | `year` | `int` | NOT NULL, UNIQUE | Godina, npr. `2026`. |
 | `is_closed` | `tinyint(1)` | NOT NULL, default `0` | Oznaka zaključane godine. |
+| `total_budget` | `decimal(14,2)` | NOT NULL, default `0.00` | Ukupni godišnji budžet za nabavu. |
+
+> **Migracija za postojeće baze:**
+> ```sql
+> ALTER TABLE `FiscalYear`
+>   ADD COLUMN `total_budget` decimal(14,2) NOT NULL DEFAULT '0.00';
+> ```
 
 Pravila u aplikaciji:
 
 - aktivna poslovna godina dohvaća se kao zadnja godina gdje je `is_closed = 0`,
-- zahtjev se veže na poslovnu godinu preko `PurchaseRequest.fk_fiscal_year`.
-
-Trenutno stanje:
-
-- tablica postoji,
-- aplikacija koristi aktivnu godinu kod kreiranja zahtjeva,
-- nema implementiranog UI/API-ja za otvaranje nove godine,
-- nema implementiranog UI/API-ja za zaključavanje godine,
-- nema automatskog kopiranja šifrarnika u novu godinu.
+- zahtjev se veže na poslovnu godinu preko `PurchaseRequest.fk_fiscal_year`,
+- `total_budget` definira se pri kreiranju nove godine i predstavlja gornji limit koji se može rasporediti po odjelima,
+- suma `department_limit` svih odjela jedne godine ne smije premašiti `total_budget` — backend odbija unos koji prelazi limit.
 
 ## Tablica `Department`
 
@@ -162,9 +163,9 @@ Pravila u aplikaciji:
 
 - kod kreiranja zahtjeva korisnik bira aktivan odjel,
 - referentna ruta vraća samo zapise gdje je `is_active = 1`,
-- `department_limit` postoji u bazi, ali se trenutno ne koristi za provjeru limita.
-
-Napomena: CRUD za šifrarnik odjela još nije implementiran.
+- `department_limit` definira koliki udio godišnjeg budžeta (`FiscalYear.total_budget`) je dodijeljen odjelu,
+- suma svih `department_limit` u godini ne smije premašiti `FiscalYear.total_budget` — backend provjerava pri svakom dodavanju i izmjeni odjela,
+- limit se može mijenjati dok je godina otvorena.
 
 ## Tablica `ItemCategory`
 
@@ -187,9 +188,7 @@ Pravila u aplikaciji:
 
 - kod kreiranja stavke korisnik bira aktivnu kategoriju,
 - referentna ruta vraća samo zapise gdje je `is_active = 1`,
-- `category_limit` postoji u bazi, ali se trenutno ne koristi za provjeru limita.
-
-Napomena: CRUD za šifrarnik predmeta nabave još nije implementiran.
+- `category_limit` definira informativni limit za kategoriju — prikazuje se u admin sučelju, ali trenutno ne blokira zahtjeve koji ga premašuju.
 
 ## Tablica `RequestStatus`
 
@@ -471,31 +470,24 @@ U trenutnoj verziji aplikacije baza podržava i backend koristi:
 - kreiranje stavki zahtjeva,
 - promjene statusa zahtjeva,
 - upload, pregled, download i brisanje dokumenata,
-- povijest aktivnosti zahtjeva.
+- povijest aktivnosti zahtjeva,
+- admin CRUD korisnika (aktivacija, deaktivacija, invite link, reset lozinke),
+- admin upravljanje poslovnim godinama (otvaranje, zaključavanje),
+- automatsko kopiranje odjela i kategorija u novu poslovnu godinu,
+- admin CRUD odjela i kategorija po poslovnoj godini,
+- godišnji budžet (`FiscalYear.total_budget`) s raspodjelom po odjelima (`department_limit`),
+- backend validacija: suma `department_limit` odjela ne smije premašiti `total_budget`.
 
 ## Djelomično ili nije implementirano
 
-Sljedeće cjeline postoje u modelu baze, ali nisu potpuno implementirane u aplikaciji:
-
 | Cjelina | Stanje |
 |---|---|
-| Administracija korisnika | Tablice postoje, ali nema admin UI/API za CRUD korisnika. |
-| Poslovne godine | Tablica postoji, ali nema otvaranja i zaključavanja godine kroz aplikaciju. |
-| Kopiranje šifrarnika u novu godinu | Nije implementirano. |
-| CRUD odjela i kategorija | Tablice postoje, ali nema admin UI/API za održavanje. |
-| Financijski limiti | Polja `department_limit` i `category_limit` postoje, ali se ne provjeravaju u workflowu. |
+| Provjera limita kategorija u workflowu | `category_limit` prikazuje se u UI, ali ne blokira zahtjeve. |
 | Storniranje zahtjeva | Implementirano kroz akciju `storno`; status `Odbijeno` koristi se i za stornirane zahtjeve. |
 | Tipovi dokumenata | Podržani su `Ponuda` i `Otpremnica`; ostali tipovi izvan su opsega projekta. |
 
 ## Napomene za daljnji razvoj
 
-Preporučene dorade modela i aplikacijske logike:
-
-- dodati admin API i UI za korisnike,
-- dodati API i UI za poslovne godine,
-- kod otvaranja nove godine kopirati odjele i kategorije iz prethodne godine,
-- kod zaključane poslovne godine zabraniti izmjene šifrarnika i kreiranje novih zahtjeva,
-- provjeravati da `Department` i `ItemCategory` pripadaju istoj poslovnoj godini kao zahtjev,
-- dodati provjere limita po mjestu troška i predmetu nabave,
-- razmotriti zasebnu tablicu za tipove dokumenata ako se broj tipova poveća,
-- razmotriti implementaciju financijskih limita po odjelu i kategoriji.
+- razmotriti blokiranje zahtjeva koji premašuju `department_limit` odjela,
+- razmotriti provjeru `category_limit` u workflowu,
+- razmotriti zasebnu tablicu za tipove dokumenata ako se broj tipova poveća.

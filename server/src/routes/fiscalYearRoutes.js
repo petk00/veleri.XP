@@ -13,9 +13,14 @@ const requireAdmin = (req, res, next) => {
 // GET /api/fiscal-years
 router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const [rows] = await db.query(
-      'SELECT id_fiscal_year, year, is_closed FROM FiscalYear ORDER BY year DESC'
-    );
+    const [rows] = await db.query(`
+      SELECT fy.id_fiscal_year, fy.year, fy.is_closed, fy.total_budget,
+             COALESCE(SUM(d.department_limit), 0) AS total_allocated
+      FROM FiscalYear fy
+      LEFT JOIN Department d ON d.fk_fiscal_year = fy.id_fiscal_year
+      GROUP BY fy.id_fiscal_year, fy.year, fy.is_closed, fy.total_budget
+      ORDER BY fy.year DESC
+    `);
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -25,11 +30,15 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
 
 // POST /api/fiscal-years — kreira novu godinu i kopira odjele+kategorije iz prethodne
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
-  const { year } = req.body;
+  const { year, total_budget } = req.body;
 
   if (!year || !Number.isInteger(Number(year)) || year < 2000 || year > 2100) {
     return res.status(400).json({ message: 'Godina mora biti broj između 2000 i 2100.' });
   }
+  if (total_budget === undefined || total_budget === null || isNaN(parseFloat(total_budget)) || parseFloat(total_budget) < 0) {
+    return res.status(400).json({ message: 'Godišnji budžet mora biti pozitivan broj.' });
+  }
+  const budget = parseFloat(total_budget);
 
   const connection = await db.getConnection();
   try {
@@ -62,7 +71,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
     }
 
     const [result] = await connection.query(
-      'INSERT INTO FiscalYear (year, is_closed) VALUES (?, 0)', [year]
+      'INSERT INTO FiscalYear (year, is_closed, total_budget) VALUES (?, 0, ?)', [year, budget]
     );
     const newId = result.insertId;
 
@@ -75,10 +84,10 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
       const prevId = prev[0].id_fiscal_year;
 
       const [prevDepts] = await connection.query(
-        'SELECT name, department_limit FROM Department WHERE fk_fiscal_year = ?', [prevId]
+        'SELECT name FROM Department WHERE fk_fiscal_year = ?', [prevId]
       );
       if (prevDepts.length > 0) {
-        const deptValues = prevDepts.map(d => [newId, d.name, d.department_limit, 1]);
+        const deptValues = prevDepts.map(d => [newId, d.name, 0, 1]);
         await connection.query(
           'INSERT INTO Department (fk_fiscal_year, name, department_limit, is_active) VALUES ?',
           [deptValues]
@@ -86,10 +95,10 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
       }
 
       const [prevCats] = await connection.query(
-        'SELECT name, category_limit FROM ItemCategory WHERE fk_fiscal_year = ?', [prevId]
+        'SELECT name FROM ItemCategory WHERE fk_fiscal_year = ?', [prevId]
       );
       if (prevCats.length > 0) {
-        const catValues = prevCats.map(c => [newId, c.name, c.category_limit, 1]);
+        const catValues = prevCats.map(c => [newId, c.name, 0, 1]);
         await connection.query(
           'INSERT INTO ItemCategory (fk_fiscal_year, name, category_limit, is_active) VALUES ?',
           [catValues]
@@ -108,6 +117,36 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+// PATCH /api/fiscal-years/:id/budget
+router.patch('/:id/budget', authenticateToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const budget = Number(req.body.total_budget);
+  if (isNaN(budget) || budget < 0) {
+    return res.status(400).json({ message: 'Iznos budžeta mora biti pozitivan broj.' });
+  }
+  try {
+    const [fy] = await db.query('SELECT is_closed FROM FiscalYear WHERE id_fiscal_year = ?', [id]);
+    if (fy.length === 0) return res.status(404).json({ message: 'Godina nije pronađena.' });
+    if (fy[0].is_closed) return res.status(400).json({ message: 'Zatvorena godina se ne može mijenjati.' });
+
+    const [sum] = await db.query(
+      'SELECT COALESCE(SUM(department_limit), 0) AS total_allocated FROM Department WHERE fk_fiscal_year = ?', [id]
+    );
+    const allocated = Number(sum[0].total_allocated);
+    if (budget < allocated) {
+      return res.status(400).json({
+        message: `Novi budžet (${budget.toFixed(2)} €) manji je od već alociranog iznosa po odjelima (${allocated.toFixed(2)} €). Smanjite limite odjela prije nego snizite godišnji budžet.`,
+      });
+    }
+
+    await db.query('UPDATE FiscalYear SET total_budget = ? WHERE id_fiscal_year = ?', [budget, id]);
+    res.json({ message: 'Godišnji budžet ažuriran.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Greška pri ažuriranju budžeta.' });
+  }
+});
+
 // PATCH /api/fiscal-years/:id/close
 router.patch('/:id/close', authenticateToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
@@ -118,9 +157,17 @@ router.patch('/:id/close', authenticateToken, requireAdmin, async (req, res) => 
     if (rows.length === 0) return res.status(404).json({ message: 'Godina nije pronađena.' });
     if (rows[0].is_closed) return res.status(400).json({ message: 'Godina je već zatvorena.' });
 
-    if (rows[0].year === new Date().getFullYear()) {
+    const now = new Date();
+    const fyYear = rows[0].year;
+    if (fyYear >= now.getFullYear()) {
       return res.status(400).json({
-        message: `Poslovna godina ${rows[0].year} ne može se zatvoriti dok traje tekuća kalendarska godina.`,
+        message: `Poslovna godina ${fyYear} ne može se zatvoriti dok traje tekuća kalendarska godina.`,
+      });
+    }
+    const windowStart = new Date(fyYear + 1, 0, 1);
+    if (now < windowStart) {
+      return res.status(400).json({
+        message: `Poslovna godina ${fyYear} ne može se zatvoriti prije 1. siječnja ${fyYear + 1}.`,
       });
     }
 
@@ -140,7 +187,15 @@ router.patch('/:id/close', authenticateToken, requireAdmin, async (req, res) => 
 router.get('/:id/departments', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT id_department, name, is_active FROM Department WHERE fk_fiscal_year = ? ORDER BY name',
+      `SELECT d.id_department, d.name, d.is_active, d.department_limit,
+         COALESCE(SUM(pr.total_amount), 0) AS spent_amount
+       FROM Department d
+       LEFT JOIN PurchaseRequest pr
+         ON pr.fk_department = d.id_department
+         AND pr.fk_request_status IN (6, 7)
+       WHERE d.fk_fiscal_year = ?
+       GROUP BY d.id_department
+       ORDER BY d.name`,
       [req.params.id]
     );
     res.json(rows);
@@ -152,15 +207,28 @@ router.get('/:id/departments', authenticateToken, requireAdmin, async (req, res)
 
 // POST /api/fiscal-years/:id/departments
 router.post('/:id/departments', authenticateToken, requireAdmin, async (req, res) => {
-  const { name } = req.body;
+  const { name, department_limit } = req.body;
   const fyId = req.params.id;
 
   if (!name?.trim()) return res.status(400).json({ message: 'Naziv odjela je obavezan.' });
+  const limit = parseFloat(department_limit) >= 0 ? parseFloat(department_limit) : 0;
 
   try {
-    const [fy] = await db.query('SELECT is_closed FROM FiscalYear WHERE id_fiscal_year = ?', [fyId]);
+    const [fy] = await db.query('SELECT is_closed, total_budget FROM FiscalYear WHERE id_fiscal_year = ?', [fyId]);
     if (fy.length === 0) return res.status(404).json({ message: 'Godina nije pronađena.' });
     if (fy[0].is_closed) return res.status(400).json({ message: 'Zatvorena godina se ne može mijenjati.' });
+
+    const [sumResult] = await db.query(
+      'SELECT COALESCE(SUM(department_limit), 0) AS total_allocated FROM Department WHERE fk_fiscal_year = ?',
+      [fyId]
+    );
+    const totalAllocated = Number(sumResult[0].total_allocated);
+    const totalBudget = Number(fy[0].total_budget);
+    if (totalAllocated + limit > totalBudget) {
+      return res.status(400).json({
+        message: `Budžet odjela (${(totalAllocated + limit).toFixed(2)} €) premašuje godišnji budžet (${totalBudget.toFixed(2)} €). Slobodno za alokaciju: ${(totalBudget - totalAllocated).toFixed(2)} €.`,
+      });
+    }
 
     const [dup] = await db.query(
       'SELECT id_department FROM Department WHERE fk_fiscal_year = ? AND name = ?',
@@ -169,8 +237,8 @@ router.post('/:id/departments', authenticateToken, requireAdmin, async (req, res
     if (dup.length > 0) return res.status(409).json({ message: 'Odjel s tim nazivom već postoji.' });
 
     const [result] = await db.query(
-      'INSERT INTO Department (fk_fiscal_year, name, department_limit, is_active) VALUES (?, ?, 0, 1)',
-      [fyId, name.trim()]
+      'INSERT INTO Department (fk_fiscal_year, name, department_limit, is_active) VALUES (?, ?, ?, 1)',
+      [fyId, name.trim(), limit]
     );
     res.status(201).json({ id_department: result.insertId, message: 'Odjel dodan.' });
   } catch (err) {
@@ -181,15 +249,28 @@ router.post('/:id/departments', authenticateToken, requireAdmin, async (req, res
 
 // PUT /api/fiscal-years/:id/departments/:deptId
 router.put('/:id/departments/:deptId', authenticateToken, requireAdmin, async (req, res) => {
-  const { name } = req.body;
+  const { name, department_limit } = req.body;
   const { id: fyId, deptId } = req.params;
 
   if (!name?.trim()) return res.status(400).json({ message: 'Naziv odjela je obavezan.' });
+  const limit = parseFloat(department_limit) >= 0 ? parseFloat(department_limit) : 0;
 
   try {
-    const [fy] = await db.query('SELECT is_closed FROM FiscalYear WHERE id_fiscal_year = ?', [fyId]);
+    const [fy] = await db.query('SELECT is_closed, total_budget FROM FiscalYear WHERE id_fiscal_year = ?', [fyId]);
     if (fy.length === 0) return res.status(404).json({ message: 'Godina nije pronađena.' });
     if (fy[0].is_closed) return res.status(400).json({ message: 'Zatvorena godina se ne može mijenjati.' });
+
+    const [sumResult] = await db.query(
+      'SELECT COALESCE(SUM(department_limit), 0) AS total_allocated FROM Department WHERE fk_fiscal_year = ? AND id_department != ?',
+      [fyId, deptId]
+    );
+    const otherAllocated = Number(sumResult[0].total_allocated);
+    const totalBudget = Number(fy[0].total_budget);
+    if (otherAllocated + limit > totalBudget) {
+      return res.status(400).json({
+        message: `Budžet odjela (${(otherAllocated + limit).toFixed(2)} €) premašuje godišnji budžet (${totalBudget.toFixed(2)} €). Slobodno za ovaj odjel: ${(totalBudget - otherAllocated).toFixed(2)} €.`,
+      });
+    }
 
     const [dup] = await db.query(
       'SELECT id_department FROM Department WHERE fk_fiscal_year = ? AND name = ? AND id_department != ?',
@@ -198,8 +279,8 @@ router.put('/:id/departments/:deptId', authenticateToken, requireAdmin, async (r
     if (dup.length > 0) return res.status(409).json({ message: 'Odjel s tim nazivom već postoji.' });
 
     const [result] = await db.query(
-      'UPDATE Department SET name = ? WHERE id_department = ? AND fk_fiscal_year = ?',
-      [name.trim(), deptId, fyId]
+      'UPDATE Department SET name = ?, department_limit = ? WHERE id_department = ? AND fk_fiscal_year = ?',
+      [name.trim(), limit, deptId, fyId]
     );
     if (result.affectedRows === 0) return res.status(404).json({ message: 'Odjel nije pronađen.' });
     res.json({ message: 'Odjel ažuriran.' });
