@@ -226,7 +226,7 @@ onMounted(async () => {
 
 <style scoped>
 .page {
-  padding: 38px 40px 32px;
+  padding: 32px 40px;
   background: transparent;
   color: #111827;
   font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -561,7 +561,7 @@ onMounted(async () => {
 }
 
 @media (max-width: 760px) {
-  .page { padding: 24px 16px; }
+  .page { padding: 20px 16px; }
   .page-header__title { font-size: 1.75rem; }
   .status-badge { min-width: unset; }
 }

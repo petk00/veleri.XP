@@ -7,53 +7,6 @@
 
     <div v-else class="fy-layout">
 
-      <!-- ── Top bar ─────────────────────────────────────── -->
-      <div class="fy-topbar">
-        <div v-if="fiscalYears.length === 0" class="fy-topbar__empty">
-          Nema poslovnih godina — kreirajte prvu.
-        </div>
-
-        <ul v-else class="fy-tabs">
-          <li
-            v-for="fy in fiscalYears"
-            :key="fy.id_fiscal_year"
-            class="fy-tab"
-            :class="{ 'fy-tab--active': selectedId === fy.id_fiscal_year }"
-            @click="selectYear(fy)"
-          >
-            <span class="fy-tab__year">{{ fy.year }}</span>
-            <span class="fy-status" :class="fy.is_closed ? 'fy-status--closed' : 'fy-status--open'">
-              {{ fy.is_closed ? 'Zatvorena' : 'Otvorena' }}
-            </span>
-            <span class="fy-tab__budget">
-              {{ fy.total_budget > 0 ? Math.round((fy.total_budget - fy.total_allocated) / fy.total_budget * 100) : 0 }}% slobodno za alokaciju
-            </span>
-            <button
-              v-if="!fy.is_closed"
-              class="fy-tab__action fy-tab__action--budget"
-              title="Uredi godišnji budžet"
-              @click.stop="openBudgetDialog(fy)"
-            >
-              <q-icon name="edit" size="13px" />
-            </button>
-            <button
-              v-if="!fy.is_closed"
-              class="fy-tab__action fy-tab__action--close"
-              title="Zatvori godinu"
-              @click.stop="closeYear(fy)"
-            >
-              <q-icon name="lock_open" size="13px" />
-            </button>
-            <q-icon v-else name="lock" size="13px" class="fy-tab__lock-icon" />
-          </li>
-        </ul>
-
-        <button class="btn btn--primary fy-topbar__new" :disabled="hasOpenYear" @click="openCreateDialog">
-          <q-icon name="add" size="16px" />
-          <span>Nova poslovna godina</span>
-        </button>
-      </div>
-
       <!-- ── Upozorenje: rok za zatvaranje istekao ── -->
       <div v-if="lateCloseWarning" class="late-warning">
         <q-icon name="warning" size="18px" />
@@ -70,68 +23,115 @@
 
         <template v-else>
 
-          <!-- Budget summary -->
-          <div v-if="!loadingDetail" class="budget-summary">
-            <div class="budget-summary__item">
-              <div class="budget-summary__label">
-                <q-icon name="account_balance_wallet" size="13px" /> Godišnji budžet
+          <!-- Gornji red -->
+          <div class="fy-top-row">
+
+            <div v-if="!loadingDetail" class="budget-summary">
+              <div class="budget-summary__item">
+                <div class="budget-summary__label">
+                  <q-icon name="account_balance_wallet" size="13px" /> Godišnji budžet
+                </div>
+                <div class="budget-summary__value budget-summary__value--total">{{ formatEUR(fyBudget) }}</div>
               </div>
-              <div class="budget-summary__value budget-summary__value--total">{{ formatEUR(fyBudget) }}</div>
+              <div class="budget-summary__item">
+                <div class="budget-summary__label">
+                  <q-icon name="shopping_cart" size="13px" /> Potrošeno
+                </div>
+                <div class="budget-summary__value budget-summary__value--spent">{{ formatEUR(totalSpent) }}</div>
+              </div>
+              <div class="budget-summary__item">
+                <div class="budget-summary__label">
+                  <q-icon name="pie_chart" size="13px" /> Alocirano
+                </div>
+                <div class="budget-summary__value" :class="totalAllocated > fyBudget ? 'budget-summary__value--over' : 'budget-summary__value--allocated'">
+                  {{ formatEUR(totalAllocated) }}
+                </div>
+              </div>
+              <div class="budget-summary__item">
+                <div class="budget-summary__label">
+                  <q-icon name="savings" size="13px" /> Slobodno
+                </div>
+                <div class="budget-summary__value" :class="totalFree < 0 ? 'budget-summary__value--over' : 'budget-summary__value--available'">
+                  {{ formatEUR(totalFree) }}
+                </div>
+              </div>
+              <div class="budget-summary__item budget-summary__item--full">
+                <div class="budget-bar budget-bar--stacked">
+                  <div class="budget-bar__fill budget-bar__fill--allocated" :style="{ width: Math.min(allocationPercent, 100) + '%' }" />
+                  <div class="budget-bar__fill budget-bar__fill--spent" :style="{ width: Math.min(spentPercent, 100) + '%' }" />
+                </div>
+                </div>
             </div>
-            <div class="budget-summary__item">
-              <div class="budget-summary__label">
-                <q-icon name="pie_chart" size="13px" /> Alocirano
+
+            <!-- Kartica: postotak + akcije -->
+            <div class="card fy-year-card">
+              <div class="fy-year-card__top">
+                <div class="fy-year-card__actions">
+                  <button
+                    v-if="!selected.is_closed"
+                    class="fy-tab__action fy-tab__action--budget"
+                    title="Uredi godišnji budžet"
+                    @click="openBudgetDialog(selected)"
+                  >
+                    <q-icon name="edit" size="13px" />
+                  </button>
+                  <button
+                    v-if="!selected.is_closed"
+                    class="fy-tab__action fy-tab__action--close"
+                    title="Zatvori godinu"
+                    @click="closeYear(selected)"
+                  >
+                    <q-icon name="lock_open" size="13px" />
+                  </button>
+                  <q-icon v-else name="lock" size="13px" class="fy-tab__lock-icon" />
+                  <button
+                    class="fy-tab__action fy-tab__action--budget"
+                    :disabled="hasOpenYear"
+                    :title="hasOpenYear ? 'Zatvorite tekuću godinu prije otvaranja nove' : 'Nova poslovna godina'"
+                    @click="openCreateDialog"
+                  >
+                    <q-icon name="add" size="13px" />
+                  </button>
+                  <button class="fy-year-switch" title="Promijeni godinu">
+                    <span class="fy-year-switch__label">{{ selected.year }}</span>
+                    <q-icon name="expand_more" size="13px" />
+                    <q-menu anchor="bottom right" self="top right" :offset="[0, 6]" class="fy-year-menu">
+                      <div class="fy-year-menu__list">
+                        <button
+                          v-for="fy in [...fiscalYears].sort((a,b) => b.year - a.year)"
+                          :key="fy.id_fiscal_year"
+                          class="fy-year-menu__item"
+                          :class="{ 'fy-year-menu__item--active': fy.id_fiscal_year === selectedId }"
+                          @click="selectYear(fy)"
+                        >
+                          <q-icon
+                            :name="fy.is_closed ? 'lock' : 'lock_open'"
+                            size="12px"
+                            class="fy-year-menu__icon"
+                          />
+                          <span class="fy-year-menu__year">{{ fy.year }}</span>
+                          <span v-if="fy.id_fiscal_year === selectedId" class="fy-year-menu__check">
+                            <q-icon name="check" size="11px" />
+                          </span>
+                        </button>
+                      </div>
+                    </q-menu>
+                  </button>
+                </div>
               </div>
-              <div class="budget-summary__value" :class="totalAllocated > fyBudget ? 'budget-summary__value--over' : 'budget-summary__value--allocated'">
-                {{ formatEUR(totalAllocated) }}
+              <div class="fy-stat-wrap">
+                <div class="budget-summary__year-pct-row">
+                  <div class="fy-stat__number">{{ spentPercent }}<span class="fy-stat__pct">%</span></div>
+                  <span class="budget-summary__year-suffix">preostalog budžeta u <strong>{{ selected.year }}</strong>. godini</span>
+                </div>
               </div>
             </div>
-            <div class="budget-summary__item">
-              <div class="budget-summary__label">
-                <q-icon name="savings" size="13px" /> Slobodno
-              </div>
-              <div class="budget-summary__value" :class="totalFree < 0 ? 'budget-summary__value--over' : 'budget-summary__value--available'">
-                {{ formatEUR(totalFree) }}
-              </div>
-            </div>
-            <div class="budget-summary__item">
-              <div class="budget-summary__label">
-                <q-icon name="shopping_cart" size="13px" /> Potrošeno
-              </div>
-              <div class="budget-summary__value budget-summary__value--spent">{{ formatEUR(totalSpent) }}</div>
-            </div>
-            <div class="budget-summary__item budget-summary__item--full">
-              <div class="budget-bar budget-bar--stacked">
-                <div class="budget-bar__fill budget-bar__fill--allocated" :style="{ width: Math.min(allocationPercent, 100) + '%' }" />
-                <div class="budget-bar__fill budget-bar__fill--spent" :style="{ width: Math.min(spentPercent, 100) + '%' }" />
-              </div>
-              <div class="budget-summary__progress-row">
-                <span class="budget-summary__label">
-                  <span class="bar-dot" style="background:#3b82f6" /> Potrošeno {{ spentPercent }}%
-                </span>
-                <span class="budget-summary__label">
-                  <span class="bar-dot" style="background:#bfdbfe" /> Alocirano {{ Math.max(0, allocationPercent - spentPercent) }}%
-                </span>
-                <span class="budget-summary__label">
-                  <span class="bar-dot" style="background:#86efac;" /> Slobodno {{ Math.max(0, 100 - allocationPercent) }}%
-                </span>
-              </div>
-            </div>
-          </div>
+
+          </div><!-- /.fy-top-row -->
 
           <!-- Odjeli + Kategorije -->
           <div class="cards-row">
             <div class="card cards-row__main">
-            <div class="card__header">
-              <h3 class="card__title">
-                <q-icon name="business" size="16px" />
-                <span>Odjeli</span>
-              </h3>
-              <button v-if="!selected.is_closed" class="btn btn--primary btn--sm" @click="openDeptDialog()">
-                <q-icon name="add" size="14px" /> Dodaj
-              </button>
-            </div>
-
             <div v-if="loadingDetail" class="loading-block loading-block--sm">
               <q-spinner color="primary" size="20px" />
             </div>
@@ -145,7 +145,11 @@
                 <span class="dept-col dept-col--bar">Iskorištenost</span>
                 <span class="dept-col dept-col--pct">%</span>
                 <span class="dept-col dept-col--amounts">Potrošeno / Limit</span>
-                <span class="dept-col dept-col--actions" v-if="!selected.is_closed"></span>
+                <span class="dept-col dept-col--actions">
+                  <button v-if="!selected.is_closed" class="btn btn--primary btn--sm" @click="openDeptDialog()">
+                    <q-icon name="add" size="14px" /> Dodaj
+                  </button>
+                </span>
               </div>
               <div
                 v-for="d in sortedDepartments"
@@ -192,16 +196,6 @@
 
             <!-- Kategorije artikala -->
             <div class="card cards-row__side">
-            <div class="card__header">
-              <h3 class="card__title">
-                <q-icon name="category" size="16px" />
-                <span>Kategorije artikala</span>
-              </h3>
-              <button v-if="!selected.is_closed" class="btn btn--primary btn--sm" @click="openCatDialog()">
-                <q-icon name="add" size="14px" /> Dodaj
-              </button>
-            </div>
-
             <div v-if="loadingDetail" class="loading-block loading-block--sm">
               <q-spinner color="primary" size="20px" />
             </div>
@@ -209,7 +203,14 @@
               <div class="empty-state__title">Nema kategorija</div>
               <div v-if="!selected.is_closed" class="empty-state__hint">Dodajte prvu kategoriju.</div>
             </div>
-            <ul v-else class="cat-grid">
+            <div v-else>
+              <div class="cat-table__header">
+                <span class="cat-col--name">Kategorija</span>
+                <button v-if="!selected.is_closed" class="btn btn--primary btn--sm" @click="openCatDialog()">
+                  <q-icon name="add" size="14px" /> Dodaj
+                </button>
+              </div>
+              <ul class="cat-grid">
               <li
                 v-for="c in categories"
                 :key="c.id_item_category"
@@ -226,6 +227,7 @@
                 </div>
               </li>
             </ul>
+            </div>
           </div>
 
           </div><!-- /.cards-row -->
@@ -770,6 +772,24 @@ onMounted(loadYears);
 
 .fy-tab__lock-icon { color: #d1d5db; flex-shrink: 0; }
 
+/* ── New year tab ── */
+.fy-tab-new {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+.fy-tab-new:hover { background: #f0fbfe; border-color: #e0f2fe; color: #0369a1; }
+.fy-tab-new--disabled { opacity: 0.4; cursor: not-allowed; }
+.fy-tab-new--disabled:hover { background: transparent; border-color: transparent; color: #9ca3af; }
+
 /* ── Status badge ── */
 .fy-status {
   display: inline-flex;
@@ -852,18 +872,94 @@ onMounted(loadYears);
 }
 
 /* ── Budget summary ── */
+
+.fy-top-row {
+  display: grid;
+  grid-template-columns: 4fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+
 .budget-summary {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
-  margin-bottom: 20px;
   overflow: hidden;
 }
 
+/* ── Year info card ── */
+.fy-year-card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-sizing: border-box;
+  height: 100%;
+  position: relative;
+}
+
+.fy-year-card__top {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+.fy-year-card__year {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.fy-year-card__actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+.fy-year-card__actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.fy-stat-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  gap: 6px;
+}
+.fy-stat__number {
+  font-size: 3.75rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.fy-stat__pct {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-left: 2px;
+}
+.fy-stat__label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+.fy-stat__bar {
+  width: 100%;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.fy-stat__bar-fill {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
 .budget-summary__item {
-  padding: 18px 24px;
+  padding: 10px 24px;
   border-right: 1px solid #f3f4f6;
   border-bottom: 1px solid #f3f4f6;
 }
@@ -874,8 +970,43 @@ onMounted(loadYears);
   border-bottom: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 14px 24px;
+  gap: 6px;
+  padding: 8px 24px;
+}
+
+.budget-summary__item--year {
+  grid-column: 5;
+  grid-row: 1 / 3;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 20px;
+  border-left: 1px solid #f3f4f6;
+}
+
+.budget-summary__year-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.budget-summary__year-pct-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.budget-summary__year-suffix {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.budget-summary__year-top {
+  flex-shrink: 0;
 }
 
 /* ── Pie chart ── */
@@ -965,8 +1096,8 @@ onMounted(loadYears);
   color: #111827;
 }
 .budget-summary__value--total     { color: #111827; }
-.budget-summary__value--allocated { color: #111827; }
-.budget-summary__value--available { color: #065f46; }
+.budget-summary__value--allocated { color: #3b82f6; }
+.budget-summary__value--available { color: #34d399; }
 .budget-summary__value--spent     { color: #f87171; }
 .budget-summary__value--over      { color: #c50f1f; }
 
@@ -974,7 +1105,7 @@ onMounted(loadYears);
 .budget-bar {
   width: 100%;
   height: 6px;
-  background: #86efac;
+  background: #34d399;
   border-radius: 99px;
   overflow: hidden;
   position: relative;
@@ -992,8 +1123,8 @@ onMounted(loadYears);
 .budget-bar__fill--warn      { background: #f59e0b; }
 .budget-bar__fill--over      { background: #ef4444; }
 .budget-bar__fill--critical  { background: #dc2626; }
-.budget-bar__fill--allocated { background: #bfdbfe; }
-.budget-bar__fill--spent     { background: #3b82f6; }
+.budget-bar__fill--allocated { background: #3b82f6; }
+.budget-bar__fill--spent     { background: #f87171; }
 
 .budget-bar__fill--striped {
   background-image: repeating-linear-gradient(
@@ -1018,25 +1149,30 @@ onMounted(loadYears);
 }
 
 /* ── Department table ── */
-.dept-table { padding: 4px 0; }
+.dept-table { }
 
 .dept-table__header {
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr 1fr 68px;
-  padding: 6px 20px;
-  border-bottom: 1px solid #f3f4f6;
+  grid-template-columns: 160px 1fr 130px 180px 100px;
+  align-items: center;
+  height: 40px;
+  padding: 0 20px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .dept-table__row {
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr 1fr 68px;
+  grid-template-columns: 160px 1fr 130px 180px 100px;
   align-items: center;
-  padding: 10px 20px;
+  height: 52px;
+  padding: 0 20px;
   border-bottom: 1px solid #f3f4f6;
-  transition: background 0.1s;
+  transition: background 0.12s;
 }
 .dept-table__row:last-child { border-bottom: none; }
-.dept-table__row:hover { background: #f9fafb; }
+.dept-table__row:hover { background: #f0fbfe; }
 
 .dept-col { font-size: 0.875rem; }
 .dept-col--name { color: #111827; font-weight: 500; padding-right: 16px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -1046,16 +1182,18 @@ onMounted(loadYears);
   gap: 4px;
   font-size: 0.8125rem;
   justify-content: flex-start;
-  padding-right: 20px;
+  padding-right: 8px;
   font-variant-numeric: tabular-nums;
   overflow: hidden;
   white-space: nowrap;
 }
 .dept-col--bar { padding-right: 12px; }
-.dept-col--pct { font-size: 0.8125rem; color: #6b7280; font-weight: 600; text-align: left; padding-right: 0; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.dept-col--pct { font-size: 0.8125rem; color: #6b7280; font-weight: 600; text-align: left; padding-right: 0; display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; }
 .dept-col--actions { display: flex; gap: 2px; justify-content: flex-end; }
 
 .dept-table__header .dept-col {
+  display: flex;
+  align-items: center;
   font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -1071,7 +1209,7 @@ onMounted(loadYears);
 /* ── Cards row (odjeli 3/4 + kategorije 1/4) ── */
 .cards-row {
   display: grid;
-  grid-template-columns: 3fr 1fr;
+  grid-template-columns: 4fr 1fr;
   gap: 16px;
   align-items: start;
 }
@@ -1080,10 +1218,26 @@ onMounted(loadYears);
 .cards-row__side { margin: 0; }
 
 /* ── Category list ── */
+.cat-table__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  padding: 0 20px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9ca3af;
+}
+
 .cat-grid {
   list-style: none;
   margin: 0;
-  padding: 4px 0;
+  padding: 0;
 }
 
 .cat-chip {
@@ -1091,12 +1245,13 @@ onMounted(loadYears);
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 9px 16px;
+  height: 52px;
+  padding: 0 20px;
   border-bottom: 1px solid #f3f4f6;
-  transition: background 0.1s;
+  transition: background 0.12s;
 }
 .cat-chip:last-child { border-bottom: none; }
-.cat-chip:hover { background: #f9fafb; }
+.cat-chip:hover { background: #f0fbfe; }
 .cat-chip__name { font-size: 0.875rem; color: #111827; font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cat-chip__actions { display: flex; gap: 2px; flex-shrink: 0; }
 
@@ -1153,8 +1308,62 @@ onMounted(loadYears);
   line-height: 1.5;
 }
 
+/* ── Year switcher button ── */
+.fy-year-switch {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  background: #f9fafb;
+  color: #374151;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+.fy-year-switch:hover {
+  background: #e0f2fe;
+  border-color: #7dd3f0;
+  color: #0369a1;
+}
+.fy-year-switch__label { letter-spacing: -0.01em; }
+
+/* ── Year picker menu ── */
+.fy-year-menu__list {
+  padding: 4px;
+  min-width: 130px;
+}
+.fy-year-menu__item {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  border-radius: 5px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.fy-year-menu__item:hover { background: #f3f4f6; }
+.fy-year-menu__item--active { color: #0369a1; font-weight: 700; }
+.fy-year-menu__item--active:hover { background: #e0f2fe; }
+.fy-year-menu__icon { color: #9ca3af; flex-shrink: 0; }
+.fy-year-menu__item--active .fy-year-menu__icon { color: #0369a1; }
+.fy-year-menu__year { flex: 1; }
+.fy-year-menu__check { color: #0369a1; display: flex; }
+
 /* ── Responsive ── */
 @media (max-width: 900px) {
+  .fy-top-row { grid-template-columns: 1fr; }
   .budget-summary { grid-template-columns: repeat(2, 1fr); }
 }
 

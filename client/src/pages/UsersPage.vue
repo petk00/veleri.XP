@@ -1,77 +1,91 @@
 <template>
   <q-page class="page">
-    <div class="page-shell">
+    <div class="users-layout">
 
-      <header class="page-header">
-        <button class="btn btn--primary" type="button" @click="openCreateDialog">
-          <q-icon name="person_add" size="16px" />
-          <span>Novi korisnik</span>
-        </button>
-      </header>
+      <!-- ── Main ── -->
+      <div class="users-main">
 
-      <div v-if="loading" class="loading-block">
-        <q-spinner color="primary" size="28px" />
-      </div>
+        <div v-if="loading" class="loading-full">
+          <q-spinner color="primary" size="32px" />
+        </div>
 
-      <div v-else class="card">
+        <div v-else>
+        <div class="users-toolbar">
+          <q-icon name="search" size="15px" class="topbar__search-icon" />
+          <input
+            v-model="searchQuery"
+            type="search"
+            class="topbar__search"
+            placeholder="Pretraži po imenu, emailu ili ulozi..."
+          />
+        </div>
 
-        <div class="card__header">
-          <h2 class="card__title">
-            <q-icon name="group" size="16px" />
-            <span>Svi korisnici</span>
-          </h2>
-          <span class="card__count">{{ filteredUsers.length }}</span>
-          <div class="toolbar">
-            <q-icon name="search" size="15px" class="toolbar__search-icon" />
-            <input
-              v-model="searchQuery"
-              type="search"
-              class="toolbar__search"
-              placeholder="Pretraži po imenu, emailu ili ulozi..."
-            />
+        <div class="users-card">
+
+          <div v-if="filteredUsers.length === 0" class="empty-state" style="padding: 48px 24px">
+            <div class="empty-state__icon"><q-icon name="group" size="28px" /></div>
+            <div class="empty-state__title">{{ users.length === 0 ? 'Nema korisnika' : 'Nema rezultata' }}</div>
+            <div class="empty-state__hint">{{ users.length === 0 ? 'Dodajte prvog korisnika klikom na "Novi korisnik".' : 'Pokušajte s drugim pojmom.' }}</div>
           </div>
+
+          <div v-else class="user-table">
+            <div class="user-table__header">
+              <button class="sort-btn" :class="{ 'sort-btn--active': sortKey === 'name' }" @click="toggleSort('name')">
+                Ime i prezime
+                <q-icon :name="sortKey === 'name' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward'" size="11px" class="sort-icon" />
+              </button>
+              <button class="sort-btn" :class="{ 'sort-btn--active': sortKey === 'email' }" @click="toggleSort('email')">
+                Email
+                <q-icon :name="sortKey === 'email' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward'" size="11px" class="sort-icon" />
+              </button>
+              <button class="sort-btn" :class="{ 'sort-btn--active': sortKey === 'role' }" @click="toggleSort('role')">
+                Uloga
+                <q-icon :name="sortKey === 'role' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward'" size="11px" class="sort-icon" />
+              </button>
+              <button class="sort-btn" :class="{ 'sort-btn--active': sortKey === 'status' }" @click="toggleSort('status')">
+                Status
+                <q-icon :name="sortKey === 'status' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward'" size="11px" class="sort-icon" />
+              </button>
+              <span class="user-table__header-btn">
+                <button class="btn btn--primary btn--sm" style="width:100%" type="button" @click="openCreateDialog">
+                  <q-icon name="person_add" size="14px" />
+                  <span>Novi korisnik</span>
+                </button>
+              </span>
+            </div>
+            <ul class="user-list">
+              <li v-for="u in filteredUsers" :key="u.id_user" class="user-row">
+                <div class="user-col-name">
+                  <div class="user-avatar" :style="{ background: avatarColor(u) }">{{ initials(u) }}</div>
+                  <span class="user-name">{{ u.first_name }} {{ u.last_name }}</span>
+                </div>
+                <span class="user-email">{{ u.email }}</span>
+                <span class="user-role-pill" :class="u.role_name === 'Administrator' ? 'user-role-pill--admin' : 'user-role-pill--user'">
+                  {{ u.role_name }}
+                </span>
+                <span class="user-status" :class="u.is_active ? 'user-status--active' : 'user-status--inactive'">
+                  {{ u.is_active ? 'Aktivan' : 'Neaktivan' }}
+                </span>
+                <div class="user-actions">
+                  <button class="icon-btn" title="Uredi" @click="openEditDialog(u)">
+                    <q-icon name="edit" size="16px" />
+                  </button>
+                  <button class="icon-btn" title="Pošalji link za postavljanje lozinke" @click="resetLink(u)">
+                    <q-icon name="key" size="16px" />
+                  </button>
+                  <button class="icon-btn" :title="u.is_active ? 'Deaktiviraj' : 'Aktiviraj'" @click="toggleStatus(u)">
+                    <q-icon :name="u.is_active ? 'person_off' : 'person'" size="16px" />
+                  </button>
+                  <button class="icon-btn icon-btn--danger" title="Obriši korisnika" @click="deleteUser(u)">
+                    <q-icon name="delete_outline" size="16px" />
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
+
         </div>
-
-        <div v-if="filteredUsers.length === 0" class="empty-state" style="padding: 48px 24px">
-          <div class="empty-state__icon"><q-icon name="group" size="28px" /></div>
-          <div class="empty-state__title">{{ users.length === 0 ? 'Nema korisnika' : 'Nema rezultata' }}</div>
-          <div class="empty-state__hint">{{ users.length === 0 ? 'Dodajte prvog korisnika klikom na "Novi korisnik".' : 'Pokušajte s drugim pojmom.' }}</div>
         </div>
-
-        <ul v-else class="user-list">
-          <li v-for="u in filteredUsers" :key="u.id_user" class="user-row">
-            <div class="user-avatar" :style="{ background: avatarColor(u) }">
-              {{ initials(u) }}
-            </div>
-            <div class="user-info">
-              <span class="user-name">{{ u.first_name }} {{ u.last_name }}</span>
-              <span class="user-email">{{ u.email }}</span>
-            </div>
-            <span class="user-role">{{ u.role_name }}</span>
-            <span class="user-status" :class="u.is_active ? 'user-status--active' : 'user-status--inactive'">
-              {{ u.is_active ? 'Aktivan' : 'Neaktivan' }}
-            </span>
-            <div class="user-actions">
-              <button class="icon-btn" title="Uredi" @click="openEditDialog(u)">
-                <q-icon name="edit" size="16px" />
-              </button>
-              <button class="icon-btn" title="Pošalji link za postavljanje lozinke" @click="resetLink(u)">
-                <q-icon name="key" size="16px" />
-              </button>
-              <button
-                class="icon-btn"
-                :title="u.is_active ? 'Deaktiviraj' : 'Aktiviraj'"
-                @click="toggleStatus(u)"
-              >
-                <q-icon :name="u.is_active ? 'person_off' : 'person'" size="16px" />
-              </button>
-              <button class="icon-btn icon-btn--danger" title="Obriši korisnika" @click="deleteUser(u)" style="margin-left: 4px;">
-                <q-icon name="delete_outline" size="16px" />
-              </button>
-            </div>
-          </li>
-        </ul>
-
       </div>
     </div>
 
@@ -171,15 +185,37 @@ const loading = ref(true);
 const users = ref([]);
 const roles = ref([]);
 const searchQuery = ref('');
+const sortKey = ref('name');
+const sortDir = ref('asc');
+
+const toggleSort = (key) => {
+  if (sortKey.value === key) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortKey.value = key;
+    sortDir.value = 'asc';
+  }
+};
 
 const filteredUsers = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return users.value;
-  return users.value.filter(u =>
-    `${u.first_name} ${u.last_name}`.toLowerCase().includes(q) ||
-    (u.email || '').toLowerCase().includes(q) ||
-    (u.role_name || '').toLowerCase().includes(q)
-  );
+  const list = q
+    ? users.value.filter(u =>
+        `${u.first_name} ${u.last_name}`.toLowerCase().includes(q) ||
+        (u.email || '').toLowerCase().includes(q) ||
+        (u.role_name || '').toLowerCase().includes(q)
+      )
+    : [...users.value];
+
+  const dir = sortDir.value === 'asc' ? 1 : -1;
+  return list.sort((a, b) => {
+    let va, vb;
+    if (sortKey.value === 'name')   { va = `${a.first_name} ${a.last_name}`; vb = `${b.first_name} ${b.last_name}`; }
+    if (sortKey.value === 'email')  { va = a.email || ''; vb = b.email || ''; }
+    if (sortKey.value === 'role')   { va = a.role_name || ''; vb = b.role_name || ''; }
+    if (sortKey.value === 'status') { va = a.is_active ? 0 : 1; vb = b.is_active ? 0 : 1; return (va - vb) * dir; }
+    return va.localeCompare(vb, 'hr') * dir;
+  });
 });
 
 const dialog = ref({ open: false, isEdit: false, editId: null, error: '', saving: false });
@@ -332,25 +368,28 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* ── Base ── */
 .page {
-  padding: 32px 40px;
+  padding: 0;
   background: transparent;
+  color: #111827;
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  height: 100%;
 }
 
-.page-shell { max-width: 1280px; margin: 0 auto; }
+/* ── Layout ── */
+.users-layout { display: flex; flex-direction: column; min-height: 100%; }
 
-.page-header { margin-bottom: 24px; }
-
-/* ── Toolbar (search inside card header) ── */
-.toolbar {
+/* ── Toolbar above card ── */
+.users-toolbar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-left: auto;
-  max-width: 280px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
-.toolbar__search-icon { color: #9ca3af; flex-shrink: 0; }
-.toolbar__search {
+
+.topbar__search-icon { color: #9ca3af; flex-shrink: 0; }
+.topbar__search {
   flex: 1;
   border: none;
   outline: none;
@@ -360,21 +399,89 @@ onMounted(async () => {
   color: #111827;
   min-width: 0;
 }
-.toolbar__search::placeholder { color: #9ca3af; }
+.topbar__search::placeholder { color: #9ca3af; }
 
-/* ── User list ── */
+/* ── Main content ── */
+.users-main { padding: 32px 40px; }
+
+/* ── Loading ── */
+.loading-full {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px;
+}
+
+/* ── Card ── */
+.users-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* ── User table ── */
+.user-table { width: 100%; }
+
+.user-table__header,
+.user-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) 148px;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.user-table__header {
+  height: 40px;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.user-table__header-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.sort-btn {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: color 0.1s;
+}
+.sort-btn:hover { color: #6b7280; }
+.sort-btn--active { color: #111827; }
+
+.sort-icon { opacity: 0.4; }
+.sort-btn--active .sort-icon { opacity: 1; }
+
+
 .user-list { list-style: none; margin: 0; padding: 0; }
 
 .user-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 20px;
+  height: 56px;
   border-bottom: 1px solid #f3f4f6;
   transition: background 0.12s;
 }
 .user-row:last-child { border-bottom: none; }
 .user-row:hover { background: #f0fbfe; }
+
+.user-col-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding-right: 12px;
+}
 
 .user-avatar {
   width: 34px;
@@ -389,30 +496,28 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.user-info { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
-.user-name  { font-size: 0.875rem; font-weight: 600; color: #111827; }
-.user-email { font-size: 0.75rem; color: #6b7280; }
+.user-name  { font-size: 0.875rem; font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-email { font-size: 0.8125rem; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 12px; }
 
-.user-role {
-  font-size: 0.75rem;
-  color: #4b5563;
-  min-width: 110px;
-  flex-shrink: 0;
-}
-
+.user-role-pill,
 .user-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 110px;
+  padding: 4px 0;
+  border-radius: 20px;
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  padding: 3px 10px;
-  border-radius: 20px;
-  flex-shrink: 0;
 }
+.user-role-pill--admin { color: #1e40af; background: #dbeafe; }
+.user-role-pill--user  { color: #065f46; background: #d1fae5; }
 .user-status--active   { color: #065f46; background: #d1fae5; }
-.user-status--inactive { color: #6b7280; background: #f3f4f6; }
+.user-status--inactive { color: #991b1b; background: #fee2e2; }
 
-.user-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.user-actions { display: flex; width: 100%; justify-content: space-between; }
 
 /* ── Dialog fields ── */
 .field-row { display: flex; gap: 12px; }
@@ -445,7 +550,7 @@ onMounted(async () => {
 .invite-link-box {
   padding: 10px 12px;
   background: #f3f4f6;
-  border: 1.5px solid var(--accent-border);
+  border: 1px solid #e5e7eb;
   border-radius: 10px;
   margin-bottom: 16px;
   overflow-x: auto;
@@ -460,7 +565,11 @@ onMounted(async () => {
 }
 
 @media (max-width: 760px) {
-  .page { padding: 24px 16px; }
-  .user-role { display: none; }
+  .users-topbar { padding: 10px 16px; }
+  .users-main { padding: 20px 16px; }
+  .user-table__header,
+  .user-row { grid-template-columns: 1fr 100px 36px; }
+  .user-email,
+  .user-role-pill { display: none; }
 }
 </style>

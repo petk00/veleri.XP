@@ -1258,7 +1258,7 @@ onMounted(() => {
 
 <style scoped>
 .page {
-  padding: 32px 40px 32px;
+  padding: 32px 40px;
   background: transparent;
   font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color: #111827;
@@ -1897,7 +1897,7 @@ onMounted(() => {
 }
 
 @media (max-width: 600px) {
-  .page { padding: 24px 16px 24px; }
+  .page { padding: 20px 16px; }
   .page-header__title { font-size: 1.7rem; }
   .action-banner { flex-direction: column; align-items: stretch; }
   .action-banner__actions { width: 100%; }

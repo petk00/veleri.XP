@@ -727,7 +727,7 @@ onMounted(async () => {
 
 /* ── Responsive ── */
 @media (max-width: 760px) {
-  .page { padding: 24px 16px; }
+  .page { padding: 20px 16px; }
 
   .action-cards { grid-template-columns: 1fr; }
 
