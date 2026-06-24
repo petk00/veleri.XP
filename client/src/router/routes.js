@@ -25,13 +25,12 @@ const routes = [
       { path: 'nabava', redirect: '/' },
 
       { path: 'zahtjevi',          component: () => import('pages/RequestsPage.vue') },
-      { path: 'zahtjevi/novi',     component: () => import('pages/NewRequestPage.vue') },
+      { path: 'novizahtjev',        component: () => import('pages/NewRequestPage.vue') },
       { path: 'zahtjevi/:id',      component: () => import('pages/RequestDetailsPage.vue') },
       { path: 'zahtjevi/:id/edit', component: () => import('pages/EditRequestPage.vue') },
 
       // backwards compat redirecti
       { path: 'requests',          redirect: '/zahtjevi' },
-      { path: 'requests/new',      redirect: '/zahtjevi/novi' },
       { path: 'requests/:id',      redirect: to => `/zahtjevi/${to.params.id}` },
       { path: 'requests/:id/edit', redirect: to => `/zahtjevi/${to.params.id}/edit` },
 

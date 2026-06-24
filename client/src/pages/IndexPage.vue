@@ -21,7 +21,7 @@
         <section class="card-grid">
 
           <!-- Novi zahtjev: full-width CTA -->
-          <button class="dash-card dash-card--offer" @click="$router.push('/zahtjevi/novi')">
+          <button class="dash-card dash-card--offer" @click="$router.push('/novizahtjev')">
             <img src="/solarlinear_NOVIZAHTJEV.svg" alt="" class="offer-deco" />
             <div class="offer-header">
               <img src="/forward-2-svgrepo-com.svg" alt="" class="offer-title-icon" />
