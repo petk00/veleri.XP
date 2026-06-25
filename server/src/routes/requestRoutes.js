@@ -273,13 +273,14 @@ router.get('/', authenticateToken, async (req, res) => {
         CONCAT(u.first_name, ' ', u.last_name) AS created_by,
         pr.total_amount,
         pr.created_at,
+        pr.updated_at,
         pr.justification,
         lc.comment AS last_comment,
         EXISTS(SELECT 1 FROM Attachment a WHERE a.fk_purchase_request = pr.id_purchase_request AND a.document_type = 'Ponuda') AS has_ponuda,
         EXISTS(SELECT 1 FROM Attachment a WHERE a.fk_purchase_request = pr.id_purchase_request AND a.document_type = 'Otpremnica') AS has_otpremnica
        ${baseJoin}
        ${filterWhere}
-       ORDER BY ${({ request_number: 'pr.request_number', department_name: 'd.name', created_by: 'u.last_name', total_amount: 'pr.total_amount', created_at: 'pr.created_at', status_name: 'pr.fk_request_status' }[req.query.sortBy] || 'pr.created_at')} ${req.query.order === 'ASC' ? 'ASC' : 'DESC'}, pr.id_purchase_request ${req.query.order === 'ASC' ? 'ASC' : 'DESC'}
+       ORDER BY ${({ request_number: 'pr.request_number', department_name: 'd.name', created_by: 'u.last_name', created_at: 'pr.created_at', updated_at: 'pr.updated_at', status_name: 'pr.fk_request_status' }[req.query.sortBy] || 'pr.created_at')} ${req.query.order === 'ASC' ? 'ASC' : 'DESC'}, pr.id_purchase_request ${req.query.order === 'ASC' ? 'ASC' : 'DESC'}
        LIMIT ? OFFSET ?`,
       [...filterParams, limit, offset]
     );

@@ -81,19 +81,17 @@
             </q-td>
           </template>
 
-          <!-- Cell: amount -->
-          <template #body-cell-total_amount="props">
-            <q-td :props="props" class="cell-num">
-              <div class="cell-num__inner" :title="formatCurrency(props.row.total_amount)">
-                {{ formatCurrency(props.row.total_amount) }}
-              </div>
-            </q-td>
-          </template>
-
           <!-- Cell: date -->
           <template #body-cell-created_at="props">
             <q-td :props="props" class="cell-muted">
               {{ formatDate(props.row.created_at) }}
+            </q-td>
+          </template>
+
+          <!-- Cell: last modified -->
+          <template #body-cell-updated_at="props">
+            <q-td :props="props" class="cell-muted">
+              {{ props.row.updated_at ? formatDate(props.row.updated_at) : '—' }}
             </q-td>
           </template>
 
@@ -102,12 +100,6 @@
             <q-td :props="props" class="cell-muted">{{ props.row.created_by }}</q-td>
           </template>
 
-          <!-- Cell: chevron -->
-          <template #body-cell-actions="props">
-            <q-td :props="props" class="text-right cell-chevron">
-              <q-icon name="chevron_right" size="18px" />
-            </q-td>
-          </template>
 
           <template #no-data>
             <div class="empty-state">
@@ -235,13 +227,12 @@ const hasActiveFilters = computed(() =>
 );
 
 const allColumns = [
-  { name: 'request_number', label: 'Broj zahtjeva', field: 'request_number', align: 'left', sortable: true, style: 'min-width: 160px' },
-  { name: 'department_name', label: 'Odjel',        field: 'department_name', align: 'left', sortable: true, style: 'min-width: 160px' },
-  { name: 'status_name',    label: 'Status',        field: 'status_name',    align: 'left', sortable: true, style: 'min-width: 140px' },
-  { name: 'created_by',     label: 'Podnositelj',   field: 'created_by',     align: 'left', sortable: true, style: 'min-width: 140px' },
-  { name: 'total_amount',   label: 'Iznos',         field: 'total_amount',   align: 'left', sortable: true, style: 'min-width: 100px' },
-  { name: 'created_at',     label: 'Datum',         field: 'created_at',     align: 'left', sortable: true, style: 'min-width: 110px' },
-  { name: 'actions',        label: '',              field: 'actions',        align: 'right', sortable: false, style: 'width: 38px' },
+  { name: 'request_number', label: 'Broj zahtjeva',   field: 'request_number', align: 'left', sortable: true, style: 'min-width: 160px' },
+  { name: 'status_name',    label: 'Status',           field: 'status_name',    align: 'left', sortable: true, style: 'min-width: 140px' },
+  { name: 'department_name', label: 'Odjel',          field: 'department_name', align: 'left', sortable: true, style: 'min-width: 160px' },
+  { name: 'created_by',     label: 'Podnositelj',      field: 'created_by',     align: 'left', sortable: true, style: 'min-width: 140px' },
+  { name: 'created_at',     label: 'Datum',            field: 'created_at',     align: 'left', sortable: true, style: 'min-width: 110px' },
+  { name: 'updated_at',     label: 'Zadnja promjena',  field: 'updated_at',     align: 'left', sortable: true, style: 'min-width: 130px' },
 ];
 
 const columns = computed(() =>
@@ -400,7 +391,7 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 .action-cards--admin {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -411,9 +402,12 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 18px 20px;
+  padding: 18px 20px 18px 16px;
   border-radius: 14px;
-  border: 1.5px solid transparent;
+  border-top: 1.5px solid #e5e7eb;
+  border-right: 1.5px solid #e5e7eb;
+  border-bottom: 1.5px solid #e5e7eb;
+  border-left: 4px solid transparent;
   box-sizing: border-box;
   cursor: pointer;
   transition: all 0.15s;
@@ -452,30 +446,30 @@ onMounted(async () => {
 
 .action-card--pending {
   background: #fffbeb;
-  border-color: #fcd34d;
+  border-left-color: #fbbf24;
 }
 .action-card--pending .action-card__icon { background: #fef3c7; color: #b45309; }
 .action-card--pending .action-card__value { color: #b45309; }
-.action-card--pending:hover { background: #fef3c7; border-color: #f59e0b; }
+.action-card--pending:hover { background: #fef3c7; border-left-color: #f59e0b; }
 .action-card--pending:hover .action-card__arrow { color: #b45309; transform: translateX(3px); }
 
 .action-card--ordered {
-  background: #faf5ff;
-  border-color: #c4b5fd;
+  background: #f0f9ff;
+  border-left-color: #00afdb;
 }
-.action-card--ordered .action-card__icon { background: #ede9fe; color: #7c3aed; }
-.action-card--ordered .action-card__value { color: #7c3aed; }
-.action-card--ordered:hover { background: #ede9fe; border-color: #a78bfa; }
-.action-card--ordered:hover .action-card__arrow { color: #7c3aed; transform: translateX(3px); }
+.action-card--ordered .action-card__icon { background: #e0f2fe; color: #0284c7; }
+.action-card--ordered .action-card__value { color: #0284c7; }
+.action-card--ordered:hover { background: #e0f2fe; border-left-color: #0ea5e9; }
+.action-card--ordered:hover .action-card__arrow { color: #0284c7; transform: translateX(3px); }
 
 .action-card--ready {
   background: #f0fdf4;
-  border-color: #86efac;
+  border-left-color: #4ade80;
 }
-.action-card--ready .action-card__icon { background: #dcfce7; color: #166534; }
-.action-card--ready .action-card__value { color: #166534; }
-.action-card--ready:hover { background: #dcfce7; border-color: #4ade80; }
-.action-card--ready:hover .action-card__arrow { color: #166534; transform: translateX(3px); }
+.action-card--ready .action-card__icon { background: #dcfce7; color: #16a34a; }
+.action-card--ready .action-card__value { color: #16a34a; }
+.action-card--ready:hover { background: #dcfce7; border-left-color: #22c55e; }
+.action-card--ready:hover .action-card__arrow { color: #16a34a; transform: translateX(3px); }
 
 /* ── List surface (card) ── */
 .list-surface {
@@ -504,7 +498,11 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
 }
 
 .topbar__search-icon { color: #9ca3af; flex-shrink: 0; }

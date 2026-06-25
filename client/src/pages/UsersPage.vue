@@ -385,7 +385,11 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
 }
 
 .topbar__search-icon { color: #9ca3af; flex-shrink: 0; }
