@@ -69,28 +69,28 @@
                 <div class="fy-year-card__actions">
                   <button
                     v-if="!selected.is_closed"
-                    class="fy-tab__action fy-tab__action--budget"
+                    class="icon-btn"
                     title="Uredi godišnji budžet"
                     @click="openBudgetDialog(selected)"
                   >
-                    <q-icon name="edit" size="13px" />
+                    <q-icon name="edit" size="16px" />
                   </button>
                   <button
                     v-if="!selected.is_closed"
-                    class="fy-tab__action fy-tab__action--close"
+                    class="icon-btn icon-btn--danger"
                     title="Zatvori godinu"
                     @click="closeYear(selected)"
                   >
-                    <q-icon name="lock_open" size="13px" />
+                    <q-icon name="lock_open" size="16px" />
                   </button>
-                  <q-icon v-else name="lock" size="13px" class="fy-tab__lock-icon" />
+                  <q-icon v-else name="lock" size="14px" class="fy-tab__lock-icon" />
                   <button
-                    class="fy-tab__action fy-tab__action--budget"
+                    class="icon-btn"
                     :disabled="hasOpenYear"
                     :title="hasOpenYear ? 'Zatvorite tekuću godinu prije otvaranja nove' : 'Nova poslovna godina'"
                     @click="openCreateDialog"
                   >
-                    <q-icon name="add" size="13px" />
+                    <q-icon name="add" size="16px" />
                   </button>
                   <button class="fy-year-switch" title="Promijeni godinu">
                     <span class="fy-year-switch__label">{{ selected.year }}</span>
@@ -146,7 +146,7 @@
                 <span class="dept-col dept-col--pct">%</span>
                 <span class="dept-col dept-col--amounts">Potrošeno / Limit</span>
                 <span class="dept-col dept-col--actions">
-                  <button v-if="!selected.is_closed" class="btn btn--primary btn--sm" @click="openDeptDialog()">
+                  <button v-if="!selected.is_closed" class="btn btn--ghost btn--sm" @click="openDeptDialog()">
                     <q-icon name="add" size="14px" /> Dodaj
                   </button>
                 </span>
@@ -206,7 +206,7 @@
             <div v-else>
               <div class="cat-table__header">
                 <span class="cat-col--name">Kategorija</span>
-                <button v-if="!selected.is_closed" class="btn btn--primary btn--sm" @click="openCatDialog()">
+                <button v-if="!selected.is_closed" class="btn btn--ghost btn--sm" @click="openCatDialog()">
                   <q-icon name="add" size="14px" /> Dodaj
                 </button>
               </div>
@@ -264,7 +264,7 @@
           <div v-if="createDialog.error" class="form-error">{{ createDialog.error }}</div>
           <div class="dialog-actions">
             <button type="button" class="btn btn--ghost" @click="createDialog.open = false">Odustani</button>
-            <button type="submit" class="btn btn--primary" :disabled="createDialog.saving">
+            <button type="submit" class="btn btn--ghost" :disabled="createDialog.saving">
               <q-spinner v-if="createDialog.saving" size="14px" color="white" />
               <span v-else>Kreiraj</span>
             </button>
@@ -297,7 +297,7 @@
           <div v-if="deptDialog.error" class="form-error">{{ deptDialog.error }}</div>
           <div class="dialog-actions">
             <button type="button" class="btn btn--ghost" @click="deptDialog.open = false">Odustani</button>
-            <button type="submit" class="btn btn--primary" :disabled="deptDialog.saving">
+            <button type="submit" class="btn btn--ghost" :disabled="deptDialog.saving">
               <q-spinner v-if="deptDialog.saving" size="14px" color="white" />
               <span v-else>Spremi</span>
             </button>
@@ -323,7 +323,7 @@
           <div v-if="catDialog.error" class="form-error">{{ catDialog.error }}</div>
           <div class="dialog-actions">
             <button type="button" class="btn btn--ghost" @click="catDialog.open = false">Odustani</button>
-            <button type="submit" class="btn btn--primary" :disabled="catDialog.saving">
+            <button type="submit" class="btn btn--ghost" :disabled="catDialog.saving">
               <q-spinner v-if="catDialog.saving" size="14px" color="white" />
               <span v-else>Spremi</span>
             </button>
@@ -359,7 +359,7 @@
           <div v-if="budgetDialog.error" class="form-error">{{ budgetDialog.error }}</div>
           <div class="dialog-actions">
             <button type="button" class="btn btn--ghost" @click="budgetDialog.open = false">Odustani</button>
-            <button type="submit" class="btn btn--primary" :disabled="budgetDialog.saving">
+            <button type="submit" class="btn btn--ghost" :disabled="budgetDialog.saving">
               <q-spinner v-if="budgetDialog.saving" size="14px" color="white" />
               <span v-else>Spremi</span>
             </button>
@@ -744,33 +744,6 @@ onMounted(loadYears);
   color: #6b7280;
   font-weight: 500;
 }
-
-.fy-tab__action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 5px;
-  cursor: pointer;
-  flex-shrink: 0;
-  padding: 0;
-  transition: background 0.1s;
-}
-
-.fy-tab__action--budget {
-  border: 1px solid #d1d5db;
-  background: #f9fafb;
-  color: #6b7280;
-}
-.fy-tab__action--budget:hover { background: #e0f2fe; border-color: #7dd3f0; color: #0369a1; }
-
-.fy-tab__action--close {
-  border: 1px solid #fca5a5;
-  background: #fef2f2;
-  color: #c50f1f;
-}
-.fy-tab__action--close:hover { background: #fee2e2; }
 
 .fy-tab__lock-icon { color: #d1d5db; flex-shrink: 0; }
 
