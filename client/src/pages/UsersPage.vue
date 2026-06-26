@@ -47,7 +47,7 @@
                 <q-icon :name="sortKey === 'status' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward'" size="11px" class="sort-icon" />
               </button>
               <span class="user-table__header-btn">
-                <button class="btn btn--primary btn--sm" style="width:100%" type="button" @click="openCreateDialog">
+                <button class="btn btn--ghost btn--sm" style="width:100%" type="button" @click="openCreateDialog">
                   <q-icon name="person_add" size="14px" />
                   <span>Novi korisnik</span>
                 </button>
@@ -112,7 +112,7 @@
           </div>
           <div class="dialog-actions" style="margin-top: 0;">
             <button type="button" class="btn btn--ghost" @click="inviteDialog.open = false">Zatvori</button>
-            <button type="button" class="btn btn--primary" @click="copyLink">
+            <button type="button" class="btn btn--ghost" @click="copyLink">
               <q-icon :name="inviteDialog.copied ? 'check' : 'content_copy'" size="16px" />
               <span>{{ inviteDialog.copied ? 'Kopirano!' : 'Kopiraj link' }}</span>
             </button>
@@ -161,7 +161,7 @@
 
           <div class="dialog-actions">
             <button type="button" class="btn btn--ghost" @click="closeDialog">Odustani</button>
-            <button type="submit" class="btn btn--primary" :disabled="dialog.saving">
+            <button type="submit" class="btn btn--ghost" :disabled="dialog.saving">
               <q-spinner v-if="dialog.saving" size="14px" color="white" />
               <span v-else>{{ dialog.isEdit ? 'Spremi' : 'Kreiraj korisnika' }}</span>
             </button>

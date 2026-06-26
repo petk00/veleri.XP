@@ -100,6 +100,21 @@
             <q-td :props="props" class="cell-muted">{{ props.row.created_by }}</q-td>
           </template>
 
+          <!-- Cell: total_amount -->
+          <template #body-cell-total_amount="props">
+            <q-td :props="props" class="cell-muted" style="text-align:right">
+              {{ formatCurrency(props.row.total_amount) }}
+            </q-td>
+          </template>
+
+          <!-- Cell: justification -->
+          <template #body-cell-justification="props">
+            <q-td :props="props" class="cell-comment">
+              <span v-if="props.row.justification" class="comment-text">{{ props.row.justification }}</span>
+              <span v-else class="cell-muted">—</span>
+            </q-td>
+          </template>
+
 
           <template #no-data>
             <div class="empty-state">
@@ -227,12 +242,14 @@ const hasActiveFilters = computed(() =>
 );
 
 const allColumns = [
-  { name: 'request_number', label: 'Broj zahtjeva',   field: 'request_number', align: 'left', sortable: true, style: 'min-width: 160px' },
-  { name: 'status_name',    label: 'Status',           field: 'status_name',    align: 'left', sortable: true, style: 'min-width: 140px' },
-  { name: 'department_name', label: 'Odjel',          field: 'department_name', align: 'left', sortable: true, style: 'min-width: 160px' },
-  { name: 'created_by',     label: 'Podnositelj',      field: 'created_by',     align: 'left', sortable: true, style: 'min-width: 140px' },
-  { name: 'created_at',     label: 'Datum',            field: 'created_at',     align: 'left', sortable: true, style: 'min-width: 110px' },
-  { name: 'updated_at',     label: 'Zadnja promjena',  field: 'updated_at',     align: 'left', sortable: true, style: 'min-width: 130px' },
+  { name: 'request_number',  label: 'Broj zahtjeva',  field: 'request_number',  align: 'left',  sortable: true,  style: 'width: 150px' },
+  { name: 'status_name',     label: 'Status',          field: 'status_name',     align: 'left',  sortable: true,  style: 'width: 140px' },
+  { name: 'department_name', label: 'Odjel',           field: 'department_name', align: 'left',  sortable: true,  style: 'width: 150px' },
+  { name: 'total_amount',    label: 'Iznos',           field: 'total_amount',    align: 'right', sortable: true,  style: 'width: 110px' },
+  { name: 'justification',   label: 'Napomena',        field: 'justification',   align: 'left',  sortable: false, style: 'min-width: 160px' },
+  { name: 'created_by',      label: 'Podnositelj',     field: 'created_by',      align: 'left',  sortable: true,  style: 'width: 140px' },
+  { name: 'created_at',      label: 'Datum',           field: 'created_at',      align: 'left',  sortable: true,  style: 'width: 100px' },
+  { name: 'updated_at',      label: 'Zadnja promjena', field: 'updated_at',      align: 'left',  sortable: true,  style: 'width: 120px' },
 ];
 
 const columns = computed(() =>
@@ -661,6 +678,17 @@ onMounted(async () => {
 }
 
 .cell-muted { color: #4b5563 !important; }
+
+.cell-comment { max-width: 300px; }
+.comment-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: #4b5563;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
 
 .cell-chevron {
   width: 38px;
