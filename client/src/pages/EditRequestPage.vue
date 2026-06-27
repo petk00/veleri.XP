@@ -22,7 +22,7 @@
         <q-spinner color="primary" size="32px" />
       </div>
 
-      <div v-else-if="form">
+      <div v-else-if="form" class="content-shell">
 
         <!-- ───── Card: Basic data ───── -->
         <div class="card">
@@ -683,49 +683,7 @@ onMounted(() => fetchData());
 }
 
 .page-shell {
-  max-width: 1040px;
-  margin: 0 auto;
-}
-
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.breadcrumb__item {
-  color: #6b7280;
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-
-.breadcrumb__back {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: none;
-  border: none;
-  padding: 0;
-  font-family: inherit;
-  font-size: 0.8125rem;
-  color: #6b7280;
-  cursor: pointer;
-  transition: color 0.15s;
-}
-
-.breadcrumb__back:hover { color: #00afdb; }
-
-.breadcrumb__sep {
-  color: #d1d5db;
-  font-size: 0.875rem;
-  user-select: none;
-}
-
-.breadcrumb__current {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #374151;
+  width: 100%;
 }
 
 .page-header {
@@ -734,24 +692,11 @@ onMounted(() => fetchData());
   border-bottom: 1px solid #e5e7eb;
 }
 
-.page-header__main { min-width: 240px; }
-.page-header__title {
-  margin: 0;
-  color: #111827;
-  font-size: 2.1rem;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  line-height: 1.15;
+.content-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
-.page-header__subtitle {
-  margin: 10px 0 0;
-  color: #4b5563;
-  font-size: 0.9375rem;
-  line-height: 1.5;
-}
-
-.card { margin-bottom: 18px; }
-.card__body { padding: 18px; }
 
 .field {
   margin-bottom: 16px;
