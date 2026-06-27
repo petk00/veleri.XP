@@ -8,7 +8,7 @@
       </div>
 
       <!-- Content -->
-      <div v-else-if="request">
+      <div v-else-if="request" class="content-shell">
 
         <!-- ──────────────── PAGE HEADER ──────────────── -->
         <header class="page-header no-print">
@@ -25,7 +25,9 @@
               {{ request.created_by }} · {{ formatDate(request.created_at) }}
             </div>
           </div>
+
           <div class="page-header__actions">
+            <!-- Neutralne akcije -->
             <button
               v-if="canDownloadPdf"
               class="btn btn--ghost"
@@ -47,22 +49,60 @@
               <q-icon name="edit" size="16px" />
               <span>Uredi</span>
             </button>
-            <button v-if="isAdmin && status && !LOCKED_STATUSES.includes(status)" class="btn btn--danger" :disabled="submittingAction" @click="openActionDialog('storno')">
-              <q-icon name="block" size="16px" />
-              <span>Storniraj</span>
+
+            <!-- Primarna CTA -->
+            <button
+              v-if="primaryCta"
+              class="btn btn--cta"
+              :disabled="primaryCta.disabled || submittingAction"
+              @click="triggerPrimaryCta"
+            >
+              <q-spinner v-if="submittingAction" size="14px" color="white" />
+              <q-icon v-else :name="primaryCta.icon" size="16px" />
+              <span>{{ primaryCta.label }}</span>
             </button>
+
+            <!-- Separator + Storniraj -->
+            <template v-if="isAdmin && status && !LOCKED_STATUSES.includes(status)">
+              <div class="header-sep"></div>
+              <button class="btn btn--storno" :disabled="submittingAction" @click="openActionDialog('storno')">
+                <q-icon name="block" size="16px" />
+                <span>Storniraj</span>
+              </button>
+            </template>
           </div>
         </header>
 
-        <!-- Status capsule -->
-        <div class="status-capsule-row no-print">
-          <span class="status status--capsule" :class="statusClass(request.fk_request_status)">
-            <q-icon :name="timelineIcon({ fk_request_status: request.fk_request_status })" size="14px" />
-            {{ request.status_name }}
-          </span>
+        <!-- ──────────────── STATUS STEPPER ──────────────── -->
+        <div class="status-stepper no-print">
+          <div class="stepper-steps">
+            <template v-for="(step, i) in STEPPER_STEPS" :key="i">
+              <div class="stepper-item">
+                <div class="stepper-dot" :class="`stepper-dot--${stepperState(i)}`">
+                  <q-icon :name="stepperDotIcon(i)" size="13px" />
+                </div>
+                <div class="stepper-label" :class="`stepper-label--${stepperState(i)}`">{{ step }}</div>
+              </div>
+              <div
+                v-if="i < STEPPER_STEPS.length - 1"
+                class="stepper-connector"
+                :class="stepperState(i) === 'done' ? 'stepper-connector--done' : ''"
+              ></div>
+            </template>
+          </div>
+          <div v-if="status === STATUS.VRACENO" class="stepper-note stepper-note--warn">
+            <q-icon name="info" size="13px" />
+            Zahtijeva izmjene od podnositelja
+          </div>
+          <div v-if="status === STATUS.ODBIJENO" class="stepper-note stepper-note--error">
+            <q-icon name="block" size="13px" />
+            Zahtjev odbijen
+          </div>
         </div>
 
-        <!-- ──────────────── ACTION BANNERS ──────────────── -->
+        <!-- ──────────────── ACTION BANNERS (samo kontekst, bez primarne CTA) ──────────────── -->
+
+        <!-- STATUS 1: admin čeka pregled -->
         <div v-if="canTakeOver" class="action-banner action-banner--neutral no-print">
           <div class="action-banner__icon">
             <q-icon name="assignment_turned_in" size="18px" />
@@ -78,14 +118,10 @@
               <q-icon name="close" size="16px" />
               <span>Odbij</span>
             </button>
-            <button class="btn btn--primary" :disabled="submittingAction" @click="quickAction('preuzmi')">
-              <q-spinner v-if="submittingAction" size="14px" color="white" />
-              <q-icon v-else name="assignment_turned_in" size="16px" />
-              <span>Preuzmi na obradu</span>
-            </button>
           </div>
         </div>
 
+        <!-- STATUS 2: admin odlučuje -->
         <div v-if="canDecide" class="action-banner action-banner--warning no-print">
           <div class="action-banner__icon">
             <q-icon name="how_to_reg" size="18px" />
@@ -105,13 +141,10 @@
               <q-icon name="undo" size="16px" />
               <span>Vrati na dopunu</span>
             </button>
-            <button class="btn btn--primary" :disabled="!hasPonuda || submittingAction" @click="openActionDialog('odobri')">
-              <q-icon name="check" size="16px" />
-              <span>Odobri</span>
-            </button>
           </div>
         </div>
 
+        <!-- STATUS 3: korisnik treba dopuniti -->
         <div v-if="canResubmit" class="action-banner action-banner--info no-print">
           <div class="action-banner__icon">
             <q-icon name="edit_note" size="18px" />
@@ -126,19 +159,9 @@
               <div class="return-comment__text">{{ lastReturnComment }}</div>
             </div>
           </div>
-          <div class="action-banner__actions">
-            <button class="btn btn--ghost" @click="editRequest">
-              <q-icon name="edit" size="16px" />
-              <span>Uredi</span>
-            </button>
-            <button class="btn btn--primary" :disabled="submittingAction" @click="quickAction('resubmit')">
-              <q-spinner v-if="submittingAction" size="14px" color="white" />
-              <q-icon v-else name="send" size="16px" />
-              <span>Pošalji ponovno</span>
-            </button>
-          </div>
         </div>
 
+        <!-- STATUS 3: admin čeka odgovor korisnika -->
         <div v-if="isAdmin && status === STATUS.VRACENO" class="action-banner action-banner--neutral no-print">
           <div class="action-banner__icon">
             <q-icon name="hourglass_empty" size="18px" />
@@ -154,14 +177,10 @@
               <q-icon name="close" size="16px" />
               <span>Odbij</span>
             </button>
-            <button class="btn btn--primary" :disabled="submittingAction" @click="quickAction('vrati-u-obradu')">
-              <q-spinner v-if="submittingAction" size="14px" color="white" />
-              <q-icon v-else name="assignment_turned_in" size="16px" />
-              <span>Preuzmi na obradu</span>
-            </button>
           </div>
         </div>
 
+        <!-- STATUS 4 (Naručeno): info o uvjetima za završetak -->
         <div v-if="canFinish" class="action-banner action-banner--success no-print">
           <div class="action-banner__icon">
             <q-icon name="verified" size="18px" />
@@ -170,7 +189,7 @@
             <div class="action-banner__title">Zahtjev je odobren</div>
             <div class="action-banner__desc">
               <span v-if="canFinishNow">
-                Svi uvjeti su zadovoljeni. Zahtjev možete označiti kao završen.
+                Svi uvjeti su zadovoljeni. Koristite gumb "Označi završeno" gore desno.
               </span>
               <span v-else>
                 Za završetak su potrebni: ponuda, otpremnica i upisan procijenjeni iznos.
@@ -181,21 +200,11 @@
               <span>Nedostaje: {{ missingForFinish.join(', ') }}</span>
             </div>
           </div>
-          <div class="action-banner__actions">
-            <button
-              class="btn btn--primary"
-              :disabled="!canFinishNow || submittingAction"
-              @click="quickAction('zavrsi')"
-            >
-              <q-spinner v-if="submittingAction" size="14px" color="white" />
-              <q-icon v-else name="task_alt" size="16px" />
-              <span>Označi završeno</span>
-            </button>
-          </div>
         </div>
 
         <!-- ──────────────── INFO CARDS ──────────────── -->
         <div class="info-grid no-print">
+          <!-- Lijevo: Osnovni podaci -->
           <div class="card">
             <div class="card__header card__header--no-divider">
               <h2 class="card__title">
@@ -234,6 +243,7 @@
             </div>
           </div>
 
+          <!-- Desno: Svrha + istaknuti iznos + Napomena -->
           <div class="info-col">
             <div class="card">
               <div class="card__header card__header--no-divider">
@@ -245,6 +255,12 @@
               <div class="card__body">
                 <p class="prose">{{ request.justification || 'Nema unesenog obrazloženja.' }}</p>
               </div>
+            </div>
+
+            <!-- Istaknuti iznos summary box -->
+            <div v-if="hasAmount" class="amount-summary">
+              <div class="amount-summary__label">Procijenjeni iznos</div>
+              <div class="amount-summary__value">{{ formatCurrency(request.total_amount) }}</div>
             </div>
 
             <div v-if="request.comment" class="card">
@@ -261,7 +277,7 @@
           </div>
         </div>
 
-        <!-- Items -->
+        <!-- ──────────────── STAVKE ──────────────── -->
         <div class="card no-print">
           <div class="card__header">
             <h2 class="card__title">
@@ -286,12 +302,18 @@
                   <td class="text-right num">{{ item.quantity }}</td>
                 </tr>
               </tbody>
-              <tfoot v-if="items.length > 1">
+              <tfoot>
                 <tr class="items-summary">
-                  <td colspan="2" class="items-summary__label">Ukupno komada</td>
-                  <td class="text-right items-summary__qty">
-                    {{ items.reduce((sum, i) => sum + Number(i.quantity || 0), 0) }}
+                  <td colspan="2" class="items-summary__label">
+                    {{ items.length > 1 ? 'Ukupno komada' : '' }}
                   </td>
+                  <td class="text-right items-summary__qty">
+                    {{ items.length > 1 ? items.reduce((s, i) => s + Number(i.quantity || 0), 0) : '' }}
+                  </td>
+                </tr>
+                <tr v-if="hasAmount" class="items-total">
+                  <td colspan="2" class="items-total__label">Procijenjeni ukupni iznos</td>
+                  <td class="text-right items-total__value">{{ formatCurrency(request.total_amount) }}</td>
                 </tr>
               </tfoot>
             </table>
@@ -299,7 +321,7 @@
           </div>
         </div>
 
-        <!-- Documents -->
+        <!-- ──────────────── DOKUMENTI ──────────────── -->
         <div class="card no-print">
           <div class="card__header">
             <h2 class="card__title">
@@ -340,15 +362,15 @@
                   </div>
                 </div>
                 <div class="file-actions">
-                  <button v-if="canPreview(att)" class="icon-btn" @click="previewAttachment(att)">
+                  <button v-if="canPreview(att)" class="icon-btn file-action-btn" @click="previewAttachment(att)">
                     <q-icon name="visibility" size="16px" />
                     <q-tooltip>Prikaži</q-tooltip>
                   </button>
-                  <button class="icon-btn" @click="downloadAttachment(att)">
+                  <button class="icon-btn file-action-btn" @click="downloadAttachment(att)">
                     <q-icon name="download" size="16px" />
                     <q-tooltip>Preuzmi</q-tooltip>
                   </button>
-                  <button v-if="canDeleteFile(att)" class="icon-btn icon-btn--danger" @click="deleteAttachment(att)">
+                  <button v-if="canDeleteFile(att)" class="icon-btn icon-btn--danger file-action-btn" @click="deleteAttachment(att)">
                     <q-icon name="delete_outline" size="16px" />
                     <q-tooltip>Obriši</q-tooltip>
                   </button>
@@ -417,7 +439,7 @@
           </div>
         </div>
 
-        <!-- Timeline -->
+        <!-- ──────────────── TIMELINE ──────────────── -->
         <div class="card no-print">
           <div class="card__header">
             <h2 class="card__title">
@@ -441,7 +463,13 @@
                 </div>
                 <div class="timeline-content">
                   <div class="timeline-title">{{ timelineTitle(entry) }}</div>
-                  <div class="timeline-meta">{{ entry.changed_by }} · {{ formatDate(entry.changed_at) }}</div>
+                  <div class="timeline-meta">
+                    {{ entry.changed_by }} ·
+                    <span class="timeline-reldate">
+                      {{ relativeDate(entry.changed_at) }}
+                      <q-tooltip>{{ formatDate(entry.changed_at) }}</q-tooltip>
+                    </span>
+                  </div>
                   <div v-if="entry.comment" class="timeline-comment">{{ entry.comment }}</div>
                 </div>
               </li>
@@ -625,18 +653,32 @@ const ORG = {
 };
 
 const STATUS = {
-  POSLANO: 1,
+  POSLANO:      1,
   NA_ODOBRENJU: 2,
-  VRACENO: 3,
-  ODBIJENO: 5,
-  NARUCENO: 6,
-  ZATVORENO: 7,
+  VRACENO:      3,
+  ODOBRENO:     4,
+  ODBIJENO:     5,
+  NARUCENO:     6,
+  ZATVORENO:    7,
 };
 const LOCKED_STATUSES = [STATUS.ODBIJENO, STATUS.ZATVORENO];
 
 const UPLOAD_RULES = {
-  Ponuda: [STATUS.POSLANO, STATUS.NA_ODOBRENJU, STATUS.VRACENO, STATUS.NARUCENO],
+  Ponuda:     [STATUS.POSLANO, STATUS.NA_ODOBRENJU, STATUS.VRACENO, STATUS.NARUCENO],
   Otpremnica: [STATUS.NARUCENO],
+};
+
+/* ───────── Stepper ───────── */
+const STEPPER_STEPS = ['Poslano', 'Na odobrenju', 'Odobreno', 'Naručeno', 'Zatvoreno'];
+
+const STEPPER_ACTIVE_STEP = {
+  [STATUS.POSLANO]:      0,
+  [STATUS.NA_ODOBRENJU]: 1,
+  [STATUS.VRACENO]:      1,
+  [STATUS.ODOBRENO]:     2,
+  [STATUS.ODBIJENO]:     2,
+  [STATUS.NARUCENO]:     3,
+  [STATUS.ZATVORENO]:    4,
 };
 
 const route = useRoute();
@@ -687,7 +729,6 @@ const missingForFinish = computed(() => {
   return missing;
 });
 
-
 const canEdit = computed(() => {
   if (!status.value) return false;
   if (LOCKED_STATUSES.includes(status.value)) return false;
@@ -695,10 +736,10 @@ const canEdit = computed(() => {
   return status.value === STATUS.VRACENO;
 });
 
-const canTakeOver = computed(() => isAdmin.value && status.value === STATUS.POSLANO);
-const canDecide = computed(() => isAdmin.value && status.value === STATUS.NA_ODOBRENJU);
-const canResubmit = computed(() => !isAdmin.value && status.value === STATUS.VRACENO);
-const canFinish = computed(() => isAdmin.value && status.value === STATUS.NARUCENO);
+const canTakeOver  = computed(() => isAdmin.value && status.value === STATUS.POSLANO);
+const canDecide    = computed(() => isAdmin.value && status.value === STATUS.NA_ODOBRENJU);
+const canResubmit  = computed(() => !isAdmin.value && status.value === STATUS.VRACENO);
+const canFinish    = computed(() => isAdmin.value && status.value === STATUS.NARUCENO);
 
 const canDownloadPdf = computed(() =>
   isAdmin.value && [STATUS.NARUCENO, STATUS.ZATVORENO].includes(status.value),
@@ -737,7 +778,6 @@ const uploadHint = computed(() => {
   return '';
 });
 
-/* "Predmet nabave" — kategorije iz stavki, unique, sortirano */
 const predmetNabave = computed(() => {
   if (!items.value.length) return '—';
   const set = new Set(items.value.map(i => i.category_name).filter(Boolean));
@@ -755,24 +795,80 @@ const canDeleteFile = (att) => {
   return isAdmin.value || att.fk_uploaded_by_user === currentUser.value?.id_user;
 };
 
+/* ───────── Stepper ───────── */
+
+// Vraća CSS modifier za korak i
+const stepperState = (i) => {
+  const s = status.value;
+  if (!s) return 'upcoming';
+  const active = STEPPER_ACTIVE_STEP[s] ?? 0;
+  if (i < active)    return 'done';
+  if (i === active) {
+    if (s === STATUS.VRACENO)   return 'active-warn';
+    if (s === STATUS.ODBIJENO)  return 'active-error';
+    if (s === STATUS.ZATVORENO) return 'done';
+    return 'active';
+  }
+  return s === STATUS.ODBIJENO ? 'locked' : 'upcoming';
+};
+
+const stepperDotIcon = (i) => {
+  const state = stepperState(i);
+  if (state === 'done')         return 'check';
+  if (state === 'active-warn')  return 'warning';
+  if (state === 'active-error') return 'close';
+  if (state === 'locked')       return 'lock';
+  return 'circle';
+};
+
+/* ───────── Primarna CTA ───────── */
+
+const primaryCta = computed(() => {
+  const s = status.value;
+  if (!s) return null;
+  if (isAdmin.value) {
+    if (s === STATUS.POSLANO)
+      return { label: 'Preuzmi na obradu', action: 'preuzmi',       icon: 'assignment_turned_in', quick: true,  disabled: false };
+    if (s === STATUS.NA_ODOBRENJU)
+      return { label: 'Odobri',            action: 'odobri',         icon: 'check',               quick: false, disabled: !hasPonuda.value };
+    if (s === STATUS.VRACENO)
+      return { label: 'Preuzmi na obradu', action: 'vrati-u-obradu', icon: 'assignment_turned_in', quick: true,  disabled: false };
+    if (s === STATUS.NARUCENO)
+      return { label: 'Označi završeno',   action: 'zavrsi',         icon: 'task_alt',            quick: true,  disabled: !canFinishNow.value };
+  } else {
+    if (s === STATUS.VRACENO)
+      return { label: 'Pošalji ponovno',   action: 'resubmit',       icon: 'send',                quick: true,  disabled: false };
+  }
+  return null;
+});
+
+const triggerPrimaryCta = () => {
+  if (!primaryCta.value || primaryCta.value.disabled || submittingAction.value) return;
+  if (primaryCta.value.quick) {
+    quickAction(primaryCta.value.action);
+  } else {
+    openActionDialog(primaryCta.value.action);
+  }
+};
+
 /* ───────── Dialog helperi ───────── */
 
 const dialogTitle = computed(() => {
   switch (pendingAction.value) {
-    case 'odobri': return 'Odobravanje zahtjeva';
-    case 'odbij': return 'Odbijanje zahtjeva';
+    case 'odobri':          return 'Odobravanje zahtjeva';
+    case 'odbij':           return 'Odbijanje zahtjeva';
     case 'vrati-na-izmjenu': return 'Vraćanje na dopunu';
-    case 'storno': return 'Storniranje zahtjeva';
-    default: return 'Akcija nad zahtjevom';
+    case 'storno':          return 'Storniranje zahtjeva';
+    default:                return 'Akcija nad zahtjevom';
   }
 });
 const dialogDescription = computed(() => {
   switch (pendingAction.value) {
-    case 'odobri': return 'Komentar je neobavezan, ali preporučen.';
-    case 'odbij': return 'Komentar je obavezan pri odbijanju zahtjeva.';
+    case 'odobri':           return 'Komentar je neobavezan, ali preporučen.';
+    case 'odbij':            return 'Komentar je obavezan pri odbijanju zahtjeva.';
     case 'vrati-na-izmjenu': return 'Komentar je obavezan kako bi podnositelj znao što ispraviti.';
-    case 'storno': return 'Navedite razlog storniranja. Akcija je nepovratna.';
-    default: return '';
+    case 'storno':           return 'Navedite razlog storniranja. Akcija je nepovratna.';
+    default:                 return '';
   }
 });
 const dialogInputLabel = computed(() =>
@@ -780,29 +876,29 @@ const dialogInputLabel = computed(() =>
 );
 const dialogConfirmClass = computed(() => {
   switch (pendingAction.value) {
-    case 'odobri': return 'btn--primary';
+    case 'odobri':           return 'btn--primary';
     case 'vrati-na-izmjenu': return 'btn--warning';
     case 'odbij':
-    case 'storno': return 'btn--danger';
-    default: return 'btn--primary';
+    case 'storno':           return 'btn--danger';
+    default:                 return 'btn--primary';
   }
 });
 const dialogConfirmIcon = computed(() => {
   switch (pendingAction.value) {
-    case 'odobri': return 'check';
+    case 'odobri':           return 'check';
     case 'vrati-na-izmjenu': return 'undo';
-    case 'odbij': return 'close';
-    case 'storno': return 'block';
-    default: return '';
+    case 'odbij':            return 'close';
+    case 'storno':           return 'block';
+    default:                 return '';
   }
 });
 const dialogConfirmLabel = computed(() => {
   switch (pendingAction.value) {
-    case 'odobri': return 'Odobri';
+    case 'odobri':           return 'Odobri';
     case 'vrati-na-izmjenu': return 'Vrati na dopunu';
-    case 'odbij': return 'Odbij';
-    case 'storno': return 'Storniraj';
-    default: return 'Potvrdi';
+    case 'odbij':            return 'Odbij';
+    case 'storno':           return 'Storniraj';
+    default:                 return 'Potvrdi';
   }
 });
 
@@ -918,9 +1014,9 @@ const quickAction = async (action) => {
   try {
     await api.patch(`/requests/${route.params.id}/status`, { action });
     const messages = {
-      preuzmi: 'Zahtjev preuzet na obradu.',
-      resubmit: 'Zahtjev je ponovno poslan.',
-      zavrsi: 'Zahtjev je označen kao završen.',
+      preuzmi:         'Zahtjev preuzet na obradu.',
+      resubmit:        'Zahtjev je ponovno poslan.',
+      zavrsi:          'Zahtjev je označen kao završen.',
       'vrati-u-obradu': 'Zahtjev preuzet na ponovnu obradu.',
     };
     $q.notify({ type: 'positive', message: messages[action] || 'Akcija izvršena.' });
@@ -973,6 +1069,109 @@ const confirmAction = async () => {
 const editRequest = () => router.push(`/zahtjevi/${route.params.id}/edit`);
 const goBack = () => router.push(isAdmin.value ? '/zahtjevi' : '/dashboard');
 
+/* ───────── Formatiranje ───────── */
+
+const formatCurrency = (value) => {
+  if (value == null) return '—';
+  return new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(value);
+};
+const formatDate = (value) => {
+  if (!value) return '—';
+  return new Date(value).toLocaleString('hr-HR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+};
+const formatDateOnly = (value) => {
+  if (!value) return '—';
+  const d = new Date(value);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}.${mm}.${yyyy}.`;
+};
+
+const relativeDate = (ts) => {
+  if (!ts) return '—';
+  const diffMs  = Date.now() - new Date(ts).getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffH   = Math.floor(diffMin / 60);
+  const diffD   = Math.floor(diffH / 24);
+  if (diffSec < 60)  return 'upravo sada';
+  if (diffMin < 60)  return `prije ${diffMin} min`;
+  if (diffH < 24)    return `prije ${diffH} ${diffH === 1 ? 'sat' : diffH < 5 ? 'sata' : 'sati'}`;
+  if (diffD === 1)   return 'jučer';
+  if (diffD < 7)     return `prije ${diffD} dana`;
+  if (diffD < 30)    return `prije ${Math.floor(diffD / 7)} ${Math.floor(diffD / 7) === 1 ? 'tjedan' : 'tjedna'}`;
+  if (diffD < 365)   return `prije ${Math.floor(diffD / 30)} mj.`;
+  return `prije ${Math.floor(diffD / 365)} god.`;
+};
+
+/* ───────── Status helpers ───────── */
+
+const timelineKind = (entry) => {
+  if (entry.comment?.startsWith('Dokument dodan'))          return 'doc-add';
+  if (entry.comment?.startsWith('Dokument obrisan'))        return 'doc-del';
+  if (entry.comment?.startsWith('Zahtjev izmijenjen'))      return 'edit';
+  if (entry.comment?.startsWith('Dodan procijenjeni iznos')) return 'amount';
+  return `s-${entry.fk_request_status}`;
+};
+const timelineIcon = (entry) => {
+  if (entry.comment?.startsWith('Dokument dodan'))          return 'attach_file';
+  if (entry.comment?.startsWith('Dokument obrisan'))        return 'delete';
+  if (entry.comment?.startsWith('Zahtjev izmijenjen'))      return 'edit';
+  if (entry.comment?.startsWith('Dodan procijenjeni iznos')) return 'payments';
+  switch (entry.fk_request_status) {
+    case STATUS.POSLANO:      return 'outbox';
+    case STATUS.NA_ODOBRENJU: return 'pending';
+    case STATUS.VRACENO:      return 'undo';
+    case STATUS.ODBIJENO:     return 'close';
+    case STATUS.NARUCENO:     return 'local_shipping';
+    case STATUS.ZATVORENO:    return 'task_alt';
+    default:                  return 'circle';
+  }
+};
+const parseDocType = (comment) =>
+  comment?.split(': ')[1]?.split(' — ')[0] ?? null;
+
+const timelineTitle = (entry) => {
+  if (entry.comment?.startsWith('Dokument dodan')) {
+    const t = parseDocType(entry.comment);
+    if (t === 'Ponuda') return 'Priložena ponuda';
+    if (t === 'Otpremnica') return 'Priložena otpremnica';
+    return 'Priložen dokument';
+  }
+  if (entry.comment?.startsWith('Dokument obrisan')) {
+    const t = parseDocType(entry.comment);
+    if (t === 'Ponuda') return 'Uklonjena ponuda';
+    if (t === 'Otpremnica') return 'Uklonjena otpremnica';
+    return 'Uklonjen dokument';
+  }
+  if (entry.comment?.startsWith('Zahtjev izmijenjen'))      return 'Izmjena zahtjeva';
+  if (entry.comment?.startsWith('Dodan procijenjeni iznos')) return 'Upisan iznos';
+  const labels = {
+    'Poslano':          'Zahtjev poslan',
+    'Na odobrenju':     'Preuzeto na obradu',
+    'Zahtjeva izmjene': 'Zahtjeva izmjene',
+    'Naručeno':         'Odobreno i naručeno',
+    'Zatvoreno':        'Zahtjev zatvoren',
+  };
+  return labels[entry.status_name] ?? entry.status_name;
+};
+
+const fileIcon = (mimeType) => {
+  if (!mimeType) return 'insert_drive_file';
+  if (mimeType.includes('pdf'))                              return 'picture_as_pdf';
+  if (mimeType.includes('image'))                            return 'image';
+  if (mimeType.includes('word') || mimeType.includes('document')) return 'description';
+  if (mimeType.includes('excel') || mimeType.includes('sheet'))   return 'table_chart';
+  if (mimeType.includes('zip'))                              return 'folder_zip';
+  return 'insert_drive_file';
+};
+
+/* ───────── PDF generiranje ───────── */
+
 const loadImage = (src) =>
   new Promise((resolve) => {
     const img = new Image();
@@ -1006,29 +1205,25 @@ const downloadPdf = async () => {
   pdfGenerating.value = true;
   try {
     const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-    const M   = 10;           // margina
-    const PW  = 210;          // širina A4
-    const CW  = PW - 2 * M;  // širina sadržaja
+    const M   = 10;
+    const PW  = 210;
+    const CW  = PW - 2 * M;
     let y = M;
 
-    // ── Fontovi (podržavaju hrvatske znakove) ──
     const fontLoaded = await embedFont(pdf, '/fonts/Times New Roman.ttf', 'TimesNewRoman', 'normal');
     await embedFont(pdf, '/fonts/Times New Roman Bold.ttf', 'TimesNewRoman', 'bold');
     const F = fontLoaded ? 'TimesNewRoman' : 'helvetica';
 
-    // ── Logo ──
     const logo = await loadImage(ORG.logoPath);
     const LOGO_H = 24;
     const LOGO_W = logo ? (LOGO_H * logo.w / logo.h) : 0;
     if (logo) pdf.addImage(logo.data, 'PNG', M, y - 2, LOGO_W, LOGO_H);
 
-    // ── Naziv institucije lijevo, uz logo, vertikalno centrirano ──
     pdf.setFont(F, 'bold');
     pdf.setFontSize(16);
     pdf.setTextColor(27, 45, 89);
     pdf.text(ORG.name, M + (logo ? LOGO_W + 4 : 0), y + 7);
 
-    // ── Latinski i engleski naziv desno ──
     const TX = PW - M;
     pdf.setFont(F, 'bold');
     pdf.setFontSize(11);
@@ -1039,7 +1234,6 @@ const downloadPdf = async () => {
 
     y += 13;
 
-    // ── Kontakt info centrirano ispod ──
     pdf.setFont(F, 'normal');
     pdf.setFontSize(7);
     pdf.setTextColor(31, 56, 100);
@@ -1047,207 +1241,114 @@ const downloadPdf = async () => {
       `${ORG.address} · Telefon ${ORG.phone} · E-mail: ${ORG.email} · ${ORG.web}`,
       PW / 2, y + 4, { align: 'center' }
     );
-    y += 3.5;
-    pdf.text(
-      `OIB: ${ORG.oib} · MB: ${ORG.mb} · RKP: ${ORG.rkp} · IBAN: ${ORG.iban}`,
-      PW / 2, y + 4, { align: 'center' }
-    );
-    y += 13;
+    y += 10;
 
-    // ── Naslov u okviru ──
-    pdf.setLineWidth(0.3);
-    pdf.rect(M, y, CW, 13);
-    pdf.setFont('helvetica', 'bold');
+    pdf.setLineWidth(0.5);
+    pdf.setDrawColor(0, 0, 0);
+    pdf.line(M, y, PW - M, y);
+    y += 10;
+
+    pdf.setFont(F, 'bold');
     pdf.setFontSize(13);
-    pdf.setTextColor(0);
-    pdf.text('ZAHTJEV ZA NABAVU', PW / 2, y + 9, { align: 'center' });
-    y += 21;
+    pdf.setTextColor(0, 0, 0);
+    const titleW = CW - 10;
+    pdf.rect(M + (CW - titleW) / 2, y, titleW, 10);
+    pdf.text('ZAHTJEV ZA NABAVU', PW / 2, y + 6.5, { align: 'center' });
+    y += 18;
 
-    // ── Polja ──
-    const LABEL_W = 58;
-    const VALUE_X = M + LABEL_W + 4;
     const fields = [
-      { label: 'Broj zahtjeva:',                              value: request.value.request_number },
-      { label: 'Datum:',                                      value: formatDateOnly(request.value.created_at) },
-      { label: 'Zahtjev podnio:', subtitle: '(ime i prezime djelatnika)', value: request.value.created_by },
-      { label: 'Odjel / Služba:',                            value: request.value.department_name },
-      { label: 'Predmet nabave:', subtitle: '(naziv robe/usluge)', value: predmetNabave.value },
+      ['Broj zahtjeva:', request.value.request_number],
+      ['Datum:', formatDateOnly(request.value.created_at)],
+      ['Zahtjev podnio:', request.value.created_by],
+      ['Odjel / Služba:', request.value.department_name],
+      ['Predmet nabave:', predmetNabave.value],
     ];
 
-    pdf.setFontSize(10);
-    for (const f of fields) {
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(0);
-      const labelLines = pdf.splitTextToSize(f.label, LABEL_W);
-      pdf.text(labelLines, M, y);
-      if (f.subtitle) {
-        pdf.setFont('helvetica', 'italic');
-        pdf.text(f.subtitle, M, y + labelLines.length * 5);
-        pdf.setFont('helvetica', 'normal');
-      }
-      pdf.text(String(f.value || '—'), VALUE_X, y);
-      y += (labelLines.length + (f.subtitle ? 1 : 0)) * 5 + 3;
-    }
-    y += 3;
-
-    // ── Svrha nabave (okvir) ──
-    pdf.setFont('helvetica', 'normal');
-    const justLines = pdf.splitTextToSize(request.value.justification || '—', CW - 8);
-    const boxH = Math.max(34, justLines.length * 5 + 18);
-    pdf.setLineWidth(0.3);
-    pdf.rect(M, y, CW, boxH);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
-    pdf.setTextColor(0);
-    pdf.text('Svrha nabave (obrazloženje):', M + 4, y + 6);
-    pdf.text(justLines, M + 4, y + 13);
-    y += boxH + 8;
-
-    // ── Stavke ──
-    if (items.value.length > 0) {
-      const cols  = [CW * 0.55, CW * 0.30, CW * 0.15];
-      const ROW_H = 7;
-
-      // Zaglavlje tablice
-      pdf.setFillColor(240, 240, 240);
-      let cx = M;
-      cols.forEach((cw) => { pdf.rect(cx, y, cw, ROW_H, 'FD'); cx += cw; });
-
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(9);
-      pdf.setTextColor(0);
-      cx = M;
-      ['Naziv artikla', 'Kategorija', 'Kol.'].forEach((h, i) => {
-        if (i === 2) pdf.text(h, cx + cols[i] - 2, y + 4.8, { align: 'right' });
-        else         pdf.text(h, cx + 2, y + 4.8);
-        cx += cols[i];
-      });
-      y += ROW_H;
-
-      // Redovi
-      pdf.setFont('helvetica', 'normal');
-      for (const item of items.value) {
-        cx = M;
-        [item.item_name, item.category_name, String(item.quantity)].forEach((cell, i) => {
-          pdf.rect(cx, y, cols[i], ROW_H, 'S');
-          const txt = (pdf.splitTextToSize(cell, cols[i] - 4)[0]) || '';
-          if (i === 2) pdf.text(txt, cx + cols[i] - 2, y + 4.8, { align: 'right' });
-          else         pdf.text(txt, cx + 2, y + 4.8);
-          cx += cols[i];
-        });
-        y += ROW_H;
-      }
+    pdf.setFontSize(11);
+    for (const [label, value] of fields) {
+      pdf.setFont(F, 'normal');
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(label, M, y);
+      pdf.setFont(F, 'normal');
+      pdf.text(String(value ?? '—'), M + 60, y);
       y += 8;
     }
+    y += 4;
 
-    // ── Ukupni iznos ──
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10.5);
-    pdf.setTextColor(0);
+    pdf.setFont(F, 'normal');
+    pdf.setFontSize(11);
+    pdf.setTextColor(0, 0, 0);
+    pdf.text('Svrha nabave (obrazloženje):', M, y);
+    y += 4;
+    const boxY = y;
+    const boxH = 40;
+    pdf.rect(M, boxY, CW, boxH);
+    const justLines = pdf.splitTextToSize(request.value.justification || '—', CW - 6);
+    pdf.text(justLines, M + 3, boxY + 6);
+    y += boxH + 8;
+
+    if (items.value.length > 0) {
+      pdf.setFont(F, 'italic');
+      pdf.setFontSize(10);
+      pdf.setTextColor(80, 80, 80);
+      pdf.text('Specifikacija stavki:', M, y);
+      y += 5;
+
+      const colW = [CW * 0.55, CW * 0.30, CW * 0.15];
+      const headers = ['Naziv artikla', 'Kategorija', 'Količina'];
+      pdf.setFont(F, 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(0, 0, 0);
+      let cx = M;
+      headers.forEach((h, i) => {
+        pdf.rect(cx, y, colW[i], 7);
+        pdf.text(h, cx + 2, y + 5);
+        cx += colW[i];
+      });
+      y += 7;
+
+      pdf.setFont(F, 'normal');
+      for (const item of items.value) {
+        cx = M;
+        const row = [item.item_name, item.category_name, String(item.quantity)];
+        row.forEach((cell, i) => {
+          pdf.rect(cx, y, colW[i], 7);
+          pdf.text(String(cell ?? ''), cx + 2, y + 5);
+          cx += colW[i];
+        });
+        y += 7;
+      }
+      y += 6;
+    }
+
+    pdf.setFont(F, 'normal');
+    pdf.setFontSize(11);
+    pdf.setTextColor(0, 0, 0);
     pdf.text(
-      `Ukupna nabava se procjenjuje na iznos od ${formatCurrency(request.value.total_amount).replace('€', 'eur')}.`,
+      `Ukupna nabava se procjenjuje na iznos od `,
       M, y
     );
+    pdf.setFont(F, 'bold');
+    pdf.text(formatCurrency(request.value.total_amount), M + 83, y);
+    pdf.text('.', M + 83 + pdf.getTextWidth(formatCurrency(request.value.total_amount)), y);
     y += 14;
 
+    pdf.setLineWidth(0.3);
+    pdf.line(M, y, PW - M, y);
+    y += 5;
+    pdf.setFont(F, 'normal');
+    pdf.setFontSize(9);
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(`Status: ${request.value.status_name}`, M, y);
+    pdf.text(`Ispisano: ${todayDate.value}`, PW - M, y, { align: 'right' });
+
     pdf.save(`${request.value.request_number}.pdf`);
+  } catch (err) {
+    console.error('PDF greška:', err);
+    $q.notify({ type: 'negative', message: 'Greška pri generiranju PDF-a.' });
   } finally {
     pdfGenerating.value = false;
   }
-};
-
-/* ───────── Formatters ───────── */
-
-const formatCurrency = (value) => {
-  if (value == null) return '—';
-  return new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(value);
-};
-const formatDate = (value) => {
-  if (!value) return '—';
-  return new Date(value).toLocaleString('hr-HR', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-};
-const formatDateOnly = (value) => {
-  if (!value) return '—';
-  const d = new Date(value);
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const yyyy = d.getFullYear();
-  return `${dd}.${mm}.${yyyy}.`;
-};
-
-const statusClass = (statusId) => {
-  switch (statusId) {
-    case STATUS.POSLANO: return 'status--sent';
-    case STATUS.NA_ODOBRENJU: return 'status--review';
-    case STATUS.VRACENO: return 'status--returned';
-    case STATUS.ODBIJENO: return 'status--rejected';
-    case STATUS.NARUCENO: return 'status--ordered';
-    case STATUS.ZATVORENO: return 'status--closed';
-    default: return 'status--default';
-  }
-};
-
-const timelineKind = (entry) => {
-  if (entry.comment?.startsWith('Dokument dodan')) return 'doc-add';
-  if (entry.comment?.startsWith('Dokument obrisan')) return 'doc-del';
-  if (entry.comment?.startsWith('Zahtjev izmijenjen')) return 'edit';
-  if (entry.comment?.startsWith('Dodan procijenjeni iznos')) return 'amount';
-  return `s-${entry.fk_request_status}`;
-};
-const timelineIcon = (entry) => {
-  if (entry.comment?.startsWith('Dokument dodan')) return 'attach_file';
-  if (entry.comment?.startsWith('Dokument obrisan')) return 'delete';
-  if (entry.comment?.startsWith('Zahtjev izmijenjen')) return 'edit';
-  if (entry.comment?.startsWith('Dodan procijenjeni iznos')) return 'payments';
-  switch (entry.fk_request_status) {
-    case STATUS.POSLANO: return 'outbox';
-    case STATUS.NA_ODOBRENJU: return 'pending';
-    case STATUS.VRACENO: return 'undo';
-    case STATUS.ODBIJENO: return 'close';
-    case STATUS.NARUCENO: return 'local_shipping';
-    case STATUS.ZATVORENO: return 'task_alt';
-    default: return 'circle';
-  }
-};
-const parseDocType = (comment) =>
-  comment?.split(': ')[1]?.split(' — ')[0] ?? null;
-
-const timelineTitle = (entry) => {
-  if (entry.comment?.startsWith('Dokument dodan')) {
-    const t = parseDocType(entry.comment);
-    if (t === 'Ponuda') return 'Priložena ponuda';
-    if (t === 'Otpremnica') return 'Priložena otpremnica';
-    return 'Priložen dokument';
-  }
-  if (entry.comment?.startsWith('Dokument obrisan')) {
-    const t = parseDocType(entry.comment);
-    if (t === 'Ponuda') return 'Uklonjena ponuda';
-    if (t === 'Otpremnica') return 'Uklonjena otpremnica';
-    return 'Uklonjen dokument';
-  }
-  if (entry.comment?.startsWith('Zahtjev izmijenjen')) return 'Izmjena zahtjeva';
-  if (entry.comment?.startsWith('Dodan procijenjeni iznos')) return 'Upisan iznos';
-  const labels = {
-    'Poslano': 'Zahtjev poslan',
-    'Na odobrenju': 'Preuzeto na obradu',
-    'Zahtjeva izmjene': 'Zahtjeva izmjene',
-    'Naručeno': 'Odobreno i naručeno',
-    'Zatvoreno': 'Zahtjev zatvoren',
-  };
-  return labels[entry.status_name] ?? entry.status_name;
-};
-
-const fileIcon = (mimeType) => {
-  if (!mimeType) return 'insert_drive_file';
-  if (mimeType.includes('pdf')) return 'picture_as_pdf';
-  if (mimeType.includes('image')) return 'image';
-  if (mimeType.includes('word') || mimeType.includes('document')) return 'description';
-  if (mimeType.includes('excel') || mimeType.includes('sheet')) return 'table_chart';
-  if (mimeType.includes('zip')) return 'folder_zip';
-  return 'insert_drive_file';
 };
 
 onMounted(() => {
@@ -1257,6 +1358,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.loading-block {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 240px;
+}
+
 .page {
   padding: 32px 40px;
   background: transparent;
@@ -1264,9 +1372,8 @@ onMounted(() => {
   color: #111827;
 }
 
-.page-shell {
-  max-width: 1280px;
-  margin: 0 auto;
+
+.content-shell {
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -1312,36 +1419,27 @@ onMounted(() => {
   flex-wrap: wrap;
   padding-bottom: 24px;
   border-bottom: 1px solid #e5e7eb;
-  margin-bottom: 24px;
 }
 .page-header__main { flex: 1; min-width: 240px; }
-.page-header__title-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.page-header__title {
-  font-size: 2.1rem;
-  font-weight: 600;
-  color: #111827;
-  letter-spacing: -0.015em;
-  line-height: 1.2;
-  margin: 0;
-}
 .page-header__meta {
   font-size: 0.875rem;
   color: #4b5563;
   margin-top: 8px;
 }
-
-.status-capsule-row {
-  margin: 16px 0;
-}
 .page-header__actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* Separator između neutralnih i storniraj */
+.header-sep {
+  width: 1px;
+  height: 24px;
+  background: #e5e7eb;
+  margin: 0 4px;
 }
 
 .pdf-locked {
@@ -1359,58 +1457,86 @@ onMounted(() => {
   cursor: default;
   user-select: none;
 }
-.btn--danger {
-  background: rgba(197,15,31,0.05);
-  color: #c50f1f;
-  border-color: rgba(197,15,31,0.25);
-}
-.btn--danger:hover:not(:disabled) {
-  background: rgba(197,15,31,0.1);
-  border-color: rgba(197,15,31,0.5);
-}
-.btn--warning {
-  background: rgba(183,121,31,0.06);
-  color: #B7791F;
-  border-color: rgba(183,121,31,0.3);
-}
-.btn--warning:hover:not(:disabled) {
-  background: rgba(183,121,31,0.12);
-  border-color: #B7791F;
+
+/* ─── Status Stepper ─── */
+.status-stepper {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 20px 24px 16px;
 }
 
-/* Status badges */
-.status {
-  display: inline-flex;
-  align-items: center;
-  min-height: 20px;
-  padding: 2px 8px;
-  border-radius: 3px;
-  background: #f3f4f6;
-  color: #374151;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.status--capsule {
+.stepper-steps {
   display: flex;
-  justify-content: center;
-  gap: 7px;
-  width: 100%;
-  padding: 10px 16px;
-  border-radius: 12px;
-  font-size: 0.875rem;
-  letter-spacing: 0.08em;
+  align-items: flex-start;
 }
-.status--sent     { color: #1d4ed8; background: #dbeafe; }
-.status--review   { color: #92400e; background: #fef3c7; }
-.status--returned { color: #9a3412; background: #ffedd5; }
-.status--rejected { color: #991b1b; background: #fee2e2; }
-.status--ordered  { color: #7c3aed; background: #ede9fe; }
-.status--closed   { color: #166534; background: #dcfce7; }
-.status--default  { color: #374151; background: #f3f4f6; }
+
+.stepper-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+
+.stepper-connector {
+  flex: 1;
+  height: 2px;
+  background: #e5e7eb;
+  margin-top: 13px;
+  min-width: 16px;
+  transition: background 0.2s;
+}
+.stepper-connector--done { background: #00afdb; }
+
+.stepper-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #d1d5db;
+  background: white;
+  color: #9ca3af;
+  position: relative;
+  z-index: 1;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.stepper-dot--done        { background: #00afdb; border-color: #00afdb; color: white; }
+.stepper-dot--active      { background: #16294E; border-color: #16294E; color: white; }
+.stepper-dot--active-warn { background: #B7791F; border-color: #B7791F; color: white; }
+.stepper-dot--active-error{ background: #c50f1f; border-color: #c50f1f; color: white; }
+.stepper-dot--upcoming    { background: white;   border-color: #d1d5db; color: #d1d5db; }
+.stepper-dot--locked      { background: #f3f4f6; border-color: #e5e7eb; color: #d1d5db; }
+
+.stepper-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #9ca3af;
+  text-align: center;
+  margin-top: 7px;
+  line-height: 1.3;
+  max-width: 70px;
+}
+.stepper-label--done        { color: #0e7490; font-weight: 600; }
+.stepper-label--active      { color: #16294E; font-weight: 700; }
+.stepper-label--active-warn { color: #B7791F; font-weight: 700; }
+.stepper-label--active-error{ color: #c50f1f; font-weight: 700; }
+.stepper-label--locked      { color: #d1d5db; }
+
+.stepper-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+.stepper-note--warn  { background: #fffbeb; color: #B7791F; border: 1px solid rgba(183,121,31,0.2); }
+.stepper-note--error { background: #fef2f2; color: #c50f1f; border: 1px solid rgba(197,15,31,0.2); }
 
 /* Action banners */
 .action-banner {
@@ -1423,7 +1549,6 @@ onMounted(() => {
   align-items: flex-start;
   gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 20px;
   box-shadow: 0 2px 12px rgba(0,175,219,0.07);
 }
 .action-banner--neutral { border-left-color: #00afdb; }
@@ -1496,9 +1621,7 @@ onMounted(() => {
   white-space: pre-wrap;
 }
 
-/* Cards — page-specific overrides */
-.card { margin-bottom: 20px; }
-.card__body { padding: 18px; }
+/* Cards */
 .card__body--flush { padding: 0; }
 .card__header--no-divider { border-bottom: none !important; padding-bottom: 0; }
 .card__empty {
@@ -1514,13 +1637,11 @@ onMounted(() => {
   grid-template-columns: 1fr 1fr;
   gap: 24px;
   align-items: start;
-  margin-bottom: 24px;
 }
-.info-grid .card { margin-bottom: 0; }
 .info-col {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 @media (max-width: 800px) {
   .info-grid { grid-template-columns: 1fr; }
@@ -1550,16 +1671,27 @@ onMounted(() => {
   white-space: pre-wrap;
 }
 
-.comment-block__label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.75rem;
+/* Amount summary box */
+.amount-summary {
+  background: linear-gradient(135deg, rgba(0,175,219,0.06) 0%, rgba(22,41,78,0.04) 100%);
+  border: 1.5px solid rgba(0,175,219,0.2);
+  border-radius: 14px;
+  padding: 18px 22px;
+}
+.amount-summary__label {
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
   letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #0e7490;
   margin-bottom: 6px;
+}
+.amount-summary__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #16294E;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 /* Items table */
@@ -1598,10 +1730,18 @@ onMounted(() => {
   border-top: 1px solid #e5e7eb;
   letter-spacing: 0.01em;
 }
-.items-summary__qty {
-  font-variant-numeric: tabular-nums;
-  color: #374151;
+.items-summary__qty { font-variant-numeric: tabular-nums; color: #374151; }
+
+.items-total td {
+  padding: 11px 18px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #16294E;
+  background: rgba(0,175,219,0.04);
+  border-top: 1.5px solid rgba(0,175,219,0.2);
 }
+.items-total__label { color: #0e7490; font-weight: 600; font-size: 0.8125rem; }
+.items-total__value { font-variant-numeric: tabular-nums; text-align: right; }
 
 /* Documents */
 .doc-indicators {
@@ -1622,16 +1762,12 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 0;
   height: 22px;
   font-size: 0.75rem;
   font-weight: 500;
-  background: transparent;
   color: #6b7280;
 }
-.doc-indicator--ok {
-  color: #107C10;
-}
+.doc-indicator--ok { color: #107C10; }
 
 .file-list { list-style: none; padding: 0; margin: 0; }
 .file-row {
@@ -1684,7 +1820,13 @@ onMounted(() => {
 }
 .doc-tag--offer    { background: #eff6ff; color: #2563eb; }
 .doc-tag--delivery { background: #f0fdf4; color: #107C10; }
+
 .file-actions { display: flex; gap: 2px; }
+/* Touch target 40px za file action gumbe */
+.file-action-btn {
+  width: 40px !important;
+  height: 40px !important;
+}
 
 /* Upload */
 .upload-section {
@@ -1701,7 +1843,6 @@ onMounted(() => {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #6b7280;
-  margin-bottom: 0;
 }
 .upload-type-row { display: flex; }
 .upload-type-select { max-width: 220px; }
@@ -1737,36 +1878,16 @@ onMounted(() => {
   transition: border-color 0.15s, background 0.15s;
   text-align: center;
 }
-.upload-zone:hover {
-  border-color: #00afdb;
-  background: #f0fbfe;
-}
+.upload-zone:hover { border-color: #00afdb; background: #f0fbfe; }
 .upload-zone__icon { color: #9ca3af; transition: color 0.15s; }
 .upload-zone:hover .upload-zone__icon { color: #00afdb; }
-.upload-zone__text {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-  word-break: break-all;
-}
-.upload-zone__hint {
-  font-size: 0.75rem;
-  color: #9ca3af;
-}
+.upload-zone__text { font-size: 0.875rem; font-weight: 500; color: #374151; word-break: break-all; }
+.upload-zone__hint { font-size: 0.75rem; color: #9ca3af; }
 
-.upload-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
+.upload-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .upload-clear-btn { height: 34px; }
 .upload-submit-btn { height: 34px; }
-
-.upload-hint {
-  font-size: 0.75rem;
-  color: #6b7280;
-  margin-top: 0;
-}
+.upload-hint { font-size: 0.75rem; color: #6b7280; }
 
 /* Timeline */
 .timeline {
@@ -1779,10 +1900,6 @@ onMounted(() => {
   padding: 0 18px 14px;
   display: flex;
   justify-content: center;
-}
-.btn--sm {
-  font-size: 0.8125rem;
-  padding: 5px 12px;
 }
 .timeline-item {
   display: flex;
@@ -1816,10 +1933,10 @@ onMounted(() => {
   color: #6b7280;
   margin-top: 2px;
 }
-.timeline-item--doc-add .timeline-dot { background: #f0fdf4; border-color: #bbf7d0; color: #107C10; }
-.timeline-item--doc-del .timeline-dot { background: #fef2f2; border-color: #fecaca; color: #c50f1f; }
-.timeline-item--edit .timeline-dot { background: rgba(0,175,219,0.08); border-color: rgba(0,175,219,0.25); color: #0e7490; }
-.timeline-item--amount .timeline-dot { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+.timeline-item--doc-add .timeline-dot  { background: #f0fdf4; border-color: #bbf7d0; color: #107C10; }
+.timeline-item--doc-del .timeline-dot  { background: #fef2f2; border-color: #fecaca; color: #c50f1f; }
+.timeline-item--edit .timeline-dot     { background: rgba(0,175,219,0.08); border-color: rgba(0,175,219,0.25); color: #0e7490; }
+.timeline-item--amount .timeline-dot   { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
 .timeline-item--s-1 .timeline-dot { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
 .timeline-item--s-2 .timeline-dot { background: #fff8e1; border-color: #fde68a; color: #B7791F; }
 .timeline-item--s-3 .timeline-dot { background: #fff7ed; border-color: #fed7aa; color: #C2410C; }
@@ -1838,6 +1955,10 @@ onMounted(() => {
   color: #6b7280;
   margin-top: 1px;
 }
+.timeline-reldate {
+  border-bottom: 1px dashed #d1d5db;
+  cursor: default;
+}
 .timeline-comment {
   margin-top: 6px;
   padding: 8px 12px;
@@ -1848,7 +1969,7 @@ onMounted(() => {
   line-height: 1.5;
 }
 
-/* Empty */
+/* Empty / 404 */
 .empty-block--page {
   text-align: center;
   padding: 56px 24px;
@@ -1856,11 +1977,7 @@ onMounted(() => {
   border: 1px solid #e5e7eb;
 }
 .empty-block__icon { color: #9ca3af; margin-bottom: 8px; }
-.empty-block__text {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: #374151;
-}
+.empty-block__text { font-size: 0.8125rem; font-weight: 500; color: #374151; }
 
 /* Dialog */
 .dialog-card {
@@ -1875,18 +1992,9 @@ onMounted(() => {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 .dialog-header { padding: 18px 20px 10px; }
-.dialog-title {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: #111827;
-  letter-spacing: -0.005em;
-}
-.dialog-desc {
-  font-size: 0.8125rem;
-  color: #4b5563;
-  margin-top: 3px;
-}
-.dialog-body { padding: 0 20px 14px; }
+.dialog-title { font-size: 0.9375rem; font-weight: 600; color: #111827; letter-spacing: -0.005em; }
+.dialog-desc  { font-size: 0.8125rem; color: #4b5563; margin-top: 3px; }
+.dialog-body  { padding: 0 20px 14px; }
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
@@ -1896,28 +2004,28 @@ onMounted(() => {
   background: #fafafa;
 }
 
-@media (max-width: 600px) {
+/* Responsive */
+@media (max-width: 640px) {
   .page { padding: 20px 16px; }
-  .page-header__title { font-size: 1.7rem; }
+  .page-header__actions { flex-wrap: wrap; }
   .action-banner { flex-direction: column; align-items: stretch; }
   .action-banner__actions { width: 100%; }
   .action-banner__actions .btn { flex: 1; }
   .dialog-card { min-width: 0; width: 100%; }
+  .stepper-label { display: none; }
+}
+@media (max-width: 480px) {
+  .status-stepper { overflow-x: auto; }
+  .stepper-steps  { min-width: 360px; }
 }
 
 /* ════════════════════════════════════════════════════
    PRINT VIEW — skriven na ekranu, vidljiv pri ispisu
    ════════════════════════════════════════════════════ */
-.print-view {
-  display: none;
-}
+.print-view { display: none; }
 
 @media print {
-  /* Reset stranice */
-  @page {
-    size: A4;
-    margin: 18mm;
-  }
+  @page { size: A4; margin: 18mm; }
 
   body {
     background: white !important;
@@ -1925,202 +2033,54 @@ onMounted(() => {
     print-color-adjust: exact;
   }
 
-  /* Sve s klasom no-print sakrij */
   .no-print { display: none !important; }
 
-  /* Sakrij Quasar header/footer ako postoji */
-  .q-layout, .q-page-container, .q-page {
-    background: white !important;
-  }
+  .q-layout, .q-page-container, .q-page { background: white !important; }
 
-  .page,
-  .q-page {
+  .page, .q-page {
     background: white !important;
     padding: 0 !important;
     min-height: 0 !important;
     height: auto !important;
   }
 
-  /* Spriječi prazan page break */
-  .page-shell,
-  .print-view {
-    page-break-after: avoid;
-    break-after: avoid;
-  }
+  .page-shell, .print-view { page-break-after: avoid; break-after: avoid; }
+  .print-stamp             { page-break-after: avoid; break-after: avoid; }
+  .page-shell { max-width: 100% !important; gap: 0 !important; }
 
-  .print-stamp {
-    page-break-after: avoid;
-    break-after: avoid;
-  }
+  .print-view { display: block !important; color: black; font-family: 'Times New Roman', Times, serif; font-size: 11pt; line-height: 1.4; }
 
-  .page-shell {
-    max-width: 100% !important;
-    gap: 0 !important;
-  }
+  .print-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 4px; }
+  .print-header__left { display: flex; align-items: center; gap: 12px; }
+  .print-header__logo { width: 48px; height: 48px; object-fit: contain; flex-shrink: 0; }
+  .print-header__inst { font-size: 11pt; font-weight: 700; color: #1F3864; letter-spacing: 0.04em; }
+  .print-header__right { text-align: right; font-size: 8pt; color: #1F3864; font-weight: 700; letter-spacing: 0.02em; }
+  .print-header__right-en { font-style: italic; font-weight: 400; margin-top: 0; }
+  .print-header__contact { font-size: 8pt; color: #555; text-align: center; margin-top: 6px; }
+  .print-header__line { border-top: 1.5px solid black; margin: 8px 0 22px; }
 
-  /* PRINT VIEW — vidljiv */
-  .print-view {
-    display: block !important;
-    color: black;
-    font-family: 'Times New Roman', Times, serif;
-    font-size: 11pt;
-    line-height: 1.4;
-  }
+  .print-title-box { border: 1px solid black; padding: 4px 0; text-align: center; margin-bottom: 20px; }
+  .print-title-box h1 { font-size: 12pt; font-weight: 700; letter-spacing: 0.05em; margin: 0; }
 
-  /* ─────── Zaglavlje institucije ─────── */
-  .print-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-    margin-bottom: 4px;
-  }
+  .print-fields { display: grid; grid-template-columns: 200px 1fr; gap: 14px 16px; margin-bottom: 24px; }
+  .print-fields__label { font-size: 11pt; color: black; }
+  .print-fields__label-sub { font-style: italic; font-size: 10pt; color: black; display: block; }
+  .print-fields__value { font-size: 11pt; color: black; }
 
-  .print-header__left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
+  .print-purpose { margin-bottom: 18px; }
+  .print-purpose__box { border: 1px solid black; padding: 10px 12px; min-height: 130px; }
+  .print-purpose__label { font-size: 11pt; margin-bottom: 6px; }
+  .print-purpose__text { font-size: 11pt; line-height: 1.55; white-space: pre-wrap; }
 
-  .print-header__logo {
-    width: 48px;
-    height: 48px;
-    object-fit: contain;
-    flex-shrink: 0;
-  }
+  .print-items { margin: 16px 0 22px; }
+  .print-items__title { font-size: 10pt; font-style: italic; color: #555; margin-bottom: 4px; }
+  .print-items table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+  .print-items th, .print-items td { border: 1px solid black; padding: 4px 8px; text-align: left; }
+  .print-items th { font-weight: 700; background: #F0F0F0; }
+  .print-items .num { text-align: right; font-variant-numeric: tabular-nums; }
 
-  .print-header__inst {
-    font-size: 11pt;
-    font-weight: 700;
-    color: #1F3864;
-    letter-spacing: 0.04em;
-  }
+  .print-total { font-size: 11pt; margin: 18px 0 8px; }
 
-  .print-header__right {
-    text-align: right;
-    font-size: 8pt;
-    color: #1F3864;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-  }
-  .print-header__right-en {
-    font-style: italic;
-    font-weight: 400;
-    margin-top: 0;
-  }
-
-  .print-header__contact {
-    font-size: 8pt;
-    color: #555;
-    text-align: center;
-    margin-top: 6px;
-  }
-
-  .print-header__line {
-    border-top: 1.5px solid black;
-    margin: 8px 0 22px;
-  }
-
-  /* ─────── Naslov u okviru ─────── */
-  .print-title-box {
-    border: 1px solid black;
-    padding: 4px 0;          /* ← bilo 12px, sad je 6px */
-    text-align: center;
-    margin-bottom: 20px;     /* opcionalno: smanji margin ispod */
-  }
-  .print-title-box h1 {
-    font-size: 12pt;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    margin: 0;
-  }
-
-  /* ─────── Polja ─────── */
-  .print-fields {
-    display: grid;
-    grid-template-columns: 200px 1fr;
-    gap: 14px 16px;
-    margin-bottom: 24px;
-  }
-
-  .print-fields__label {
-    font-size: 11pt;
-    color: black;
-  }
-  .print-fields__label-sub {
-    font-style: italic;
-    font-size: 10pt;
-    color: black;
-    display: block;
-  }
-  .print-fields__value {
-    font-size: 11pt;
-    color: black;
-  }
-
-  /* ─────── Svrha ─────── */
-  .print-purpose {
-    margin-bottom: 18px;
-  }
-  .print-purpose__box {
-    border: 1px solid black;
-    padding: 10px 12px;
-    min-height: 130px;
-  }
-  .print-purpose__label {
-    font-size: 11pt;
-    margin-bottom: 6px;
-  }
-  .print-purpose__text {
-    font-size: 11pt;
-    line-height: 1.55;
-    white-space: pre-wrap;
-  }
-
-  /* ─────── Stavke (mala tablica) ─────── */
-  .print-items {
-    margin: 16px 0 22px;
-  }
-  .print-items__title {
-    font-size: 10pt;
-    font-style: italic;
-    color: #555;
-    margin-bottom: 4px;
-  }
-  .print-items table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 10pt;
-  }
-  .print-items th, .print-items td {
-    border: 1px solid black;
-    padding: 4px 8px;
-    text-align: left;
-  }
-  .print-items th {
-    font-weight: 700;
-    background: #F0F0F0;
-  }
-  .print-items .num {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* ─────── Ukupni iznos ─────── */
-  .print-total {
-    font-size: 11pt;
-    margin: 18px 0 8px;
-  }
-
-  /* ─────── Status stamp ─────── */
-  .print-stamp {
-    margin-top: 28px;
-    padding-top: 12px;
-    border-top: 1px solid black;
-    display: flex;
-    justify-content: space-between;
-    font-size: 9pt;
-    color: black;
-  }
+  .print-stamp { margin-top: 28px; padding-top: 12px; border-top: 1px solid black; display: flex; justify-content: space-between; font-size: 9pt; color: black; }
 }
 </style>

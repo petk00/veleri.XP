@@ -313,7 +313,7 @@
                         class="add-item__qty"
                         @keyup.enter="addItem"
                       />
-                      <button class="btn btn--ghost add-item__btn" @click="addItem">
+                      <button class="btn btn--primary add-item__btn" @click="addItem">
                         <q-icon name="add" size="16px" />
                         <span>Dodaj</span>
                       </button>
@@ -334,7 +334,7 @@
                         <div class="item-list__category">{{ item.category_label }}</div>
                       </div>
                       <div class="item-list__qty">× {{ item.quantity }}</div>
-                      <button class="icon-btn" @click="removeItem(index)">
+                      <button class="icon-btn icon-btn--danger" @click="removeItem(index)">
                         <q-icon name="close" size="16px" />
                       </button>
                     </li>
@@ -392,7 +392,7 @@
               </button>
               <button
                 v-else
-                class="btn btn--primary"
+                class="btn btn--cta"
                 :disabled="submitting"
                 @click="submitWizard"
               >

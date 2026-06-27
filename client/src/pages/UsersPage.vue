@@ -112,7 +112,7 @@
           </div>
           <div class="dialog-actions" style="margin-top: 0;">
             <button type="button" class="btn btn--ghost" @click="inviteDialog.open = false">Zatvori</button>
-            <button type="button" class="btn btn--ghost" @click="copyLink">
+            <button type="button" class="btn btn--primary" @click="copyLink">
               <q-icon :name="inviteDialog.copied ? 'check' : 'content_copy'" size="16px" />
               <span>{{ inviteDialog.copied ? 'Kopirano!' : 'Kopiraj link' }}</span>
             </button>
@@ -161,7 +161,7 @@
 
           <div class="dialog-actions">
             <button type="button" class="btn btn--ghost" @click="closeDialog">Odustani</button>
-            <button type="submit" class="btn btn--ghost" :disabled="dialog.saving">
+            <button type="submit" class="btn btn--primary" :disabled="dialog.saving">
               <q-spinner v-if="dialog.saving" size="14px" color="white" />
               <span v-else>{{ dialog.isEdit ? 'Spremi' : 'Kreiraj korisnika' }}</span>
             </button>
