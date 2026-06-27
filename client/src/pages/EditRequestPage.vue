@@ -325,7 +325,7 @@
           <button class="btn btn--ghost" :disabled="saving" @click="goBack">
             Odustani
           </button>
-          <button class="btn btn--primary" :disabled="saving" @click="saveChanges">
+          <button class="btn btn--cta" :disabled="saving" @click="saveChanges">
             <q-spinner v-if="saving" size="16px" color="white" />
             <q-icon v-else name="save" size="16px" />
             <span>{{ saving ? 'Spremam...' : 'Spremi izmjene' }}</span>

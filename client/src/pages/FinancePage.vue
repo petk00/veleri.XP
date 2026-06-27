@@ -264,7 +264,7 @@
           <div v-if="createDialog.error" class="form-error">{{ createDialog.error }}</div>
           <div class="dialog-actions">
             <button type="button" class="btn btn--ghost" @click="createDialog.open = false">Odustani</button>
-            <button type="submit" class="btn btn--ghost" :disabled="createDialog.saving">
+            <button type="submit" class="btn btn--primary" :disabled="createDialog.saving">
               <q-spinner v-if="createDialog.saving" size="14px" color="white" />
               <span v-else>Kreiraj</span>
             </button>
@@ -297,7 +297,7 @@
           <div v-if="deptDialog.error" class="form-error">{{ deptDialog.error }}</div>
           <div class="dialog-actions">
             <button type="button" class="btn btn--ghost" @click="deptDialog.open = false">Odustani</button>
-            <button type="submit" class="btn btn--ghost" :disabled="deptDialog.saving">
+            <button type="submit" class="btn btn--primary" :disabled="deptDialog.saving">
               <q-spinner v-if="deptDialog.saving" size="14px" color="white" />
               <span v-else>Spremi</span>
             </button>
@@ -323,7 +323,7 @@
           <div v-if="catDialog.error" class="form-error">{{ catDialog.error }}</div>
           <div class="dialog-actions">
             <button type="button" class="btn btn--ghost" @click="catDialog.open = false">Odustani</button>
-            <button type="submit" class="btn btn--ghost" :disabled="catDialog.saving">
+            <button type="submit" class="btn btn--primary" :disabled="catDialog.saving">
               <q-spinner v-if="catDialog.saving" size="14px" color="white" />
               <span v-else>Spremi</span>
             </button>
@@ -359,7 +359,7 @@
           <div v-if="budgetDialog.error" class="form-error">{{ budgetDialog.error }}</div>
           <div class="dialog-actions">
             <button type="button" class="btn btn--ghost" @click="budgetDialog.open = false">Odustani</button>
-            <button type="submit" class="btn btn--ghost" :disabled="budgetDialog.saving">
+            <button type="submit" class="btn btn--primary" :disabled="budgetDialog.saving">
               <q-spinner v-if="budgetDialog.saving" size="14px" color="white" />
               <span v-else>Spremi</span>
             </button>

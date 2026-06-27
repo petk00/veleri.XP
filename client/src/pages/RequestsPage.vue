@@ -107,6 +107,26 @@
             </q-td>
           </template>
 
+          <!-- Cell: docs -->
+          <template #body-cell-docs="props">
+            <q-td :props="props" class="cell-docs">
+              <q-icon
+                name="description"
+                size="16px"
+                :class="props.row.has_ponuda ? 'doc-icon--ok' : 'doc-icon--missing'"
+              >
+                <q-tooltip>{{ props.row.has_ponuda ? 'Ponuda priložena' : 'Ponuda nije priložena' }}</q-tooltip>
+              </q-icon>
+              <q-icon
+                name="local_shipping"
+                size="16px"
+                :class="props.row.has_otpremnica ? 'doc-icon--ok' : 'doc-icon--missing'"
+              >
+                <q-tooltip>{{ props.row.has_otpremnica ? 'Otpremnica priložena' : 'Otpremnica nije priložena' }}</q-tooltip>
+              </q-icon>
+            </q-td>
+          </template>
+
           <!-- Cell: justification -->
           <template #body-cell-justification="props">
             <q-td :props="props" class="cell-comment">
@@ -247,6 +267,7 @@ const allColumns = [
   { name: 'department_name', label: 'Odjel',           field: 'department_name', align: 'left',  sortable: true,  style: 'width: 150px' },
   { name: 'total_amount',    label: 'Iznos',           field: 'total_amount',    align: 'right', sortable: true,  style: 'width: 110px' },
   { name: 'justification',   label: 'Napomena',        field: 'justification',   align: 'left',  sortable: false, style: 'min-width: 160px' },
+  { name: 'docs',            label: 'Dokumenti',       field: 'docs',            align: 'center', sortable: false, style: 'width: 90px' },
   { name: 'created_by',      label: 'Podnositelj',     field: 'created_by',      align: 'left',  sortable: true,  style: 'width: 140px' },
   { name: 'created_at',      label: 'Datum',           field: 'created_at',      align: 'left',  sortable: true,  style: 'width: 100px' },
   { name: 'updated_at',      label: 'Zadnja promjena', field: 'updated_at',      align: 'left',  sortable: true,  style: 'width: 120px' },
@@ -678,6 +699,10 @@ onMounted(async () => {
 }
 
 .cell-muted { color: #4b5563 !important; }
+
+.cell-docs { display: flex; align-items: center; gap: 6px; }
+.doc-icon--ok      { color: #107C10; }
+.doc-icon--missing { color: #d1d5db; }
 
 .cell-comment { max-width: 300px; }
 .comment-text {

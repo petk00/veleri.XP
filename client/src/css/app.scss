@@ -85,6 +85,50 @@ body {
   border-radius: 8px;
 }
 
+.btn--cta {
+  background: #00afdb;
+  color: #ffffff;
+  border-color: #00afdb;
+  font-weight: 700;
+  padding: 0 22px;
+}
+.btn--cta:hover:not(:disabled) {
+  background: #0099c2;
+  border-color: #0099c2;
+  box-shadow: 0 2px 10px rgba(0, 175, 219, 0.35);
+}
+
+.btn--danger {
+  background: rgba(197, 15, 31, 0.05);
+  color: #c50f1f;
+  border-color: rgba(197, 15, 31, 0.25);
+}
+.btn--danger:hover:not(:disabled) {
+  background: rgba(197, 15, 31, 0.1);
+  border-color: rgba(197, 15, 31, 0.5);
+}
+
+.btn--warning {
+  background: rgba(183, 121, 31, 0.06);
+  color: #B7791F;
+  border-color: rgba(183, 121, 31, 0.3);
+}
+.btn--warning:hover:not(:disabled) {
+  background: rgba(183, 121, 31, 0.12);
+  border-color: #B7791F;
+}
+
+.btn--storno {
+  background: transparent;
+  color: #6b7280;
+  border-color: #e5e7eb;
+}
+.btn--storno:hover:not(:disabled) {
+  background: rgba(197, 15, 31, 0.04);
+  color: #c50f1f;
+  border-color: rgba(197, 15, 31, 0.35);
+}
+
 // ── Icon buttons ─────────────────────────────────────────────────────────────
 .icon-btn {
   all: unset;
