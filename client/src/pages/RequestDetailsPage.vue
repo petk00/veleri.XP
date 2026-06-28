@@ -1,23 +1,6 @@
 <template>
   <q-page class="page">
 
-    <!-- ═══════════════════════════════════════
-         STICKY HEADER
-         ═══════════════════════════════════════ -->
-    <header class="sticky-header no-print">
-      <div class="sticky-header__left">
-        <button class="breadcrumb__back" type="button" @click="goBack">
-          <q-icon name="arrow_back" size="13px" />
-          <span>{{ isAdmin ? 'Zahtjevi' : 'Moji zahtjevi' }}</span>
-        </button>
-        <span class="sticky-header__sep">/</span>
-        <span class="sticky-header__title">{{ request?.request_number || '…' }}</span>
-      </div>
-      <div v-if="request" class="sticky-header__right">
-        <span class="status-badge" :class="statusBadgeClass">{{ request.status_name }}</span>
-      </div>
-    </header>
-
     <!-- Loading -->
     <div v-if="loading" class="loading-block no-print">
       <q-spinner color="primary" size="32px" />
@@ -27,33 +10,6 @@
          MAIN CONTENT
          ═══════════════════════════════════════ -->
     <div v-else-if="request" class="page-body">
-
-      <!-- Alert box -->
-      <div v-if="pageAlert" class="alert-box no-print" :class="`alert-box--${pageAlert.type}`">
-        <q-icon :name="pageAlert.icon" size="16px" class="alert-box__icon" />
-        <div class="alert-box__body">
-          <strong class="alert-box__title">{{ pageAlert.title }}</strong>
-          <span v-if="pageAlert.desc" class="alert-box__desc"> — {{ pageAlert.desc }}</span>
-        </div>
-        <div class="alert-box__actions">
-          <button
-            v-if="canDecide"
-            class="btn btn--warning btn--sm"
-            :disabled="submittingAction"
-            @click="openActionDialog('vrati-na-izmjenu')"
-          >
-            <q-icon name="undo" size="13px" /> Vrati na dopunu
-          </button>
-          <button
-            v-if="canTakeOver || canDecide || (isAdmin && status === STATUS.VRACENO)"
-            class="btn btn--danger btn--sm"
-            :disabled="submittingAction"
-            @click="openActionDialog('odbij')"
-          >
-            <q-icon name="close" size="13px" /> Odbij
-          </button>
-        </div>
-      </div>
 
       <!-- Stepper -->
       <div class="status-stepper no-print">
@@ -80,142 +36,150 @@
         </div>
       </div>
 
-      <!-- ───── Two-column grid ───── -->
-      <div class="detail-grid no-print">
+      <!-- ───── Main content ───── -->
+      <div class="main-col no-print">
 
-        <!-- LEFT: main content -->
-        <div class="main-col">
+        <div class="cards-stack">
 
-          <!-- Osnovni podaci -->
-          <div class="card card--compact">
-            <div class="card__header">
-              <h2 class="card__title">
-                <q-icon name="info" size="15px" />
-                <span>Osnovni podaci</span>
-              </h2>
-            </div>
-            <div class="card__body">
-              <dl class="info-list">
-                <div class="info-row">
-                  <dt>Fiskalna godina</dt>
-                  <dd>{{ request.fiscal_year }}</dd>
-                </div>
-                <div class="info-row">
-                  <dt>Odjel / Služba</dt>
-                  <dd>{{ request.department_name }}</dd>
-                </div>
-                <div class="info-row">
-                  <dt>Podnositelj</dt>
-                  <dd>{{ request.created_by }}</dd>
-                </div>
-                <div class="info-row">
-                  <dt>Datum kreiranja</dt>
-                  <dd>{{ formatDate(request.created_at) }}</dd>
-                </div>
-                <div v-if="request.updated_at && request.updated_at !== request.created_at" class="info-row">
-                  <dt>Zadnja izmjena</dt>
-                  <dd>{{ formatDate(request.updated_at) }}</dd>
-                </div>
-              </dl>
-              <div class="info-divider" />
-              <div class="info-section-label">Svrha nabave</div>
-              <p class="prose">{{ request.justification || 'Nema unesenog obrazloženja.' }}</p>
-              <div v-if="request.comment" class="prose-note">
-                <div class="prose-note__label">Napomena podnositelja</div>
-                <p class="prose">{{ request.comment }}</p>
+          <!-- Merged card: identity + actions + meta + svrha -->
+          <div class="card no-print">
+
+            <!-- Top row: nav / request info / action buttons -->
+            <div class="merged-top">
+              <div class="action-bar__identity">
+                <button class="breadcrumb__back" type="button" @click="goBack">
+                  <q-icon name="arrow_back" size="13px" />
+                  <span>{{ isAdmin ? 'Zahtjevi' : 'Moji zahtjevi' }}</span>
+                </button>
+                <div class="action-bar__vsep" />
+                <span class="action-bar__req-number">{{ request.request_number }}</span>
+                <div class="action-bar__vsep" />
+                <span class="action-bar__req-number">
+                  <span v-if="hasAmount">{{ formatCurrency(request.total_amount) }}</span>
+                  <span v-else style="color:#c4c9d4;font-weight:400;font-style:italic;">Iznos nije određen</span>
+                </span>
+                <div class="action-bar__vsep" />
+                <span class="action-bar__req-number">{{ request.created_by }}<span style="font-weight:400;color:#6b7280;"> ({{ request.department_name }})</span></span>
               </div>
-              <div class="info-divider" />
-              <div class="info-section-label">Dokumenti</div>
-              <div class="doc-slots">
-                <!-- Ponuda -->
-                <div class="doc-slot">
-                  <div class="doc-slot__left">
-                    <q-icon name="receipt_long" size="15px" :class="hasPonuda ? 'doc-slot__icon--ok' : 'doc-slot__icon--missing'" />
+              <div v-if="pageAlert && pageAlert.type !== 'info'" class="merged-alert" :class="`merged-alert--${pageAlert.type}`">
+                <q-icon :name="pageAlert.icon" size="14px" />
+                <span>{{ pageAlert.title }}</span>
+                <span v-if="pageAlert.desc" class="merged-alert__desc">— {{ pageAlert.desc }}</span>
+              </div>
+              <div style="flex:1" />
+              <div class="action-bar__actions">
+                <template v-if="canUploadAny">
+                  <label v-if="canUploadPonuda" class="btn btn--ghost btn--sm" style="cursor:pointer;">
+                    <q-icon name="upload_file" size="13px" /><span>Dodaj ponudu</span>
+                    <q-file v-model="ponudaFileInput" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none" @update:model-value="val => { if (val) uploadDirect(val, 'Ponuda') }" />
+                  </label>
+                  <label v-if="canUploadOtpremnica" class="btn btn--ghost btn--sm" style="cursor:pointer;">
+                    <q-icon name="upload_file" size="13px" /><span>Dodaj otpremnicu</span>
+                    <q-file v-model="otpremnicaFileInput" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none" @update:model-value="val => { if (val) uploadDirect(val, 'Otpremnica') }" />
+                  </label>
+                  <div class="action-bar__vsep" />
+                </template>
+                <button v-if="canEdit && !canResubmit" class="btn btn--ghost btn--sm" @click="editRequest">
+                  <q-icon name="edit" size="14px" /><span>Uredi</span>
+                </button>
+                <button v-if="canDownloadPdf" class="btn btn--ghost btn--sm" :disabled="pdfGenerating" @click="downloadPdf">
+                  <q-spinner v-if="pdfGenerating" size="12px" />
+                  <q-icon v-else name="download" size="14px" />
+                  <span>{{ pdfGenerating ? 'Generiranje…' : 'PDF' }}</span>
+                </button>
+                <template v-if="canEdit || canDownloadPdf">
+                  <div class="action-bar__vsep" />
+                </template>
+                <button v-if="canDecide" class="btn btn--warning btn--sm" :disabled="submittingAction" @click="openActionDialog('vrati-na-izmjenu')">
+                  <q-icon name="undo" size="14px" /><span>Vrati na dopunu</span>
+                </button>
+                <button v-if="canTakeOver || canDecide" class="btn btn--danger btn--sm" :disabled="submittingAction" @click="openActionDialog('odbij')">
+                  <q-icon name="close" size="14px" /><span>Odbij</span>
+                </button>
+                <button v-if="primaryCta" class="btn btn--cta btn--sm" :disabled="primaryCta.disabled || submittingAction" @click="triggerPrimaryCta">
+                  <q-spinner v-if="submittingAction" size="12px" color="white" />
+                  <q-icon v-else :name="primaryCta.icon" size="14px" />
+                  <span>{{ primaryCta.label }}</span>
+                </button>
+                <template v-if="isAdmin && status && !LOCKED_STATUSES.includes(status)">
+                  <div class="action-bar__vsep" />
+                  <button class="btn btn--storno btn--sm" :disabled="submittingAction" @click="openActionDialog('storno')">
+                    <q-icon name="block" size="14px" /><span>Storniraj</span>
+                  </button>
+                </template>
+              </div>
+            </div>
+
+            <!-- meta strip -->
+            <div class="meta-strip">
+
+              <!-- Kol 1: dokumenti -->
+              <div class="meta-col">
+                <div class="info-section-label">Dokumenti</div>
+                <div class="doc-col-row">
+                  <div class="doc-col-row__left">
+                    <q-icon name="receipt_long" size="14px" :class="hasPonuda ? 'doc-slot__icon--ok' : 'doc-slot__icon--missing'" />
                     <span class="doc-slot__type">Ponuda</span>
-                    <span v-if="ponudaFile" class="doc-slot__filename">{{ ponudaFile.file_name }}</span>
                   </div>
-                  <div class="doc-slot__right">
+                  <div class="doc-col-row__right">
                     <template v-if="ponudaFile">
-                      <span class="doc-badge doc-badge--ok">
-                        <q-icon name="check_circle" size="11px" /> Priložena
-                      </span>
-                      <button v-if="canPreview(ponudaFile)" class="icon-btn" @click="previewAttachment(ponudaFile)">
-                        <q-icon name="visibility" size="14px" /><q-tooltip>Prikaži</q-tooltip>
-                      </button>
-                      <button class="icon-btn" @click="downloadAttachment(ponudaFile)">
-                        <q-icon name="download" size="14px" /><q-tooltip>Preuzmi</q-tooltip>
-                      </button>
-                      <button v-if="canDeleteFile(ponudaFile)" class="icon-btn icon-btn--danger" @click="deleteAttachment(ponudaFile)">
-                        <q-icon name="delete_outline" size="14px" /><q-tooltip>Obriši</q-tooltip>
-                      </button>
+                      <span class="doc-badge doc-badge--ok"><q-icon name="check_circle" size="10px" /> Priložena</span>
+                      <button v-if="canPreview(ponudaFile)" class="icon-btn" @click="previewAttachment(ponudaFile)"><q-icon name="visibility" size="13px" /><q-tooltip>Prikaži</q-tooltip></button>
+                      <button class="icon-btn" @click="downloadAttachment(ponudaFile)"><q-icon name="download" size="13px" /><q-tooltip>Preuzmi</q-tooltip></button>
+                      <button v-if="canDeleteFile(ponudaFile)" class="icon-btn icon-btn--danger" @click="deleteAttachment(ponudaFile)"><q-icon name="delete_outline" size="13px" /><q-tooltip>Obriši</q-tooltip></button>
                     </template>
-                    <template v-else>
-                      <span class="doc-badge doc-badge--missing">Nedostaje</span>
-                      <label v-if="canUploadPonuda" class="btn btn--ghost btn--sm doc-upload-btn">
-                        <q-icon name="upload_file" size="13px" />
-                        <span>Dodaj</span>
-                        <q-file
-                          v-model="ponudaFileInput"
-                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                          style="display:none"
-                          @update:model-value="val => { if (val) uploadDirect(val, 'Ponuda') }"
-                        />
-                      </label>
-                    </template>
+                    <template v-else><span class="doc-badge doc-badge--missing">Nedostaje</span></template>
                   </div>
                 </div>
-                <!-- Otpremnica -->
-                <div class="doc-slot">
-                  <div class="doc-slot__left">
-                    <q-icon name="local_shipping" size="15px" :class="hasOtpremnica ? 'doc-slot__icon--ok' : 'doc-slot__icon--missing'" />
+                <div class="doc-col-row">
+                  <div class="doc-col-row__left">
+                    <q-icon name="local_shipping" size="14px" :class="hasOtpremnica ? 'doc-slot__icon--ok' : 'doc-slot__icon--missing'" />
                     <span class="doc-slot__type">Otpremnica</span>
-                    <span v-if="otpremnicaFile" class="doc-slot__filename">{{ otpremnicaFile.file_name }}</span>
                   </div>
-                  <div class="doc-slot__right">
+                  <div class="doc-col-row__right">
                     <template v-if="otpremnicaFile">
-                      <span class="doc-badge doc-badge--ok">
-                        <q-icon name="check_circle" size="11px" /> Priložena
-                      </span>
-                      <button v-if="canPreview(otpremnicaFile)" class="icon-btn" @click="previewAttachment(otpremnicaFile)">
-                        <q-icon name="visibility" size="14px" /><q-tooltip>Prikaži</q-tooltip>
-                      </button>
-                      <button class="icon-btn" @click="downloadAttachment(otpremnicaFile)">
-                        <q-icon name="download" size="14px" /><q-tooltip>Preuzmi</q-tooltip>
-                      </button>
-                      <button v-if="canDeleteFile(otpremnicaFile)" class="icon-btn icon-btn--danger" @click="deleteAttachment(otpremnicaFile)">
-                        <q-icon name="delete_outline" size="14px" /><q-tooltip>Obriši</q-tooltip>
-                      </button>
+                      <span class="doc-badge doc-badge--ok"><q-icon name="check_circle" size="10px" /> Priložena</span>
+                      <button v-if="canPreview(otpremnicaFile)" class="icon-btn" @click="previewAttachment(otpremnicaFile)"><q-icon name="visibility" size="13px" /><q-tooltip>Prikaži</q-tooltip></button>
+                      <button class="icon-btn" @click="downloadAttachment(otpremnicaFile)"><q-icon name="download" size="13px" /><q-tooltip>Preuzmi</q-tooltip></button>
+                      <button v-if="canDeleteFile(otpremnicaFile)" class="icon-btn icon-btn--danger" @click="deleteAttachment(otpremnicaFile)"><q-icon name="delete_outline" size="13px" /><q-tooltip>Obriši</q-tooltip></button>
                     </template>
-                    <template v-else>
-                      <span class="doc-badge doc-badge--missing">Nedostaje</span>
-                      <label v-if="canUploadOtpremnica" class="btn btn--ghost btn--sm doc-upload-btn">
-                        <q-icon name="upload_file" size="13px" />
-                        <span>Dodaj</span>
-                        <q-file
-                          v-model="otpremnicaFileInput"
-                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                          style="display:none"
-                          @update:model-value="val => { if (val) uploadDirect(val, 'Otpremnica') }"
-                        />
-                      </label>
-                    </template>
+                    <template v-else><span class="doc-badge doc-badge--missing">Nedostaje</span></template>
                   </div>
                 </div>
               </div>
+
+              <!-- Kol 2: svrha + napomena -->
+              <div class="meta-col meta-col--prose">
+                <div class="info-section-label">Svrha nabave</div>
+                <p class="prose prose--meta">{{ request.justification || '—' }}</p>
+                <div class="info-section-label" style="margin-top:10px;">Napomena</div>
+                <p class="prose prose--meta" :style="!request.comment ? 'color:#c4c9d4;font-style:italic;' : ''">
+                  {{ request.comment || 'Nema napomene.' }}
+                </p>
+              </div>
+
             </div>
+
           </div>
 
           <!-- Stavke -->
-          <div class="card card--compact">
-            <div class="card__header">
-              <h2 class="card__title">
-                <q-icon name="inventory_2" size="15px" />
+          <div class="card">
+            <button class="accordion-header" type="button" @click="stavkeOpen = !stavkeOpen">
+              <span class="card__title">
+                <q-icon name="list" size="15px" />
                 <span>Stavke</span>
-              </h2>
-              <span class="card__count">{{ items.length }}</span>
-            </div>
-            <div class="card__body card__body--flush">
-              <table v-if="items.length > 0" class="items-table">
+                <span class="card__count">{{ items.length }}</span>
+              </span>
+              <q-icon :name="stavkeOpen ? 'expand_less' : 'expand_more'" size="18px" color="grey-5" />
+            </button>
+            <div v-if="stavkeOpen" class="card__body card__body--flush accordion-body">
+              <div v-if="items.length === 0" class="card__empty">Nema stavki.</div>
+              <table v-else class="items-table">
+                <colgroup>
+                  <col style="width:55%">
+                  <col style="width:auto">
+                  <col style="width:80px">
+                </colgroup>
                 <thead>
                   <tr>
                     <th>Naziv artikla</th>
@@ -231,20 +195,18 @@
                   </tr>
                 </tbody>
               </table>
-              <div v-else class="card__empty">Nema stavki.</div>
             </div>
           </div>
 
-
-          <!-- Aktivnosti (accordion) -->
-          <div class="card card--compact">
+          <!-- Aktivnosti -->
+          <div class="card">
             <button class="accordion-header" type="button" @click="historyOpen = !historyOpen">
               <span class="card__title">
                 <q-icon name="history" size="15px" />
                 <span>Aktivnosti</span>
                 <span class="card__count">{{ history.length }}</span>
               </span>
-              <q-icon :name="historyOpen ? 'expand_less' : 'expand_more'" size="18px" />
+              <q-icon :name="historyOpen ? 'expand_less' : 'expand_more'" size="18px" color="grey-5" />
             </button>
             <div v-if="historyOpen" class="card__body card__body--flush accordion-body">
               <div v-if="history.length === 0" class="card__empty">Nema zapisa.</div>
@@ -279,109 +241,9 @@
             </div>
           </div>
 
+        </div>
+
         </div><!-- /main-col -->
-
-        <!-- RIGHT: sticky metadata -->
-        <aside class="meta-col">
-          <div class="meta-card">
-
-            <!-- Amount -->
-            <div class="meta-amount">
-              <div class="meta-amount__label">Procijenjeni iznos</div>
-              <div v-if="hasAmount" class="meta-amount__value">{{ formatCurrency(request.total_amount) }}</div>
-              <div v-else class="meta-amount__empty">Nije određeno</div>
-            </div>
-
-            <div class="meta-divider" />
-
-            <!-- Actions -->
-            <div class="meta-actions">
-              <button
-                v-if="primaryCta"
-                class="btn btn--cta meta-btn"
-                :disabled="primaryCta.disabled || submittingAction"
-                @click="triggerPrimaryCta"
-              >
-                <q-spinner v-if="submittingAction" size="14px" color="white" />
-                <q-icon v-else :name="primaryCta.icon" size="15px" />
-                <span>{{ primaryCta.label }}</span>
-              </button>
-
-              <button
-                v-if="canDecide"
-                class="btn btn--warning meta-btn"
-                :disabled="submittingAction"
-                @click="openActionDialog('vrati-na-izmjenu')"
-              >
-                <q-icon name="undo" size="15px" />
-                <span>Vrati na dopunu</span>
-              </button>
-
-              <button
-                v-if="canDownloadPdf"
-                class="btn btn--ghost meta-btn"
-                :disabled="pdfGenerating"
-                @click="downloadPdf"
-              >
-                <q-spinner v-if="pdfGenerating" size="14px" />
-                <q-icon v-else name="download" size="15px" />
-                <span>{{ pdfGenerating ? 'Generiranje…' : 'Preuzmi PDF' }}</span>
-              </button>
-              <div v-else-if="isAdmin" class="meta-locked">
-                <q-icon name="lock" size="12px" />
-                <span>PDF dostupan nakon odobrenja</span>
-              </div>
-
-              <button
-                v-if="canEdit && !canResubmit"
-                class="btn btn--ghost meta-btn"
-                @click="editRequest"
-              >
-                <q-icon name="edit" size="15px" />
-                <span>Uredi</span>
-              </button>
-            </div>
-
-            <template v-if="isAdmin && status && !LOCKED_STATUSES.includes(status)">
-              <div class="meta-divider" />
-              <div class="meta-actions">
-                <button
-                  class="btn btn--storno meta-btn"
-                  :disabled="submittingAction"
-                  @click="openActionDialog('storno')"
-                >
-                  <q-icon name="block" size="15px" />
-                  <span>Storniraj</span>
-                </button>
-              </div>
-            </template>
-
-            <div class="meta-divider" />
-
-            <!-- Compact info -->
-            <dl class="meta-info">
-              <div class="meta-info__row">
-                <dt><q-icon name="business" size="11px" /> Odjel</dt>
-                <dd>{{ request.department_name }}</dd>
-              </div>
-              <div class="meta-info__row">
-                <dt><q-icon name="event" size="11px" /> Fisk. godina</dt>
-                <dd>{{ request.fiscal_year }}</dd>
-              </div>
-              <div class="meta-info__row">
-                <dt><q-icon name="person" size="11px" /> Podnositelj</dt>
-                <dd>{{ request.created_by }}</dd>
-              </div>
-              <div class="meta-info__row">
-                <dt><q-icon name="calendar_today" size="11px" /> Datum</dt>
-                <dd>{{ formatDateOnly(request.created_at) }}</dd>
-              </div>
-            </dl>
-
-          </div>
-        </aside>
-
-      </div><!-- /detail-grid -->
     </div><!-- /page-body -->
 
     <!-- 404 -->
@@ -556,7 +418,8 @@ const history          = ref([]);
 const attachments      = ref([]);
 const TIMELINE_INITIAL = 10;
 const showAllHistory   = ref(false);
-const historyOpen      = ref(true);
+const historyOpen      = ref(false);
+const stavkeOpen       = ref(true);
 const showUpload       = ref(false);
 
 const visibleHistory = computed(() =>
@@ -954,60 +817,9 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
   color: #111827;
 }
 
-/* ── Sticky header ── */
-.sticky-header {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px 40px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e5e7eb;
-}
-.sticky-header__left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-.sticky-header__sep { color: #d1d5db; font-size: 0.875rem; }
-.sticky-header__title {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: #111827;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.sticky-header__right { flex-shrink: 0; }
-
-/* Status badge */
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  height: 24px;
-  padding: 0 10px;
-  border-radius: 9999px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  border: 1px solid transparent;
-  white-space: nowrap;
-}
-.badge--poslano      { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
-.badge--na-odobrenju { background: #fffbeb; color: #B7791F; border-color: #fde68a; }
-.badge--vraceno      { background: #fff7ed; color: #C2410C; border-color: #fed7aa; }
-.badge--odobreno     { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
-.badge--odbijeno     { background: #fef2f2; color: #c50f1f; border-color: #fecaca; }
-.badge--naruceno     { background: rgba(0,175,219,0.08); color: #0e7490; border-color: rgba(0,175,219,0.3); }
-.badge--zatvoreno    { background: #f0fdf4; color: #107C10; border-color: #bbf7d0; }
-
 /* ── Page body ── */
 .loading-block { display: flex; justify-content: center; align-items: center; min-height: 240px; }
-.page-body { padding: 18px 40px 40px; display: flex; flex-direction: column; gap: 16px; }
+.page-body { padding: 24px 40px 40px; display: flex; flex-direction: column; gap: 16px; }
 .empty-page { display: flex; flex-direction: column; align-items: center; padding: 60px; }
 
 /* ── Alert box ── */
@@ -1034,14 +846,14 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 14px 20px 12px;
+  padding: 8px 20px;
 }
 .stepper-steps { display: flex; align-items: flex-start; }
-.stepper-item  { display: flex; flex-direction: column; align-items: center; min-width: 56px; }
-.stepper-connector { flex: 1; height: 2px; background: #e5e7eb; margin-top: 11px; min-width: 12px; transition: background 0.2s; }
+.stepper-item  { display: flex; flex-direction: column; align-items: center; min-width: 50px; }
+.stepper-connector { flex: 1; height: 2px; background: #e5e7eb; margin-top: 9px; min-width: 12px; transition: background 0.2s; }
 .stepper-connector--done { background: #00afdb; }
 .stepper-dot {
-  width: 24px; height: 24px; border-radius: 50%;
+  width: 20px; height: 20px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   border: 2px solid #d1d5db; background: white; color: #9ca3af;
   position: relative; z-index: 1; transition: all 0.2s; flex-shrink: 0;
@@ -1053,8 +865,8 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
 .stepper-dot--upcoming    { background: white;   border-color: #d1d5db; color: #d1d5db; }
 .stepper-dot--locked      { background: #f3f4f6; border-color: #e5e7eb; color: #d1d5db; }
 .stepper-label {
-  font-size: 0.625rem; font-weight: 500; color: #9ca3af;
-  text-align: center; margin-top: 5px; line-height: 1.3; max-width: 60px;
+  font-size: 0.75rem; font-weight: 500; color: #9ca3af;
+  text-align: center; margin-top: 3px; white-space: nowrap;
 }
 .stepper-label--done        { color: #0e7490; font-weight: 600; }
 .stepper-label--active      { color: #16294E; font-weight: 700; }
@@ -1063,7 +875,7 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
 .stepper-label--locked      { color: #d1d5db; }
 .stepper-note {
   display: flex; align-items: center; gap: 5px;
-  margin-top: 10px; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 500;
+  margin-top: 6px; padding: 4px 8px; border-radius: 6px; font-size: 0.6875rem; font-weight: 500;
 }
 .stepper-note--warn  { background: #fffbeb; color: #B7791F; border: 1px solid rgba(183,121,31,0.2); }
 .stepper-note--error { background: #fef2f2; color: #c50f1f; border: 1px solid rgba(197,15,31,0.2); }
@@ -1083,30 +895,31 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
 .card--compact .card__body--flush { padding: 0; }
 .card--compact .card__empty  { padding: 20px 14px; }
 
-/* ── Info list ── */
-.info-list { margin: 0; padding: 0; }
-.info-row {
-  display: flex; justify-content: space-between; align-items: center;
-  gap: 12px; padding: 7px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.8rem;
+/* ── Info grid ── */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 20px;
+  margin: 0; padding: 0;
 }
-.info-row:last-child { border-bottom: none; }
-.info-row dt { color: #6b7280; margin: 0; }
-.info-row dd { color: #111827; font-weight: 500; margin: 0; text-align: right; }
+.info-cell { display: flex; flex-direction: column; gap: 2px; }
+.info-cell dt { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; margin: 0; }
+.info-cell dd { font-size: 0.8125rem; font-weight: 400; color: #374151; line-height: 1.5; margin: 2px 0 0; }
 
 .info-divider { height: 1px; background: #e5e7eb; margin: 12px 0; }
-.info-section-label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; margin-bottom: 6px; }
+.info-section-label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.info-section-count { font-size: 0.625rem; background: #f3f4f6; color: #6b7280; padding: 1px 6px; border-radius: 9999px; font-variant-numeric: tabular-nums; }
 .prose { font-size: 0.8125rem; color: #111827; line-height: 1.6; margin: 0; white-space: pre-wrap; }
-.prose-note { margin-top: 10px; padding: 10px 12px; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; }
-.prose-note__label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; margin-bottom: 4px; }
 
 /* ── Items table ── */
-.items-table { width: 100%; border-collapse: collapse; }
+.items-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.items-table--tight { max-width: 640px; }
 .items-table thead th {
   text-align: left; font-size: 0.625rem; font-weight: 600;
   letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;
   background: #fafafa; padding: 8px 14px; border-bottom: 1px solid #e5e7eb;
 }
-.items-table tbody td { padding: 9px 14px; font-size: 0.8rem; color: #111827; border-bottom: 1px solid #f0f0f0; }
+.items-table tbody td { padding: 9px 14px; font-size: 0.8125rem; color: #111827; border-bottom: 1px solid #f0f0f0; }
 .items-table tbody tr:last-child td { border-bottom: none; }
 .text-right { text-align: right; }
 .muted { color: #6b7280; }
@@ -1177,57 +990,127 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
 .timeline-item--s-6 .timeline-dot { background: rgba(0,175,219,0.08); border-color: rgba(0,175,219,0.3); color: #0e7490; }
 .timeline-item--s-7 .timeline-dot { background: #f0fdf4; border-color: #bbf7d0; color: #107C10; }
 .timeline-content { flex: 1; min-width: 0; padding-top: 1px; }
-.timeline-title   { font-size: 0.8rem; font-weight: 600; color: #111827; }
+.timeline-title   { font-size: 0.8125rem; font-weight: 600; color: #111827; }
 .timeline-meta    { font-size: 0.6875rem; color: #6b7280; margin-top: 1px; }
 .timeline-reldate { border-bottom: 1px dashed #d1d5db; cursor: default; }
 .timeline-comment { margin-top: 5px; padding: 6px 10px; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 4px; font-size: 0.75rem; color: #111827; line-height: 1.5; }
 
-/* ── Right sidebar ── */
+/* ── Merged card top row ── */
+.merged-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.action-bar__identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.action-bar__vsep {
+  width: 1px; height: 22px;
+  background: #e5e7eb; flex-shrink: 0;
+}
+.action-bar__req-number {
+  font-size: 0.8125rem; font-weight: 700;
+  color: #16294E; letter-spacing: 0.02em; white-space: nowrap;
+}
+.action-bar__actions {
+  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+}
+
+/* meta strip */
+.meta-strip {
+  display: grid;
+  grid-template-columns: auto minmax(200px, 1fr);
+  gap: 0;
+  padding: 14px 16px;
+}
 .meta-col {
-  position: sticky;
-  top: 60px;
-  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 20px 0 0;
+  margin: 0;
+  white-space: nowrap;
 }
-.meta-card {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  overflow: hidden;
+.meta-col + .meta-col {
+  padding-left: 20px;
+  border-left: 1px solid #f0f0f0;
 }
-.meta-amount {
-  padding: 16px;
-  background: linear-gradient(135deg, rgba(0,175,219,0.05) 0%, rgba(22,41,78,0.03) 100%);
+.meta-col--prose { gap: 4px; white-space: normal; }
+
+/* ── Main col ── */
+.main-col { display: flex; flex-direction: column; gap: 14px; }
+
+/* ── Two-card stack (Osnovni podaci + Aktivnosti) ── */
+.cards-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
-.meta-amount__label {
-  font-size: 0.625rem; font-weight: 600; letter-spacing: 0.05em;
-  text-transform: uppercase; color: #6b7280; margin-bottom: 6px;
+
+.prose--meta { margin: 2px 0 0; font-size: 0.8125rem; color: #374151; line-height: 1.5; white-space: normal; }
+
+/* doc rows inside meta-col */
+.doc-col-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
 }
-.meta-amount__value {
-  font-size: 1.5rem; font-weight: 700; color: #16294E;
-  font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+.doc-col-row__left {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
 }
-.meta-amount__empty { font-size: 0.875rem; color: #9ca3af; font-style: italic; }
-.meta-divider { height: 1px; background: #e5e7eb; }
-.meta-actions { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
-.meta-btn { width: 100%; justify-content: flex-start; }
-.meta-locked {
-  display: flex; align-items: center; gap: 6px;
-  padding: 0 4px; font-size: 0.75rem; color: #9ca3af;
+.doc-col-row__right {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
 }
-.meta-info { padding: 10px 14px; display: flex; flex-direction: column; gap: 7px; margin: 0; }
-.meta-info__row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; font-size: 0.75rem; }
-.meta-info__row dt { display: flex; align-items: center; gap: 4px; color: #6b7280; white-space: nowrap; margin: 0; }
-.meta-info__row dd { color: #374151; font-weight: 500; margin: 0; text-align: right; }
+
+/* ── Merged card inline alert ── */
+.merged-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: 1.5px solid;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.merged-alert--warning  { background: #fffbeb; border-color: #B7791F; color: #B7791F; }
+.merged-alert--decision { background: #f0fdf4; border-color: #16a34a; color: #15803d; }
+.merged-alert__desc { font-weight: 400; opacity: 0.85; }
 
 /* ── Responsive ── */
 @media (max-width: 900px) {
-  .detail-grid { grid-template-columns: 1fr; }
-  .meta-col { position: static; }
+  .meta-strip { grid-template-columns: auto auto minmax(0, 1fr); }
+  .meta-col--prose { grid-column: 1 / -1; border-left: none; border-top: 1px solid #f0f0f0; padding-left: 0; padding-top: 12px; }
 }
 @media (max-width: 640px) {
-  .sticky-header { padding: 10px 16px; }
+  .meta-strip { grid-template-columns: 1fr 1fr; }
+  .meta-col--prose { grid-column: 1 / -1; border-left: none; border-top: 1px solid #f0f0f0; padding-left: 0; padding-top: 10px; }
+}
+@media (max-width: 420px) {
+  .meta-strip { grid-template-columns: 1fr; }
+  .meta-col + .meta-col { border-left: none; border-top: 1px solid #f0f0f0; padding-left: 0; padding-top: 10px; }
+}
+@media (max-width: 640px) {
   .page-body { padding: 14px 16px 32px; }
   .stepper-label { display: none; }
+  .action-bar { gap: 8px; }
+  .action-bar__identity { flex-wrap: wrap; }
 }
 @media (max-width: 480px) {
   .status-stepper { overflow-x: auto; }
