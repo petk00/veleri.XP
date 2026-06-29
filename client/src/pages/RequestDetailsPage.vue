@@ -68,6 +68,7 @@
               </div>
               <div style="flex:1" />
               <div class="action-bar__actions">
+                <!-- Upload gumbi -->
                 <template v-if="canUploadAny">
                   <label v-if="canUploadPonuda" class="btn btn--ghost btn--sm" style="cursor:pointer;">
                     <q-icon name="upload_file" size="13px" /><span>Dodaj ponudu</span>
@@ -79,6 +80,8 @@
                   </label>
                   <div class="action-bar__vsep" />
                 </template>
+
+                <!-- Sekundarne neutralne akcije -->
                 <button v-if="canEdit && !canResubmit" class="btn btn--ghost btn--sm" @click="editRequest">
                   <q-icon name="edit" size="14px" /><span>Uredi</span>
                 </button>
@@ -87,26 +90,28 @@
                   <q-icon v-else name="download" size="14px" />
                   <span>{{ pdfGenerating ? 'Generiranje…' : 'PDF' }}</span>
                 </button>
-                <template v-if="canEdit || canDownloadPdf">
-                  <div class="action-bar__vsep" />
-                </template>
+
+                <!-- Separator ispred destruktivnih akcija -->
+                <div v-if="((canEdit && !canResubmit) || canDownloadPdf) && (canDecide || canTakeOver || (isAdmin && status && !LOCKED_STATUSES.includes(status)))" class="action-bar__vsep" />
+
+                <!-- Destruktivne akcije — prigušene, desno od neutralnih -->
                 <button v-if="canDecide" class="btn btn--warning btn--sm" :disabled="submittingAction" @click="openActionDialog('vrati-na-izmjenu')">
                   <q-icon name="undo" size="14px" /><span>Vrati na dopunu</span>
                 </button>
                 <button v-if="canTakeOver || canDecide" class="btn btn--danger btn--sm" :disabled="submittingAction" @click="openActionDialog('odbij')">
                   <q-icon name="close" size="14px" /><span>Odbij</span>
                 </button>
+                <button v-if="isAdmin && status && !LOCKED_STATUSES.includes(status)" class="btn btn--danger btn--sm" :disabled="submittingAction" @click="openActionDialog('storno')">
+                  <q-icon name="block" size="14px" /><span>Storniraj</span>
+                </button>
+
+                <!-- Separator + primarna CTA — uvijek krajnje desno -->
+                <div v-if="primaryCta && hasActionsBeforeCta" class="action-bar__vsep" />
                 <button v-if="primaryCta" class="btn btn--cta btn--sm" :disabled="primaryCta.disabled || submittingAction" @click="triggerPrimaryCta">
                   <q-spinner v-if="submittingAction" size="12px" color="white" />
                   <q-icon v-else :name="primaryCta.icon" size="14px" />
                   <span>{{ primaryCta.label }}</span>
                 </button>
-                <template v-if="isAdmin && status && !LOCKED_STATUSES.includes(status)">
-                  <div class="action-bar__vsep" />
-                  <button class="btn btn--storno btn--sm" :disabled="submittingAction" @click="openActionDialog('storno')">
-                    <q-icon name="block" size="14px" /><span>Storniraj</span>
-                  </button>
-                </template>
               </div>
             </div>
 
@@ -131,7 +136,7 @@
                     <template v-else><span class="doc-badge doc-badge--missing">Nedostaje</span></template>
                   </div>
                 </div>
-                <div class="doc-col-row">
+                <div v-if="otpremnicaFile || [STATUS.NARUCENO, STATUS.ZATVORENO].includes(status)" class="doc-col-row">
                   <div class="doc-col-row__left">
                     <q-icon name="local_shipping" size="14px" :class="hasOtpremnica ? 'doc-slot__icon--ok' : 'doc-slot__icon--missing'" />
                     <span class="doc-slot__type">Otpremnica</span>
@@ -224,7 +229,7 @@
                     <div class="timeline-title">{{ timelineTitle(entry) }}</div>
                     <div class="timeline-meta">
                       {{ entry.changed_by }} ·
-                      <span class="timeline-reldate">
+                      <span class="timeline-reldate" :title="formatDate(entry.changed_at)">
                         {{ relativeDate(entry.changed_at) }}
                         <q-tooltip>{{ formatDate(entry.changed_at) }}</q-tooltip>
                       </span>
@@ -465,6 +470,14 @@ const canDecide    = computed(() => isAdmin.value && status.value === STATUS.NA_
 const canResubmit  = computed(() => !isAdmin.value && status.value === STATUS.VRACENO);
 const canFinish    = computed(() => isAdmin.value && status.value === STATUS.NARUCENO);
 const canDownloadPdf = computed(() => isAdmin.value && [STATUS.NARUCENO, STATUS.ZATVORENO].includes(status.value));
+const hasActionsBeforeCta = computed(() =>
+  canUploadAny.value ||
+  (canEdit.value && !canResubmit.value) ||
+  canDownloadPdf.value ||
+  canDecide.value ||
+  canTakeOver.value ||
+  (isAdmin.value && !!status.value && !LOCKED_STATUSES.includes(status.value))
+);
 
 const lastReturnComment = computed(() => {
   const entries = history.value.filter((h) => h.fk_request_status === STATUS.VRACENO);
@@ -942,9 +955,10 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
 }
 .doc-slot__right { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
 .doc-badge {
-  display: inline-flex; align-items: center; gap: 3px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 3px;
   font-size: 0.625rem; font-weight: 600; padding: 2px 8px;
-  border-radius: 9999px; border: 1px solid; white-space: nowrap; margin-right: 4px;
+  border-radius: 9999px; border: 1px solid; white-space: nowrap;
+  min-width: 72px;
 }
 .doc-badge--ok      { background: #f0fdf4; color: #107C10; border-color: #bbf7d0; }
 .doc-badge--missing { background: #f9fafb; color: #9ca3af; border-color: #e5e7eb; }
@@ -1038,8 +1052,11 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
   white-space: nowrap;
 }
 .meta-col + .meta-col {
-  padding-left: 20px;
+  padding-left: 32px;
   border-left: 1px solid #f0f0f0;
+}
+.meta-col:first-child {
+  padding-right: 32px;
 }
 .meta-col--prose { gap: 4px; white-space: normal; }
 
@@ -1051,6 +1068,7 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
   display: flex;
   flex-direction: column;
   gap: 14px;
+  max-width: 900px;
 }
 
 .prose--meta { margin: 2px 0 0; font-size: 0.8125rem; color: #374151; line-height: 1.5; white-space: normal; }
@@ -1074,6 +1092,7 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
+  min-width: 130px;
 }
 
 /* ── Merged card inline alert ── */
