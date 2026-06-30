@@ -39,13 +39,12 @@
       <!-- ───── Main content ───── -->
       <div class="main-col no-print">
 
-        <div class="cards-stack">
+        <!-- Header: identity + actions, puna širina -->
+        <div class="card no-print">
 
-          <!-- Merged card: identity + actions + meta + svrha -->
-          <div class="card no-print">
-
-            <!-- Top row: nav / request info / action buttons -->
-            <div class="merged-top">
+          <!-- Top row: nav / request info / action buttons -->
+          <div class="merged-top">
+            <div class="merged-top__row">
               <div class="action-bar__identity">
                 <button class="breadcrumb__back" type="button" @click="goBack">
                   <q-icon name="arrow_back" size="13px" />
@@ -56,15 +55,13 @@
                 <div class="action-bar__vsep" />
                 <span class="action-bar__req-number">
                   <span v-if="hasAmount">{{ formatCurrency(request.total_amount) }}</span>
+                  <button v-else-if="canEdit" class="btn-add-amount" @click="editRequest">
+                    <q-icon name="add" size="12px" />Dodaj iznos
+                  </button>
                   <span v-else style="color:#c4c9d4;font-weight:400;font-style:italic;">Iznos nije određen</span>
                 </span>
                 <div class="action-bar__vsep" />
                 <span class="action-bar__req-number">{{ request.created_by }}<span style="font-weight:400;color:#6b7280;"> ({{ request.department_name }})</span></span>
-              </div>
-              <div v-if="pageAlert && pageAlert.type !== 'info'" class="merged-alert" :class="`merged-alert--${pageAlert.type}`">
-                <q-icon :name="pageAlert.icon" size="14px" />
-                <span>{{ pageAlert.title }}</span>
-                <span v-if="pageAlert.desc" class="merged-alert__desc">— {{ pageAlert.desc }}</span>
               </div>
               <div style="flex:1" />
               <div class="action-bar__actions">
@@ -81,7 +78,7 @@
                   <div class="action-bar__vsep" />
                 </template>
 
-                <!-- Sekundarne neutralne akcije -->
+                <!-- Neutralne: Uredi, PDF -->
                 <button v-if="canEdit && !canResubmit" class="btn btn--ghost btn--sm" @click="editRequest">
                   <q-icon name="edit" size="14px" /><span>Uredi</span>
                 </button>
@@ -91,161 +88,192 @@
                   <span>{{ pdfGenerating ? 'Generiranje…' : 'PDF' }}</span>
                 </button>
 
-                <!-- Separator ispred destruktivnih akcija -->
+                <!-- Separator ispred destruktivnih -->
                 <div v-if="((canEdit && !canResubmit) || canDownloadPdf) && (canDecide || canTakeOver || (isAdmin && status && !LOCKED_STATUSES.includes(status)))" class="action-bar__vsep" />
 
-                <!-- Destruktivne akcije — prigušene, desno od neutralnih -->
+                <!-- Destruktivne (prigušene) -->
                 <button v-if="canDecide" class="btn btn--warning btn--sm" :disabled="submittingAction" @click="openActionDialog('vrati-na-izmjenu')">
                   <q-icon name="undo" size="14px" /><span>Vrati na dopunu</span>
                 </button>
-                <button v-if="canTakeOver || canDecide" class="btn btn--danger btn--sm" :disabled="submittingAction" @click="openActionDialog('odbij')">
+                <!-- Odbij: tekst danger, border se pojačava tek na hover -->
+                <button v-if="canTakeOver || canDecide" class="btn btn--text-danger btn--sm" :disabled="submittingAction" @click="openActionDialog('odbij')">
                   <q-icon name="close" size="14px" /><span>Odbij</span>
                 </button>
-                <button v-if="isAdmin && status && !LOCKED_STATUSES.includes(status)" class="btn btn--danger btn--sm" :disabled="submittingAction" @click="openActionDialog('storno')">
-                  <q-icon name="block" size="14px" /><span>Storniraj</span>
-                </button>
+                <!-- Storniraj u overflow "..." — rijetka akcija, vizualno potisnuta -->
+                <div v-if="isAdmin && status && !LOCKED_STATUSES.includes(status)" style="display:inline-flex;">
+                  <button class="icon-btn" :disabled="submittingAction">
+                    <q-icon name="more_vert" size="16px" />
+                    <q-tooltip>Više opcija</q-tooltip>
+                  </button>
+                  <q-menu auto-close>
+                    <q-list dense style="min-width:160px;padding:4px 0;">
+                      <q-item clickable :disable="submittingAction" @click="openActionDialog('storno')">
+                        <q-item-section avatar style="min-width:32px;">
+                          <q-icon name="block" size="14px" color="negative" />
+                        </q-item-section>
+                        <q-item-section style="font-size:0.8125rem;color:#c50f1f;font-weight:500;">Storniraj zahtjev</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-menu>
+                </div>
 
-                <!-- Separator + primarna CTA — uvijek krajnje desno -->
+                <!-- Separator + primarna CTA — uvijek krajnje desno, najistaknutiji -->
                 <div v-if="primaryCta && hasActionsBeforeCta" class="action-bar__vsep" />
                 <button v-if="primaryCta" class="btn btn--cta btn--sm" :disabled="primaryCta.disabled || submittingAction" @click="triggerPrimaryCta">
                   <q-spinner v-if="submittingAction" size="12px" color="white" />
                   <q-icon v-else :name="primaryCta.icon" size="14px" />
                   <span>{{ primaryCta.label }}</span>
+                  <q-tooltip v-if="ctaDisabledTooltip">{{ ctaDisabledTooltip }}</q-tooltip>
                 </button>
               </div>
             </div>
+            <div v-if="pageAlert && pageAlert.type !== 'info'" class="merged-alert" :class="`merged-alert--${pageAlert.type}`">
+              <q-icon :name="pageAlert.icon" size="14px" />
+              <span>{{ pageAlert.title }}</span>
+              <span v-if="pageAlert.desc" class="merged-alert__desc">— {{ pageAlert.desc }}</span>
+            </div>
+          </div>
 
-            <!-- meta strip -->
-            <div class="meta-strip">
+        </div>
 
-              <!-- Kol 1: dokumenti -->
-              <div class="meta-col">
-                <div class="info-section-label">Dokumenti</div>
-                <div class="doc-col-row">
-                  <div class="doc-col-row__left">
+        <!-- meta strip -->
+        <div class="card">
+          <div class="meta-strip">
+
+            <!-- Kol 1: dokumenti -->
+            <div class="meta-col">
+              <div class="info-section-label">Dokumenti</div>
+              <div class="doc-grid">
+                <div class="doc-row">
+                  <div class="doc-row__name">
                     <q-icon name="receipt_long" size="14px" :class="hasPonuda ? 'doc-slot__icon--ok' : 'doc-slot__icon--missing'" />
                     <span class="doc-slot__type">Ponuda</span>
                   </div>
-                  <div class="doc-col-row__right">
+                  <div class="doc-row__status">
+                    <span v-if="ponudaFile" class="doc-badge doc-badge--ok"><q-icon name="check_circle" size="10px" /> Priložena</span>
+                    <span v-else class="doc-badge doc-badge--missing">Nedostaje</span>
+                  </div>
+                  <div class="doc-row__actions">
                     <template v-if="ponudaFile">
-                      <span class="doc-badge doc-badge--ok"><q-icon name="check_circle" size="10px" /> Priložena</span>
-                      <button v-if="canPreview(ponudaFile)" class="icon-btn" @click="previewAttachment(ponudaFile)"><q-icon name="visibility" size="13px" /><q-tooltip>Prikaži</q-tooltip></button>
+                      <button class="icon-btn" :class="{ 'icon-btn--muted': !canPreview(ponudaFile) }" @click="previewOrDownload(ponudaFile)"><q-icon name="visibility" size="13px" /><q-tooltip>{{ canPreview(ponudaFile) ? 'Prikaži' : 'Pregled nije moguć za ovaj tip datoteke — klikni za preuzimanje' }}</q-tooltip></button>
                       <button class="icon-btn" @click="downloadAttachment(ponudaFile)"><q-icon name="download" size="13px" /><q-tooltip>Preuzmi</q-tooltip></button>
                       <button v-if="canDeleteFile(ponudaFile)" class="icon-btn icon-btn--danger" @click="deleteAttachment(ponudaFile)"><q-icon name="delete_outline" size="13px" /><q-tooltip>Obriši</q-tooltip></button>
                     </template>
-                    <template v-else><span class="doc-badge doc-badge--missing">Nedostaje</span></template>
                   </div>
                 </div>
-                <div v-if="otpremnicaFile || [STATUS.NARUCENO, STATUS.ZATVORENO].includes(status)" class="doc-col-row">
-                  <div class="doc-col-row__left">
+                <div class="doc-row" v-if="otpremnicaFile || [STATUS.NARUCENO, STATUS.ZATVORENO].includes(status)">
+                  <div class="doc-row__name">
                     <q-icon name="local_shipping" size="14px" :class="hasOtpremnica ? 'doc-slot__icon--ok' : 'doc-slot__icon--missing'" />
                     <span class="doc-slot__type">Otpremnica</span>
                   </div>
-                  <div class="doc-col-row__right">
+                  <div class="doc-row__status">
+                    <span v-if="otpremnicaFile" class="doc-badge doc-badge--ok"><q-icon name="check_circle" size="10px" /> Priložena</span>
+                    <span v-else class="doc-badge doc-badge--missing">Nedostaje</span>
+                  </div>
+                  <div class="doc-row__actions">
                     <template v-if="otpremnicaFile">
-                      <span class="doc-badge doc-badge--ok"><q-icon name="check_circle" size="10px" /> Priložena</span>
-                      <button v-if="canPreview(otpremnicaFile)" class="icon-btn" @click="previewAttachment(otpremnicaFile)"><q-icon name="visibility" size="13px" /><q-tooltip>Prikaži</q-tooltip></button>
+                      <button class="icon-btn" :class="{ 'icon-btn--muted': !canPreview(otpremnicaFile) }" @click="previewOrDownload(otpremnicaFile)"><q-icon name="visibility" size="13px" /><q-tooltip>{{ canPreview(otpremnicaFile) ? 'Prikaži' : 'Pregled nije moguć za ovaj tip datoteke — klikni za preuzimanje' }}</q-tooltip></button>
                       <button class="icon-btn" @click="downloadAttachment(otpremnicaFile)"><q-icon name="download" size="13px" /><q-tooltip>Preuzmi</q-tooltip></button>
                       <button v-if="canDeleteFile(otpremnicaFile)" class="icon-btn icon-btn--danger" @click="deleteAttachment(otpremnicaFile)"><q-icon name="delete_outline" size="13px" /><q-tooltip>Obriši</q-tooltip></button>
                     </template>
-                    <template v-else><span class="doc-badge doc-badge--missing">Nedostaje</span></template>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <!-- Kol 2: svrha + napomena -->
-              <div class="meta-col meta-col--prose">
+            <!-- Kol 2: svrha + napomena -->
+            <div class="meta-col meta-col--prose">
+              <div class="meta-section">
                 <div class="info-section-label">Svrha nabave</div>
                 <p class="prose prose--meta">{{ request.justification || '—' }}</p>
-                <div class="info-section-label" style="margin-top:10px;">Napomena</div>
+              </div>
+              <div class="meta-section">
+                <div class="info-section-label">Napomena</div>
                 <p class="prose prose--meta" :style="!request.comment ? 'color:#c4c9d4;font-style:italic;' : ''">
                   {{ request.comment || 'Nema napomene.' }}
                 </p>
               </div>
-
             </div>
 
           </div>
+        </div>
 
-          <!-- Stavke -->
-          <div class="card">
-            <button class="accordion-header" type="button" @click="stavkeOpen = !stavkeOpen">
-              <span class="card__title">
-                <q-icon name="list" size="15px" />
-                <span>Stavke</span>
-                <span class="card__count">{{ items.length }}</span>
-              </span>
-              <q-icon :name="stavkeOpen ? 'expand_less' : 'expand_more'" size="18px" color="grey-5" />
-            </button>
-            <div v-if="stavkeOpen" class="card__body card__body--flush accordion-body">
-              <div v-if="items.length === 0" class="card__empty">Nema stavki.</div>
-              <table v-else class="items-table">
-                <colgroup>
-                  <col style="width:55%">
-                  <col style="width:auto">
-                  <col style="width:80px">
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th>Naziv artikla</th>
-                    <th>Kategorija</th>
-                    <th class="text-right">Kol.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="item in items" :key="item.id_purchase_request_item">
-                    <td>{{ item.item_name }}</td>
-                    <td class="muted">{{ item.category_name }}</td>
-                    <td class="text-right num">{{ item.quantity }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+        <!-- Stavke — primarni sadržaj, uvijek vidljiv (nije collapsible) -->
+        <div class="card">
+          <div class="section-header">
+            <span class="card__title">
+              <q-icon name="list" size="15px" />
+              <span>Stavke</span>
+              <span class="count-pill">{{ items.length }}</span>
+            </span>
           </div>
+          <div class="card__body card__body--flush">
+            <div v-if="items.length === 0" class="card__empty">Nema stavki.</div>
+            <table v-else class="items-table">
+              <colgroup>
+                <col style="width:55%">
+                <col style="width:auto">
+                <col style="width:80px">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Naziv artikla</th>
+                  <th>Kategorija</th>
+                  <th class="text-right">Kol.</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in items" :key="item.id_purchase_request_item">
+                  <td>{{ item.item_name }}</td>
+                  <td class="muted">{{ item.category_name }}</td>
+                  <td class="text-right num">{{ item.quantity }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-          <!-- Aktivnosti -->
-          <div class="card">
-            <button class="accordion-header" type="button" @click="historyOpen = !historyOpen">
-              <span class="card__title">
-                <q-icon name="history" size="15px" />
-                <span>Aktivnosti</span>
-                <span class="card__count">{{ history.length }}</span>
-              </span>
-              <q-icon :name="historyOpen ? 'expand_less' : 'expand_more'" size="18px" color="grey-5" />
-            </button>
-            <div v-if="historyOpen" class="card__body card__body--flush accordion-body">
-              <div v-if="history.length === 0" class="card__empty">Nema zapisa.</div>
-              <ol v-else class="timeline">
-                <li
-                  v-for="entry in visibleHistory"
-                  :key="entry.id_request_status_history"
-                  class="timeline-item"
-                  :class="`timeline-item--${timelineKind(entry)}`"
-                >
-                  <div class="timeline-dot">
-                    <q-icon :name="timelineIcon(entry)" size="11px" />
+        <!-- Aktivnosti — sekundarni audit log, collapsible, default zatvoren -->
+        <div class="card">
+          <button class="accordion-header" type="button" @click="historyOpen = !historyOpen">
+            <span class="card__title">
+              <q-icon name="history" size="15px" />
+              <span>Povijest aktivnosti</span>
+              <span class="count-pill">{{ history.length }}</span>
+            </span>
+            <q-icon :name="historyOpen ? 'expand_less' : 'expand_more'" size="18px" color="grey-5" />
+          </button>
+          <div v-if="historyOpen" class="card__body card__body--flush accordion-body">
+            <div v-if="history.length === 0" class="card__empty">Nema zapisa.</div>
+            <ol v-else class="timeline">
+              <li
+                v-for="entry in visibleHistory"
+                :key="entry.id_request_status_history"
+                class="timeline-item"
+                :class="`timeline-item--${timelineKind(entry)}`"
+              >
+                <div class="timeline-dot">
+                  <q-icon :name="timelineIcon(entry)" size="11px" />
+                </div>
+                <div class="timeline-content">
+                  <div class="timeline-title">{{ timelineTitle(entry) }}</div>
+                  <div class="timeline-meta">
+                    {{ entry.changed_by }} ·
+                    <span class="timeline-reldate" :title="formatDate(entry.changed_at)">
+                      {{ relativeDate(entry.changed_at) }}
+                      <q-tooltip>{{ formatDate(entry.changed_at) }}</q-tooltip>
+                    </span>
                   </div>
-                  <div class="timeline-content">
-                    <div class="timeline-title">{{ timelineTitle(entry) }}</div>
-                    <div class="timeline-meta">
-                      {{ entry.changed_by }} ·
-                      <span class="timeline-reldate" :title="formatDate(entry.changed_at)">
-                        {{ relativeDate(entry.changed_at) }}
-                        <q-tooltip>{{ formatDate(entry.changed_at) }}</q-tooltip>
-                      </span>
-                    </div>
-                    <div v-if="entry.comment" class="timeline-comment">{{ entry.comment }}</div>
-                  </div>
-                </li>
-              </ol>
-              <div v-if="!showAllHistory && history.length > TIMELINE_INITIAL" class="timeline-more">
-                <button class="btn btn--ghost btn--sm" @click="showAllHistory = true">
-                  Prikaži sve ({{ history.length }})
-                </button>
-              </div>
+                  <div v-if="entry.comment" class="timeline-comment">{{ entry.comment }}</div>
+                </div>
+              </li>
+            </ol>
+            <div v-if="!showAllHistory && history.length > TIMELINE_INITIAL" class="timeline-more">
+              <button class="btn btn--ghost btn--sm" @click="showAllHistory = true">
+                Prikaži sve ({{ history.length }})
+              </button>
             </div>
           </div>
-
         </div>
 
         </div><!-- /main-col -->
@@ -424,7 +452,6 @@ const attachments      = ref([]);
 const TIMELINE_INITIAL = 10;
 const showAllHistory   = ref(false);
 const historyOpen      = ref(false);
-const stavkeOpen       = ref(true);
 const showUpload       = ref(false);
 
 const visibleHistory = computed(() =>
@@ -575,6 +602,11 @@ const triggerPrimaryCta = () => {
   if (!primaryCta.value || primaryCta.value.disabled || submittingAction.value) return;
   primaryCta.value.quick ? quickAction(primaryCta.value.action) : openActionDialog(primaryCta.value.action);
 };
+const ctaDisabledTooltip = computed(() => {
+  if (!primaryCta.value?.disabled) return null;
+  if (status.value === STATUS.NARUCENO && !hasAmount.value) return 'Unesi iznos prije završetka zahtjeva';
+  return null;
+});
 
 /* ── Dialog helpers ── */
 const dialogTitle = computed(() => {
@@ -674,6 +706,8 @@ const previewAttachment = async (att) => {
     window.open(window.URL.createObjectURL(new Blob([r.data], { type: att.file_type })), '_blank');
   } catch { $q.notify({ type: 'negative', message: 'Greška pri otvaranju datoteke.' }); }
 };
+
+const previewOrDownload = (att) => { if (canPreview(att)) previewAttachment(att); else downloadAttachment(att); };
 
 const downloadAttachment = async (att) => {
   try {
@@ -832,7 +866,7 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
 
 /* ── Page body ── */
 .loading-block { display: flex; justify-content: center; align-items: center; min-height: 240px; }
-.page-body { padding: 24px 40px 40px; display: flex; flex-direction: column; gap: 16px; }
+.page-body { max-width: 1120px; margin: 0 auto; padding: 24px 40px 40px; display: flex; flex-direction: column; gap: 16px; }
 .empty-page { display: flex; flex-direction: column; align-items: center; padding: 60px; }
 
 /* ── Alert box ── */
@@ -893,13 +927,6 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
 .stepper-note--warn  { background: #fffbeb; color: #B7791F; border: 1px solid rgba(183,121,31,0.2); }
 .stepper-note--error { background: #fef2f2; color: #c50f1f; border: 1px solid rgba(197,15,31,0.2); }
 
-/* ── Two-column grid ── */
-.detail-grid {
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 16px;
-  align-items: start;
-}
 .main-col { display: flex; flex-direction: column; gap: 14px; }
 
 /* ── Compact card modifier ── */
@@ -920,7 +947,7 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
 .info-cell dd { font-size: 0.8125rem; font-weight: 400; color: #374151; line-height: 1.5; margin: 2px 0 0; }
 
 .info-divider { height: 1px; background: #e5e7eb; margin: 12px 0; }
-.info-section-label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.info-section-label { font-size: 0.6875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
 .info-section-count { font-size: 0.625rem; background: #f3f4f6; color: #6b7280; padding: 1px 6px; border-radius: 9999px; font-variant-numeric: tabular-nums; }
 .prose { font-size: 0.8125rem; color: #111827; line-height: 1.6; margin: 0; white-space: pre-wrap; }
 
@@ -964,17 +991,48 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
 .doc-badge--missing { background: #f9fafb; color: #9ca3af; border-color: #e5e7eb; }
 .doc-upload-btn { cursor: pointer; }
 
+/* ── Section header (zajednički pattern: ikona + naslov + pill broj, opcionalno chevron) ── */
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+/* Section naslovi (Stavke, Povijest aktivnosti) — jasno iznad field labela (Dokumenti, Svrha nabave) u hijerarhiji */
+.section-header .card__title,
+.accordion-header .card__title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #16294E;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.section-header .card__title .q-icon,
+.accordion-header .card__title .q-icon {
+  color: #16294E;
+}
+.count-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: 9999px;
+  background: rgba(0, 175, 219, 0.12);
+  color: #0e7490;
+  font-size: 0.6875rem; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Accordion ── */
 .accordion-header {
   all: unset; box-sizing: border-box;
   display: flex; width: 100%; align-items: center; justify-content: space-between;
   padding: 10px 14px; cursor: pointer;
-  border-bottom: 1px solid transparent;
+  border-bottom: 1px solid #e5e7eb;
   transition: background 0.12s;
   border-radius: 12px 12px 0 0;
 }
 .accordion-header:hover { background: #f9fafb; }
-.accordion-body { border-top: 1px solid #e5e7eb; }
+.card__body--flush { padding: 0; }
+.card__empty { padding: 24px 14px; text-align: center; color: #9ca3af; font-size: 0.8125rem; }
 
 /* ── Timeline ── */
 .timeline { list-style: none; margin: 0; padding: 10px 14px; position: relative; }
@@ -1012,11 +1070,16 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
 /* ── Merged card top row ── */
 .merged-top {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.merged-top__row {
+  display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  padding: 10px 16px;
-  border-bottom: 1px solid #e5e7eb;
 }
 .action-bar__identity {
   display: flex;
@@ -1032,68 +1095,65 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
   font-size: 0.8125rem; font-weight: 700;
   color: #16294E; letter-spacing: 0.02em; white-space: nowrap;
 }
+.btn-add-amount {
+  all: unset;
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 0.75rem; font-weight: 600; color: #00afdb;
+  cursor: pointer; padding: 1px 6px; border-radius: 6px;
+  transition: background 0.12s; letter-spacing: 0.01em;
+}
+.btn-add-amount:hover { background: rgba(0, 175, 219, 0.1); }
 .action-bar__actions {
   display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
 }
 
-/* meta strip */
+/* meta strip — vertikalni stack sekcija (DOKUMENTI / SVRHA NABAVE / NAPOMENA) */
 .meta-strip {
-  display: grid;
-  grid-template-columns: auto minmax(200px, 1fr);
-  gap: 0;
-  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
 }
 .meta-col {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 0 20px 0 0;
   margin: 0;
   white-space: nowrap;
 }
 .meta-col + .meta-col {
-  padding-left: 32px;
-  border-left: 1px solid #f0f0f0;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
 }
-.meta-col:first-child {
-  padding-right: 32px;
-}
-.meta-col--prose { gap: 4px; white-space: normal; }
-
-/* ── Main col ── */
-.main-col { display: flex; flex-direction: column; gap: 14px; }
-
-/* ── Two-card stack (Osnovni podaci + Aktivnosti) ── */
-.cards-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  max-width: 900px;
-}
+.meta-col--prose { gap: 16px; white-space: normal; }
+.meta-section { display: flex; flex-direction: column; gap: 4px; }
 
 .prose--meta { margin: 2px 0 0; font-size: 0.8125rem; color: #374151; line-height: 1.5; white-space: normal; }
 
-/* doc rows inside meta-col */
-.doc-col-row {
-  display: flex;
+/* doc rows inside meta-col — grid: [naziv 1fr][status auto][akcije auto], poravnato po stupcima */
+.doc-grid {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  min-width: 0;
+  gap: 6px 14px;
 }
-.doc-col-row__left {
+.doc-row { display: contents; }
+.doc-row__name {
   display: flex;
   align-items: center;
   gap: 5px;
   min-width: 0;
 }
-.doc-col-row__right {
+.doc-row__status { justify-self: start; }
+.doc-row__actions {
   display: flex;
   align-items: center;
   gap: 2px;
-  flex-shrink: 0;
-  min-width: 130px;
+  justify-self: end;
+  min-height: 30px;
 }
+/* Oko-ikona kad inline preview nije moguć za tip datoteke — prigušena, klik i dalje radi (fallback na preuzimanje) */
+.icon-btn--muted { opacity: 0.35; }
+.icon-btn--muted:hover { opacity: 0.7; }
 
 /* ── Merged card inline alert ── */
 .merged-alert {
@@ -1113,18 +1173,6 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
 .merged-alert__desc { font-weight: 400; opacity: 0.85; }
 
 /* ── Responsive ── */
-@media (max-width: 900px) {
-  .meta-strip { grid-template-columns: auto auto minmax(0, 1fr); }
-  .meta-col--prose { grid-column: 1 / -1; border-left: none; border-top: 1px solid #f0f0f0; padding-left: 0; padding-top: 12px; }
-}
-@media (max-width: 640px) {
-  .meta-strip { grid-template-columns: 1fr 1fr; }
-  .meta-col--prose { grid-column: 1 / -1; border-left: none; border-top: 1px solid #f0f0f0; padding-left: 0; padding-top: 10px; }
-}
-@media (max-width: 420px) {
-  .meta-strip { grid-template-columns: 1fr; }
-  .meta-col + .meta-col { border-left: none; border-top: 1px solid #f0f0f0; padding-left: 0; padding-top: 10px; }
-}
 @media (max-width: 640px) {
   .page-body { padding: 14px 16px 32px; }
   .stepper-label { display: none; }
