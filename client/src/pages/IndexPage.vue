@@ -24,14 +24,11 @@
           <button class="dash-card dash-card--offer" @click="$router.push('/novizahtjev')">
             <img src="/solarlinear_NOVIZAHTJEV.svg" alt="" class="offer-deco" />
             <div class="offer-banner">
-              <div class="offer-banner__icon">
-                <img src="/forward-2-svgrepo-com.svg" alt="" />
-              </div>
+              <img src="/forward-2-svgrepo-com.svg" alt="" class="offer-banner__arrow" />
               <div class="offer-banner__text">
                 <span class="offer-banner__title">Novi zahtjev</span>
                 <span class="offer-banner__sub">Recite što trebate, priložite ponudu i pratite status u stvarnom vremenu</span>
               </div>
-              <q-icon name="arrow_forward" size="22px" class="offer-banner__arrow" />
             </div>
           </button>
 
@@ -42,12 +39,25 @@
                 <q-icon name="receipt_long" size="15px" />
                 <span>Nedavni zahtjevi</span>
               </span>
-              <span class="count-pill">{{ recentRows.length }}</span>
+              <div class="section-header__right">
+                <span class="section-header__count">
+                  {{ hasMoreRows ? `Prikazano ${displayedRows.length} od ${recentRows.length}` : recentRows.length }}
+                </span>
+                <button
+                  v-if="hasMoreRows"
+                  type="button"
+                  class="section-header__more"
+                  @click="$router.push('/zahtjevi')"
+                >
+                  Prikaži sve
+                  <q-icon name="arrow_forward" size="12px" />
+                </button>
+              </div>
             </div>
 
-            <div v-if="recentRows.length" class="requests-list">
+            <div v-if="displayedRows.length" class="requests-list">
               <button
-                v-for="row in recentRows"
+                v-for="row in displayedRows"
                 :key="row.id_purchase_request"
                 class="request-row"
                 :style="{ borderLeftColor: buildRequestStyle(row).card.borderLeftColor }"
@@ -103,6 +113,10 @@ const recentRows = computed(() =>
   [...allRequests.value]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 );
+
+const DASHBOARD_LIST_LIMIT = 8;
+const displayedRows = computed(() => recentRows.value.slice(0, DASHBOARD_LIST_LIMIT));
+const hasMoreRows = computed(() => recentRows.value.length > DASHBOARD_LIST_LIMIT);
 
 const STATUS_STYLES = {
   1: { background: '#eff6ff', badge: '#1d4ed8', badgeBg: '#dbeafe', border: '#93c5fd' },
@@ -349,24 +363,6 @@ onMounted(async () => {
   z-index: 1;
 }
 
-.offer-banner__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  flex-shrink: 0;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.75);
-  border: 1.5px solid rgba(0, 175, 219, 0.35);
-  box-shadow: 0 1px 4px rgba(0, 175, 219, 0.1);
-}
-
-.offer-banner__icon img {
-  width: 26px;
-  height: 26px;
-}
-
 .offer-banner__text {
   display: flex;
   flex-direction: column;
@@ -391,9 +387,9 @@ onMounted(async () => {
 }
 
 .offer-banner__arrow {
-  margin-left: auto;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
-  color: #00afdb;
   transition: transform 0.2s ease;
 }
 
@@ -432,25 +428,43 @@ onMounted(async () => {
   color: #16294e;
 }
 
-.section-header .count-pill {
+.section-header__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-header__count {
+  color: #6b7280;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.section-header__more {
+  all: unset;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 9999px;
-  background: rgba(0, 175, 219, 0.12);
-  color: #0e7490;
-  font-size: 0.6875rem;
+  gap: 3px;
+  color: #00afdb;
+  font-size: 0.75rem;
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: gap 0.15s;
+}
+
+.section-header__more:hover {
+  gap: 5px;
+  color: #14bae4;
 }
 
 .requests-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .request-row {
@@ -459,11 +473,11 @@ onMounted(async () => {
   grid-template-columns: 1fr 1fr 1fr 1fr;
   align-items: center;
   gap: 8px;
-  padding: 11px 20px;
+  padding: 7px 16px;
   background: #ffffff;
   border: 1.5px solid rgba(0, 175, 219, 0.18);
   border-left: 4px solid transparent;
-  border-radius: 12px;
+  border-radius: 10px;
   box-shadow: 0 1px 4px rgba(0, 175, 219, 0.06);
   box-sizing: border-box;
   width: 100%;
@@ -494,7 +508,7 @@ onMounted(async () => {
   justify-content: center;
   gap: 4px;
   min-width: 148px;
-  padding: 5px 10px;
+  padding: 4px 10px;
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: 700;
@@ -522,7 +536,7 @@ onMounted(async () => {
   justify-content: center;
   min-width: 148px;
   flex-shrink: 0;
-  padding: 5px 10px;
+  padding: 4px 10px;
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: 700;

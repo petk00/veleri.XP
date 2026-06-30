@@ -3,19 +3,32 @@
     <div class="page-shell">
 
       <section class="action-cards" :class="{ 'action-cards--admin': isAdmin }" aria-label="Brzi pregled">
-        <button class="action-card action-card--pending" @click="setStatusFilter('u_obradi')">
+        <button
+          class="action-card action-card--pending"
+          :class="{ 'action-card--active': statusFilter === 'u_obradi' }"
+          @click="setStatusFilter('u_obradi')"
+        >
           <div class="action-card__icon"><q-icon name="pending_actions" size="18px" /></div>
           <span class="action-card__value">{{ counts.u_obradi }}</span>
           <span class="action-card__label">U obradi</span>
           <q-icon name="chevron_right" size="14px" class="action-card__arrow" />
         </button>
-        <button class="action-card action-card--ordered" @click="setStatusFilter('ceka_otpremnicu')">
+        <button
+          class="action-card action-card--ordered"
+          :class="{ 'action-card--active': statusFilter === 'ceka_otpremnicu' }"
+          @click="setStatusFilter('ceka_otpremnicu')"
+        >
           <div class="action-card__icon"><q-icon name="inbox" size="18px" /></div>
           <span class="action-card__value">{{ counts.ceka_otpremnicu }}</span>
           <span class="action-card__label">Čekaju otpremnicu</span>
           <q-icon name="chevron_right" size="14px" class="action-card__arrow" />
         </button>
-        <button v-if="isAdmin" class="action-card action-card--ready" @click="setStatusFilter('spremno_za_zatvaranje')">
+        <button
+          v-if="isAdmin"
+          class="action-card action-card--ready"
+          :class="{ 'action-card--active': statusFilter === 'spremno_za_zatvaranje' }"
+          @click="setStatusFilter('spremno_za_zatvaranje')"
+        >
           <div class="action-card__icon"><q-icon name="task_alt" size="18px" /></div>
           <span class="action-card__value">{{ counts.spremno_za_zatvaranje }}</span>
           <span class="action-card__label">Spremno za zatvaranje</span>
@@ -115,14 +128,14 @@
                 size="16px"
                 :class="props.row.has_ponuda ? 'doc-icon--ok' : 'doc-icon--missing'"
               >
-                <q-tooltip>{{ props.row.has_ponuda ? 'Ponuda priložena' : 'Ponuda nije priložena' }}</q-tooltip>
+                <q-tooltip>{{ props.row.has_ponuda ? 'Ponuda priložena' : 'Ponuda nedostaje' }}</q-tooltip>
               </q-icon>
               <q-icon
                 name="local_shipping"
                 size="16px"
                 :class="props.row.has_otpremnica ? 'doc-icon--ok' : 'doc-icon--missing'"
               >
-                <q-tooltip>{{ props.row.has_otpremnica ? 'Otpremnica priložena' : 'Otpremnica nije priložena' }}</q-tooltip>
+                <q-tooltip>{{ props.row.has_otpremnica ? 'Otpremnica priložena' : 'Otpremnica nedostaje' }}</q-tooltip>
               </q-icon>
             </q-td>
           </template>
@@ -488,8 +501,19 @@ onMounted(async () => {
 }
 .action-card--pending .action-card__icon { background: #fef3c7; color: #b45309; }
 .action-card--pending .action-card__value { color: #b45309; }
-.action-card--pending:hover { background: #fef3c7; border-left-color: #f59e0b; }
+.action-card--pending:hover {
+  background: #fef3c7;
+  border-left-color: #f59e0b;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(180, 83, 9, 0.12);
+}
 .action-card--pending:hover .action-card__arrow { color: #b45309; transform: translateX(3px); }
+.action-card--pending.action-card--active {
+  background: #fef3c7;
+  border-left-color: #f59e0b;
+  box-shadow: 0 4px 14px rgba(180, 83, 9, 0.15);
+}
+.action-card--pending.action-card--active .action-card__arrow { color: #b45309; }
 
 .action-card--ordered {
   background: #f0f9ff;
@@ -497,8 +521,19 @@ onMounted(async () => {
 }
 .action-card--ordered .action-card__icon { background: #e0f2fe; color: #0284c7; }
 .action-card--ordered .action-card__value { color: #0284c7; }
-.action-card--ordered:hover { background: #e0f2fe; border-left-color: #0ea5e9; }
+.action-card--ordered:hover {
+  background: #e0f2fe;
+  border-left-color: #0ea5e9;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 175, 219, 0.15);
+}
 .action-card--ordered:hover .action-card__arrow { color: #0284c7; transform: translateX(3px); }
+.action-card--ordered.action-card--active {
+  background: #e0f2fe;
+  border-left-color: #0ea5e9;
+  box-shadow: 0 4px 14px rgba(0, 175, 219, 0.18);
+}
+.action-card--ordered.action-card--active .action-card__arrow { color: #0284c7; }
 
 .action-card--ready {
   background: #f0fdf4;
@@ -506,8 +541,19 @@ onMounted(async () => {
 }
 .action-card--ready .action-card__icon { background: #dcfce7; color: #16a34a; }
 .action-card--ready .action-card__value { color: #16a34a; }
-.action-card--ready:hover { background: #dcfce7; border-left-color: #22c55e; }
+.action-card--ready:hover {
+  background: #dcfce7;
+  border-left-color: #22c55e;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(22, 163, 74, 0.12);
+}
 .action-card--ready:hover .action-card__arrow { color: #16a34a; transform: translateX(3px); }
+.action-card--ready.action-card--active {
+  background: #dcfce7;
+  border-left-color: #22c55e;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.15);
+}
+.action-card--ready.action-card--active .action-card__arrow { color: #16a34a; }
 
 /* ── List surface (card) ── */
 .list-surface {
