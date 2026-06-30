@@ -39,21 +39,20 @@ export function useActionableRequestsNotifier() {
   const $q = useQuasar();
   const router = useRouter();
 
-  const showNotification = ({ requestId, message, caption, icon, color }) => {
+  const showNotification = ({ requestId, message, caption, icon, type }) => {
     $q.notify({
       position: 'bottom',
       timeout: 0,                 // sticky — ostaje dok korisnik ne reagira
       progress: false,
       icon,
-      color: color || 'orange-8',
-      textColor: 'white',
       message,
       caption,
-      classes: 'actionable-request-notify',
+      classes: `actionable-request-notify actionable-request-notify--${type || 'action'}`,
       actions: [
         {
           label: 'Pregledaj',
           color: 'white',
+          class: 'notify-action--accent',
           handler: () => {
             router.push(`/zahtjevi/${requestId}`);
           },
@@ -61,6 +60,7 @@ export function useActionableRequestsNotifier() {
         {
           label: 'Zatvori',
           color: 'white',
+          flat: true,
           handler: () => { /* dismiss */ },
         },
       ],
@@ -84,7 +84,7 @@ export function useActionableRequestsNotifier() {
       showNotification({
         requestId: req.id_purchase_request,
         icon: 'inbox',
-        color: 'dark',
+        type: 'review',
         message: `Zahtjev ${req.request_number} čeka pregled`,
         caption: 'Preuzmite zahtjev na obradu.',
       });
@@ -112,7 +112,7 @@ export function useActionableRequestsNotifier() {
       showNotification({
         requestId: req.id_purchase_request,
         icon: 'undo',
-        color: 'orange-8',
+        type: 'revision',
         message: `Zahtjev ${req.request_number} vraćen je na izmjenu`,
         caption: 'Uredi zahtjev prema komentaru i pošalji ga ponovno.',
       });
@@ -140,7 +140,7 @@ export function useActionableRequestsNotifier() {
       showNotification({
         requestId: req.id_purchase_request,
         icon: 'cancel',
-        color: 'red-8',
+        type: 'rejected',
         message: `Zahtjev ${req.request_number} je odbijen`,
         caption: 'Pregledajte razlog odbijanja.',
       });
@@ -167,7 +167,7 @@ export function useActionableRequestsNotifier() {
       showNotification({
         requestId: req.id_purchase_request,
         icon: 'manage_search',
-        color: 'blue-grey-7',
+        type: 'underReview',
         message: `Zahtjev ${req.request_number} je preuzet na obradu`,
         caption: 'Administrator pregledava vaš zahtjev.',
       });
@@ -194,7 +194,7 @@ export function useActionableRequestsNotifier() {
       showNotification({
         requestId: req.id_purchase_request,
         icon: 'check_circle',
-        color: 'green-7',
+        type: 'approved',
         message: `Zahtjev ${req.request_number} je odobren`,
         caption: 'Vaš zahtjev je odobren i upućen na nabavu.',
       });
@@ -221,7 +221,7 @@ export function useActionableRequestsNotifier() {
       showNotification({
         requestId: req.id_purchase_request,
         icon: 'task_alt',
-        color: 'teal-7',
+        type: 'closed',
         message: `Zahtjev ${req.request_number} je zatvoren`,
         caption: 'Nabava je završena i zahtjev je zatvoren.',
       });
@@ -264,7 +264,7 @@ export function useActionableRequestsNotifier() {
       showNotification({
         requestId: req.id_purchase_request,
         icon: 'local_shipping',
-        color: 'blue-8',
+        type: 'action',
         message: `Zahtjev ${req.request_number} čeka otpremnicu`,
         caption: 'Dodaj otpremnicu kako bi zahtjev mogao biti zatvoren.',
       });

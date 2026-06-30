@@ -1,8 +1,8 @@
 {
   "name": "client",
   "version": "0.0.1",
-  "description": "veleriXP",
-  "productName": "Quasar App",
+  "description": "nabava.XP",
+  "productName": "nabava.XP",
   "author": "Igor Petkovic <igr.petkovic@gmail.com>",
   "type": "module",
   "private": true,

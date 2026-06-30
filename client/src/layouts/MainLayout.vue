@@ -367,26 +367,75 @@ onMounted(() => {
 .page-enter-from   { opacity: 0; transform: translateY(8px); }
 .page-leave-to     { opacity: 0; transform: translateY(-4px); }
 
+/* Svjetla, brand-usklađena varijanta (bijela podloga, navy tekst) umjesto
+   Quasarove tamne zadane (#323232) koja je stršala na svijetlom UI-ju.
+   Lijevi border + ikona nose semantsku boju scenarija (ista paleta kao
+   status-badgevi u IndexPage/RequestsPage); akcijski tip nema status pa
+   nosi brand cyan. */
 .actionable-request-notify {
   min-width: 320px;
   max-width: 420px;
+  background: #ffffff !important;
+  color: #16294e !important;
+  border-left: 4px solid #00afdb;
   border-radius: 6px !important;
   padding: 12px 14px !important;
   box-shadow:
     0 6.4px 14.4px rgba(0, 0, 0, 0.13),
     0 1.2px 3.6px rgba(0, 0, 0, 0.10) !important;
 }
+.actionable-request-notify .q-notification__icon {
+  color: #00afdb;
+}
 .actionable-request-notify .q-notification__message {
+  color: #16294e;
   font-weight: 600;
   font-size: 0.8125rem;
   letter-spacing: -0.005em;
 }
 .actionable-request-notify .q-notification__caption {
   margin-top: 2px;
-  opacity: 0.85;
+  color: #6b7280;
+  opacity: 1;
   font-size: 0.75rem;
   line-height: 1.4;
 }
+
+/* Default (Zatvori) akcija — neutralna */
+.actionable-request-notify .q-notification__actions .q-btn {
+  color: #6b7280 !important;
+}
+
+/* Primarna (Pregledaj) akcija — uvijek brand cyan, bez obzira na tip */
+.actionable-request-notify .q-notification__actions .notify-action--accent {
+  color: #0e7490 !important;
+  font-weight: 700 !important;
+}
+.actionable-request-notify .q-notification__actions .notify-action--accent:hover {
+  background: rgba(0, 175, 219, 0.12) !important;
+}
+
+/* Semantski akcenti po scenariju — ista paleta kao status-badgevi */
+.actionable-request-notify--review     { border-left-color: #1d4ed8; }
+.actionable-request-notify--review     .q-notification__icon { color: #1d4ed8; }
+
+.actionable-request-notify--underReview { border-left-color: #b45309; }
+.actionable-request-notify--underReview .q-notification__icon { color: #b45309; }
+
+.actionable-request-notify--revision   { border-left-color: #c2410c; }
+.actionable-request-notify--revision   .q-notification__icon { color: #c2410c; }
+
+.actionable-request-notify--rejected   { border-left-color: #b91c1c; }
+.actionable-request-notify--rejected   .q-notification__icon { color: #b91c1c; }
+
+.actionable-request-notify--approved   { border-left-color: #7c3aed; }
+.actionable-request-notify--approved   .q-notification__icon { color: #7c3aed; }
+
+.actionable-request-notify--closed     { border-left-color: #166534; }
+.actionable-request-notify--closed     .q-notification__icon { color: #166534; }
+
+.actionable-request-notify--action     { border-left-color: #00afdb; }
+.actionable-request-notify--action     .q-notification__icon { color: #00afdb; }
 
 @media print {
   .app-header,

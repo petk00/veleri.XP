@@ -20,66 +20,54 @@
         <!-- Cards grid -->
         <section class="card-grid">
 
-          <!-- Novi zahtjev: full-width CTA -->
+          <!-- Novi zahtjev: kompaktni CTA banner -->
           <button class="dash-card dash-card--offer" @click="$router.push('/novizahtjev')">
             <img src="/solarlinear_NOVIZAHTJEV.svg" alt="" class="offer-deco" />
-            <div class="offer-header">
-              <img src="/forward-2-svgrepo-com.svg" alt="" class="offer-title-icon" />
-              <span class="card-label">Novi zahtjev</span>
+            <div class="offer-banner">
+              <div class="offer-banner__icon">
+                <img src="/forward-2-svgrepo-com.svg" alt="" />
+              </div>
+              <div class="offer-banner__text">
+                <span class="offer-banner__title">Novi zahtjev</span>
+                <span class="offer-banner__sub">Recite što trebate, priložite ponudu i pratite status u stvarnom vremenu</span>
+              </div>
+              <q-icon name="arrow_forward" size="22px" class="offer-banner__arrow" />
             </div>
-            <ol class="offer-steps">
-              <li class="offer-step">
-                <div class="offer-step__track">
-                  <div class="offer-step__dot">
-                    <img src="/solarlinear_NABAVA.svg" alt="" />
-                  </div>
-                  <div class="offer-step__line" />
-                </div>
-                <span class="offer-step__text">Recite što trebate i zašto</span>
-              </li>
-              <li class="offer-step">
-                <div class="offer-step__track">
-                  <div class="offer-step__dot">
-                    <img src="/solarlinear_FINANCIRANJE.svg" alt="" />
-                  </div>
-                  <div class="offer-step__line" />
-                </div>
-                <span class="offer-step__text">Priložite ponudu ili navedite stavke</span>
-              </li>
-              <li class="offer-step">
-                <div class="offer-step__track">
-                  <div class="offer-step__dot">
-                    <img src="/solarlinear_MOJIZAHTJEVI.svg" alt="" />
-                  </div>
-                </div>
-                <span class="offer-step__text">Pošaljite i pratite status u stvarnom vremenu</span>
-              </li>
-            </ol>
           </button>
 
-          <!-- Svi nalozi: info trake -->
-          <div v-if="recentRows.length" class="requests-list">
-            <button
-              v-for="row in recentRows"
-              :key="row.id_purchase_request"
-              class="request-row"
-              :style="{ borderLeftColor: buildRequestStyle(row).card.borderLeftColor }"
-              @click="$router.push(`/zahtjevi/${row.id_purchase_request}`)"
-            >
-              <span class="lrb__number">{{ row.request_number }}</span>
-              <span class="status-badge lrb__badge" :style="buildRequestStyle(row).badge">
-                <q-icon :name="statusIcon(row)" size="11px" class="badge-icon" />
-                {{ row.status_name }}
+          <!-- Nedavni zahtjevi -->
+          <div class="requests-section">
+            <div class="section-header">
+              <span class="card__title">
+                <q-icon name="receipt_long" size="15px" />
+                <span>Nedavni zahtjevi</span>
               </span>
-              <span class="lrb__doc" :class="row.has_ponuda ? 'lrb__doc--on' : 'lrb__doc--off'">
-                <q-icon :name="row.has_ponuda ? 'check_circle' : 'radio_button_unchecked'" size="12px" />
-                Ponuda
-              </span>
-              <span class="lrb__doc" :class="row.has_otpremnica ? 'lrb__doc--on' : 'lrb__doc--off'">
-                <q-icon :name="row.has_otpremnica ? 'check_circle' : 'radio_button_unchecked'" size="12px" />
-                Otpremnica
-              </span>
-            </button>
+              <span class="count-pill">{{ recentRows.length }}</span>
+            </div>
+
+            <div v-if="recentRows.length" class="requests-list">
+              <button
+                v-for="row in recentRows"
+                :key="row.id_purchase_request"
+                class="request-row"
+                :style="{ borderLeftColor: buildRequestStyle(row).card.borderLeftColor }"
+                @click="$router.push(`/zahtjevi/${row.id_purchase_request}`)"
+              >
+                <span class="lrb__number">{{ row.request_number }}</span>
+                <span class="status-badge lrb__badge" :style="buildRequestStyle(row).badge">
+                  <q-icon :name="statusIcon(row)" size="11px" class="badge-icon" />
+                  {{ row.status_name }}
+                </span>
+                <span class="lrb__doc" :class="row.has_ponuda ? 'lrb__doc--on' : 'lrb__doc--off'">
+                  <q-icon :name="row.has_ponuda ? 'check_circle' : 'radio_button_unchecked'" size="12px" />
+                  Ponuda
+                </span>
+                <span class="lrb__doc" :class="row.has_otpremnica ? 'lrb__doc--on' : 'lrb__doc--off'">
+                  <q-icon :name="row.has_otpremnica ? 'check_circle' : 'radio_button_unchecked'" size="12px" />
+                  Otpremnica
+                </span>
+              </button>
+            </div>
           </div>
 
         </section>
@@ -321,10 +309,11 @@ onMounted(async () => {
 /* ── CTA: Novi zahtjev (navy/cyan) ── */
 
 .dash-card--offer {
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 6px;
-  height: 288px;
+  align-items: stretch;
+  justify-content: center;
+  height: auto;
+  min-height: 96px;
+  padding: 0;
   background: linear-gradient(145deg, #e8f6fd 0%, #cceef9 100%);
   border: 1.5px solid #00afdb;
   border-left: 1.5px solid #00afdb;
@@ -335,141 +324,129 @@ onMounted(async () => {
   background: linear-gradient(145deg, #d0edf9 0%, #b3e4f5 100%);
   border-color: #14bae4;
   box-shadow: 0 10px 32px rgba(0, 175, 219, 0.25);
-  transform: scale(1.02);
-}
-
-.offer-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  position: relative;
-  z-index: 1;
-}
-
-.offer-title-icon {
-  width: 58px;
-  height: 58px;
-  flex-shrink: 0;
-  pointer-events: none;
-  margin-left: 0;
+  transform: scale(1.01);
 }
 
 .offer-deco {
   position: absolute;
-  bottom: -94px;
-  right: -45px;
-  width: 380px;
-  height: 380px;
+  top: 50%;
+  right: -40px;
+  width: 180px;
+  height: 180px;
   opacity: 0.08;
-  transform: rotate(-18deg);
+  transform: translateY(-50%) rotate(-18deg);
   pointer-events: none;
   z-index: 0;
 }
 
-.offer-steps {
-  list-style: none;
-  margin: 16px 0 0;
-  padding: 0;
+.offer-banner {
   display: flex;
-  flex-direction: column;
-  gap: 0;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  padding: 18px 24px;
   position: relative;
   z-index: 1;
 }
 
-.offer-step {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-}
-
-/* Track = stupac s krugom i linijom */
-.offer-step__track {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.offer-step__dot {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.75);
-  border: 1.5px solid rgba(0, 175, 219, 0.35);
+.offer-banner__icon {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 48px;
+  height: 48px;
   flex-shrink: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1.5px solid rgba(0, 175, 219, 0.35);
   box-shadow: 0 1px 4px rgba(0, 175, 219, 0.1);
 }
 
-.offer-step__dot img {
-  width: 24px;
-  height: 24px;
-  opacity: 0.75;
+.offer-banner__icon img {
+  width: 26px;
+  height: 26px;
 }
 
-.offer-step__line {
-  width: 2px;
-  flex: 1;
-  min-height: 20px;
-  background: rgba(0, 175, 219, 0.2);
-  margin: 3px 0;
+.offer-banner__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-.offer-step__text {
-  font-size: 0.875rem;
-  font-weight: 600;
+.offer-banner__title {
   color: #1b2d59;
-  line-height: 1.35;
-  padding-top: 8px;
-}
-
-.offer-step__text em {
-  font-style: normal;
-  opacity: 0.55;
-  font-size: 0.8125rem;
-}
-
-.dash-card--offer .card-label {
-  color: #1b2d59;
-  font-size: 2.25rem;
+  font-size: 1.0625rem;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  position: relative;
-  z-index: 1;
+  letter-spacing: 0.04em;
 }
 
-.dash-card--offer .card-sub {
-  color: #00afdb;
+.offer-banner__sub {
+  color: #16294e;
+  opacity: 0.65;
   font-size: 0.8125rem;
-  font-weight: 400;
-  opacity: 1;
-  letter-spacing: 0.01em;
-  margin-top: 4px;
-  position: relative;
-  z-index: 1;
-}
-
-
-.card-label {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  transition: color 0.2s ease;
-}
-
-.card-sub {
-  font-size: 0.75rem;
   font-weight: 500;
-  opacity: 0.8;
-  letter-spacing: 0.01em;
+  line-height: 1.3;
+}
+
+.offer-banner__arrow {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: #00afdb;
+  transition: transform 0.2s ease;
+}
+
+.dash-card--offer:hover .offer-banner__arrow {
+  transform: translateX(3px);
 }
 
 
-/* ── Requests list ── */
+/* ── Requests section ── */
+.requests-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px;
+}
+
+.section-header .card__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #16294e;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.section-header .card__title .q-icon {
+  color: #16294e;
+}
+
+.section-header .count-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  background: rgba(0, 175, 219, 0.12);
+  color: #0e7490;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 .requests-list {
   display: flex;
   flex-direction: column;
