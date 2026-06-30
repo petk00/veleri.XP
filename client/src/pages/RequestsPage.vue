@@ -2,7 +2,11 @@
   <q-page class="page">
     <div class="page-shell">
 
-      <section class="action-cards" :class="{ 'action-cards--admin': isAdmin }" aria-label="Brzi pregled">
+      <section
+        class="action-cards"
+        :class="{ 'action-cards--admin': isAdmin, 'action-cards--filtered': activeCardFilter }"
+        aria-label="Brzi pregled"
+      >
         <button
           class="action-card action-card--pending"
           :class="{ 'action-card--active': statusFilter === 'u_obradi' }"
@@ -11,7 +15,11 @@
           <div class="action-card__icon"><q-icon name="pending_actions" size="18px" /></div>
           <span class="action-card__value">{{ counts.u_obradi }}</span>
           <span class="action-card__label">U obradi</span>
-          <q-icon name="chevron_right" size="14px" class="action-card__arrow" />
+          <q-icon
+            :name="statusFilter === 'u_obradi' ? 'close' : 'chevron_right'"
+            size="14px"
+            class="action-card__arrow"
+          />
         </button>
         <button
           class="action-card action-card--ordered"
@@ -21,7 +29,11 @@
           <div class="action-card__icon"><q-icon name="inbox" size="18px" /></div>
           <span class="action-card__value">{{ counts.ceka_otpremnicu }}</span>
           <span class="action-card__label">Čekaju otpremnicu</span>
-          <q-icon name="chevron_right" size="14px" class="action-card__arrow" />
+          <q-icon
+            :name="statusFilter === 'ceka_otpremnicu' ? 'close' : 'chevron_right'"
+            size="14px"
+            class="action-card__arrow"
+          />
         </button>
         <button
           v-if="isAdmin"
@@ -32,7 +44,11 @@
           <div class="action-card__icon"><q-icon name="task_alt" size="18px" /></div>
           <span class="action-card__value">{{ counts.spremno_za_zatvaranje }}</span>
           <span class="action-card__label">Spremno za zatvaranje</span>
-          <q-icon name="chevron_right" size="14px" class="action-card__arrow" />
+          <q-icon
+            :name="statusFilter === 'spremno_za_zatvaranje' ? 'close' : 'chevron_right'"
+            size="14px"
+            class="action-card__arrow"
+          />
         </button>
       </section>
 
@@ -45,10 +61,20 @@
           class="topbar__search"
           placeholder="Pretraži po broju, podnositelju, odjelu ili statusu..."
         />
-        <button v-if="hasActiveFilters" class="toolbar__reset" @click="resetFilters">
+        <button v-if="searchQuery" class="toolbar__reset" @click="searchQuery = ''">
           <q-icon name="close" size="12px" />
           <span>Poništi</span>
         </button>
+      </div>
+
+      <div v-if="activeCardFilter" class="filter-chip-row">
+        <span class="filter-chip">
+          <q-icon name="filter_alt" size="13px" />
+          Filtrirano: {{ activeCardLabel }}
+          <button class="filter-chip__remove" @click="setStatusFilter(activeCardFilter)">
+            <q-icon name="close" size="13px" />
+          </button>
+        </span>
       </div>
 
       <section class="list-surface">
@@ -115,7 +141,7 @@
 
           <!-- Cell: total_amount -->
           <template #body-cell-total_amount="props">
-            <q-td :props="props" class="cell-muted" style="text-align:right">
+            <q-td :props="props" class="cell-muted">
               {{ formatCurrency(props.row.total_amount) }}
             </q-td>
           </template>
@@ -143,7 +169,11 @@
           <!-- Cell: justification -->
           <template #body-cell-justification="props">
             <q-td :props="props" class="cell-comment">
-              <span v-if="props.row.justification" class="comment-text">{{ props.row.justification }}</span>
+              <span
+                v-if="props.row.justification"
+                class="comment-text"
+                :title="props.row.justification"
+              >{{ props.row.justification }}</span>
               <span v-else class="cell-muted">—</span>
             </q-td>
           </template>
@@ -154,9 +184,11 @@
               <div class="empty-state__icon">
                 <q-icon name="filter_list_off" size="28px" />
               </div>
-              <h3 class="empty-state__title">Nema zahtjeva za odabrane filtere</h3>
+              <h3 class="empty-state__title">
+                {{ activeCardLabel ? `Nema zahtjeva za "${activeCardLabel}"` : 'Nema zahtjeva za odabrane filtere' }}
+              </h3>
               <p class="empty-state__hint">
-                Pokušajte promijeniti kriterije pretrage ili prikažite sve zahtjeve.
+                {{ activeCardLabel ? 'Trenutno nema zahtjeva u ovom statusu.' : 'Pokušajte promijeniti kriterije pretrage ili prikažite sve zahtjeve.' }}
               </p>
               <button class="btn btn--primary" @click="showAll">
                 <q-icon name="list" size="16px" />
@@ -275,15 +307,15 @@ const hasActiveFilters = computed(() =>
 );
 
 const allColumns = [
-  { name: 'request_number',  label: 'Broj zahtjeva',  field: 'request_number',  align: 'left',  sortable: true,  style: 'width: 150px' },
-  { name: 'status_name',     label: 'Status',          field: 'status_name',     align: 'left',  sortable: true,  style: 'width: 140px' },
-  { name: 'department_name', label: 'Odjel',           field: 'department_name', align: 'left',  sortable: true,  style: 'width: 150px' },
-  { name: 'total_amount',    label: 'Iznos',           field: 'total_amount',    align: 'right', sortable: true,  style: 'width: 110px' },
-  { name: 'justification',   label: 'Napomena',        field: 'justification',   align: 'left',  sortable: false, style: 'min-width: 160px' },
-  { name: 'docs',            label: 'Dokumenti',       field: 'docs',            align: 'center', sortable: false, style: 'width: 90px' },
-  { name: 'created_by',      label: 'Podnositelj',     field: 'created_by',      align: 'left',  sortable: true,  style: 'width: 140px' },
-  { name: 'created_at',      label: 'Datum',           field: 'created_at',      align: 'left',  sortable: true,  style: 'width: 100px' },
-  { name: 'updated_at',      label: 'Zadnja promjena', field: 'updated_at',      align: 'left',  sortable: true,  style: 'width: 120px' },
+  { name: 'request_number',  label: 'Broj zahtjeva',  field: 'request_number',  align: 'left',  sortable: true,  style: 'width: 120px' },
+  { name: 'status_name',     label: 'Status',          field: 'status_name',     align: 'left',  sortable: true,  style: 'width: 165px' },
+  { name: 'department_name', label: 'Odjel',           field: 'department_name', align: 'left',  sortable: true,  style: 'width: 130px' },
+  { name: 'total_amount',    label: 'Iznos',           field: 'total_amount',    align: 'left',  sortable: true,  style: 'width: 95px' },
+  { name: 'justification',   label: 'Napomena',        field: 'justification',   align: 'left',  sortable: false, style: 'min-width: 200px' },
+  { name: 'docs',            label: 'Dokumenti',       field: 'docs',            align: 'left',  sortable: false, style: 'width: 112px' },
+  { name: 'created_by',      label: 'Podnositelj',     field: 'created_by',      align: 'left',  sortable: true,  style: 'width: 130px' },
+  { name: 'created_at',      label: 'Datum',           field: 'created_at',      align: 'left',  sortable: true,  style: 'width: 88px' },
+  { name: 'updated_at',      label: 'Zadnja promjena', field: 'updated_at',      align: 'left',  sortable: true,  style: 'width: 100px' },
 ];
 
 const columns = computed(() =>
@@ -385,8 +417,22 @@ const showAll = () => {
   pagination.value.descending = true;
 };
 
+const CARD_FILTER_LABELS = {
+  u_obradi:             'U obradi',
+  ceka_otpremnicu:      'Čekaju otpremnicu',
+  spremno_za_zatvaranje: 'Spremno za zatvaranje',
+};
+
+const activeCardFilter = computed(() =>
+  CARD_FILTER_LABELS[statusFilter.value] ? statusFilter.value : null
+);
+
+const activeCardLabel = computed(() =>
+  CARD_FILTER_LABELS[statusFilter.value] || null
+);
+
 const setStatusFilter = (status) => {
-  statusFilter.value    = status;
+  statusFilter.value    = statusFilter.value === status ? 'all' : status;
   pagination.value.page = 1;
 };
 
@@ -511,7 +557,7 @@ onMounted(async () => {
 .action-card--pending.action-card--active {
   background: #fef3c7;
   border-left-color: #f59e0b;
-  box-shadow: 0 4px 14px rgba(180, 83, 9, 0.15);
+  box-shadow: 0 0 0 2.5px #f59e0b, 0 4px 16px rgba(180, 83, 9, 0.18);
 }
 .action-card--pending.action-card--active .action-card__arrow { color: #b45309; }
 
@@ -531,7 +577,7 @@ onMounted(async () => {
 .action-card--ordered.action-card--active {
   background: #e0f2fe;
   border-left-color: #0ea5e9;
-  box-shadow: 0 4px 14px rgba(0, 175, 219, 0.18);
+  box-shadow: 0 0 0 2.5px #0ea5e9, 0 4px 16px rgba(0, 175, 219, 0.2);
 }
 .action-card--ordered.action-card--active .action-card__arrow { color: #0284c7; }
 
@@ -551,9 +597,57 @@ onMounted(async () => {
 .action-card--ready.action-card--active {
   background: #dcfce7;
   border-left-color: #22c55e;
-  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.15);
+  box-shadow: 0 0 0 2.5px #22c55e, 0 4px 16px rgba(22, 163, 74, 0.18);
 }
 .action-card--ready.action-card--active .action-card__arrow { color: #16a34a; }
+
+/* Kad je kartica filter aktivan — priguši neodabrane */
+.action-cards--filtered .action-card:not(.action-card--active) {
+  opacity: 0.45;
+  filter: saturate(0.4);
+}
+.action-cards--filtered .action-card:not(.action-card--active):hover {
+  opacity: 0.75;
+  filter: saturate(0.7);
+}
+
+/* ── Filter chip ── */
+.filter-chip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 5px 10px;
+  border-radius: 20px;
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  color: #1d4ed8;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.filter-chip .q-icon { flex-shrink: 0; }
+
+.filter-chip__remove {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 2px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #1d4ed8;
+  transition: background 0.12s;
+}
+.filter-chip__remove:hover { background: rgba(29, 78, 216, 0.12); }
 
 /* ── List surface (card) ── */
 .list-surface {
@@ -664,12 +758,16 @@ onMounted(async () => {
 /* ── Table ── */
 .data-table { border-radius: 0; }
 
-.data-table :deep(.q-table__middle) { overflow: hidden; }
+.data-table :deep(.q-table__middle) { overflow-x: auto; }
 
 .data-table :deep(.q-table) {
   border-collapse: separate;
   border-spacing: 0;
 }
+
+/* Neutralizira Quasarov td::before hover overlay (rgba(0,0,0,0.03)) koji
+   se gazi s našim tr:hover background i stvara vizualni artefakt. */
+.data-table :deep(tbody td::before) { content: none !important; }
 
 .data-table :deep(thead tr) { background: #f9fafb; }
 
@@ -746,7 +844,7 @@ onMounted(async () => {
 
 .cell-muted { color: #4b5563 !important; }
 
-.cell-docs { display: flex; align-items: center; gap: 6px; }
+.cell-docs { display: flex; align-items: center; gap: 6px; padding: 8px 10px; }
 .doc-icon--ok      { color: #107C10; }
 .doc-icon--missing { color: #d1d5db; }
 
@@ -778,7 +876,6 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  width: 160px;
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 0.72rem;

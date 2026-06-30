@@ -37,8 +37,11 @@
         <!-- ── Content ── -->
         <div class="wizard__content">
 
-          <div class="wizard__progress">
-            <div class="wizard__progress-fill" :style="{ width: progressBarWidth }" />
+          <div class="wizard__progress-row">
+            <div class="wizard__progress">
+              <div class="wizard__progress-fill" :style="{ width: progressBarWidth }" />
+            </div>
+            <span class="wizard__step-label">Korak {{ currentStepIndex + 1 }} od {{ stepSequence.length }}</span>
           </div>
 
           <div class="wizard__inner">
@@ -122,7 +125,7 @@
                     >
                       <img src="/clipboard-check-svgrepo-com.svg" alt="" class="offer-choice__svg" />
                       <span class="offer-choice__label">Da, imam ponudu ili račun</span>
-                      <q-icon v-if="form.hasOffer === true" name="check_circle" size="18px" class="offer-choice__check" />
+                      <q-icon :name="form.hasOffer === true ? 'check_circle' : 'chevron_right'" size="18px" class="offer-choice__check" :class="{ 'offer-choice__check--pending': form.hasOffer !== true }" />
                     </button>
                     <button
                       type="button"
@@ -132,7 +135,7 @@
                     >
                       <img src="/clipboard-remove-svgrepo-com.svg" alt="" class="offer-choice__svg" />
                       <span class="offer-choice__label">Nemam ponudu, ali znam što mi treba</span>
-                      <q-icon v-if="form.hasOffer === false" name="check_circle" size="18px" class="offer-choice__check" />
+                      <q-icon :name="form.hasOffer === false ? 'check_circle' : 'chevron_right'" size="18px" class="offer-choice__check" :class="{ 'offer-choice__check--pending': form.hasOffer !== false }" />
                     </button>
                   </div>
                 </div>
@@ -305,14 +308,20 @@
                         class="add-item__name"
                         @keyup.enter="addItem"
                       />
-                      <q-input
-                        v-model.number="itemForm.quantity"
-                        placeholder="1"
-                        type="number" min="1"
-                        outlined dense
-                        class="add-item__qty"
-                        @keyup.enter="addItem"
-                      />
+                      <div class="qty-stepper">
+                        <button type="button" class="qty-stepper__btn" @click="itemForm.quantity = Math.max(1, (itemForm.quantity || 1) - 1)">
+                          <q-icon name="remove" size="14px" />
+                        </button>
+                        <input
+                          v-model.number="itemForm.quantity"
+                          type="number" min="1"
+                          class="qty-stepper__input"
+                          @keyup.enter="addItem"
+                        />
+                        <button type="button" class="qty-stepper__btn" @click="itemForm.quantity = (itemForm.quantity || 0) + 1">
+                          <q-icon name="add" size="14px" />
+                        </button>
+                      </div>
                       <button class="btn btn--primary add-item__btn" @click="addItem">
                         <q-icon name="add" size="16px" />
                         <span>Dodaj</span>
@@ -367,6 +376,9 @@
 
 
             </transition>
+
+            <!-- Proceed hint -->
+            <p v-if="proceedHint" class="proceed-hint">{{ proceedHint }}</p>
 
             <!-- Nav -->
             <div class="wizard__nav">
@@ -534,6 +546,19 @@ const canProceed = computed(() => {
   }
 });
 
+const proceedHint = computed(() => {
+  if (canProceed.value) return '';
+  switch (currentStep.value) {
+    case 'odjel':      return 'Odaberite odjel ili projekt za nastavak';
+    case 'svrha':      return 'Upišite svrhu nabave za nastavak';
+    case 'ponuda':     return 'Odaberite jednu od opcija za nastavak';
+    case 'upload':     return 'Priložite barem jednu ponudu za nastavak';
+    case 'kategorija': return 'Upišite iznos i odaberite kategoriju za nastavak';
+    case 'stavke':     return 'Dodajte barem jednu stavku za nastavak';
+    default:           return '';
+  }
+});
+
 /* ───────── isDirty ───────── */
 
 const isDirty = computed(() => {
@@ -649,6 +674,8 @@ const selectHasOffer = (hasOffer) => {
   } else {
     form.value.items = [];
   }
+  // Auto-advance — kratak delay da korisnik vidi selected state
+  setTimeout(() => goNext(), 180);
 };
 
 const onAddOffer = (file) => {
@@ -682,13 +709,21 @@ const addItem = () => {
     notifyError('Ispunite kategoriju, naziv i količinu.');
     return;
   }
-  const category = categoryOptions.value.find((x) => x.value === itemForm.value.category);
-  form.value.items.push({
-    category: itemForm.value.category,
-    category_label: category?.label || '',
-    item_name: itemForm.value.item_name.trim(),
-    quantity: itemForm.value.quantity,
-  });
+  const trimmedName = itemForm.value.item_name.trim();
+  const duplicateIdx = form.value.items.findIndex(
+    (it) => it.category === itemForm.value.category && it.item_name.toLowerCase() === trimmedName.toLowerCase()
+  );
+  if (duplicateIdx !== -1) {
+    form.value.items[duplicateIdx].quantity += itemForm.value.quantity;
+  } else {
+    const category = categoryOptions.value.find((x) => x.value === itemForm.value.category);
+    form.value.items.push({
+      category: itemForm.value.category,
+      category_label: category?.label || '',
+      item_name: trimmedName,
+      quantity: itemForm.value.quantity,
+    });
+  }
   itemForm.value = { category: null, item_name: '', quantity: 1 };
 };
 
@@ -875,21 +910,28 @@ onMounted(() => fetchReferenceData());
 
 /* ─── Wizard content ─── */
 .wizard__content {
-  display: flex; flex-direction: column; height: 600px;
+  display: flex; flex-direction: column;
   max-width: 976px; margin: 0 auto; width: 100%;
 }
 
-.wizard__progress { height: 2px; background: #e5e7eb; border-radius: 2px; margin-bottom: 32px; }
+.wizard__progress-row {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 28px;
+}
+.wizard__progress { flex: 1; height: 2px; background: #e5e7eb; border-radius: 2px; }
 .wizard__progress-fill { height: 100%; background: linear-gradient(90deg, #00afdb, #1b2d59); border-radius: 2px; transition: width 0.4s ease; }
+.wizard__step-label {
+  flex-shrink: 0; font-size: 0.6875rem; font-weight: 600;
+  color: #9ca3af; letter-spacing: 0.02em; white-space: nowrap;
+}
 
 .wizard__inner {
-  flex: 1; display: flex; flex-direction: column; align-items: stretch; gap: 24px;
+  display: flex; flex-direction: column; align-items: stretch; gap: 24px;
 }
 
 /* ─── Hero card ─── */
 .hero-card {
   width: 100%;
-  flex: 1; min-height: 0;
+  min-height: 280px;
   display: flex;
   flex-direction: column;
   background: linear-gradient(145deg, #e8f6fd 0%, #cceef9 100%);
@@ -1094,7 +1136,7 @@ onMounted(() => fetchReferenceData());
   box-shadow: 0 1px 6px rgba(0,175,219,0.07);
 }
 .add-item__grid {
-  display: grid; grid-template-columns: 1fr 1.4fr 72px auto;
+  display: grid; grid-template-columns: 1fr 1.4fr auto auto;
   gap: 8px; align-items: stretch;
 }
 .add-item__category :deep(.q-field__control),
@@ -1203,7 +1245,9 @@ onMounted(() => fetchReferenceData());
 .review__value--prose  { font-weight: 400; color: #374151; white-space: pre-wrap; line-height: 1.5; }
 .review__value--amount { font-weight: 600; color: #111827; font-variant-numeric: tabular-nums; }
 .review__muted  { color: #9ca3af; font-weight: 400; font-style: italic; }
-.review__file   { display: inline-flex; align-items: center; gap: 4px; color: #059669; font-size: 0.75rem; font-weight: 500; margin-right: 8px; margin-bottom: 4px; }
+.review__file   { display: inline-flex; align-items: center; gap: 4px; color: #059669; font-size: 0.75rem; font-weight: 500; margin-right: 8px; margin-bottom: 4px; cursor: default; }
+.review__file span { text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 2px; transition: text-decoration-color 0.15s; }
+.review__file:hover span { text-decoration-color: #059669; }
 .review__edit   {
   all: unset; display: inline-flex; align-items: center; gap: 3px;
   font-size: 0.6875rem; font-weight: 500; color: #00afdb;
@@ -1294,6 +1338,7 @@ onMounted(() => fetchReferenceData());
 .offer-choice__svg { width: 36px; height: 36px; opacity: 0.65; flex-shrink: 0; }
 .offer-choice__label { flex: 1; font-size: 1rem; font-weight: 600; color: #1b2d59; }
 .offer-choice__check { color: #00afdb; flex-shrink: 0; }
+.offer-choice__check--pending { color: #d1d5db; }
 
 /* ─── Svrha box ─── */
 .svrha-box {
@@ -1312,6 +1357,41 @@ onMounted(() => fetchReferenceData());
   line-height: 1.6;
 }
 .svrha-box__input::placeholder { color: #94a3b8; font-weight: 400; }
+
+/* ─── Proceed hint ─── */
+.proceed-hint {
+  margin: 10px 0 0; font-size: 0.6875rem; font-weight: 500;
+  color: #9ca3af; text-align: center; line-height: 1.4;
+}
+
+/* ─── Qty stepper ─── */
+.qty-stepper {
+  display: flex; align-items: center;
+  height: 56px; border-radius: 14px;
+  background: rgba(255,255,255,0.75);
+  border: 1.5px solid rgba(0,175,219,0.3);
+  overflow: hidden;
+  transition: border-color 0.15s, background 0.15s;
+}
+.qty-stepper:focus-within {
+  border-color: #00afdb; background: rgba(255,255,255,0.95);
+  box-shadow: 0 0 0 3px rgba(0,175,219,0.12);
+}
+.qty-stepper__btn {
+  all: unset; display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 100%; flex-shrink: 0;
+  color: #0e7490; cursor: pointer;
+  transition: background 0.12s;
+}
+.qty-stepper__btn:hover { background: rgba(0,175,219,0.1); }
+.qty-stepper__input {
+  flex: 1; border: none; background: transparent; outline: none;
+  font-family: inherit; font-size: 1rem; color: #1b2d59; font-weight: 600;
+  text-align: center; min-width: 0; width: 40px;
+}
+.qty-stepper__input::-webkit-outer-spin-button,
+.qty-stepper__input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.qty-stepper__input[type=number] { -moz-appearance: textfield; }
 
 /* ─── Wizard nav ─── */
 .wizard__nav {
