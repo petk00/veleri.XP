@@ -1,106 +1,130 @@
 <template>
   <q-page class="login-page">
-    <div class="blob blob--1" aria-hidden="true" />
-    <div class="blob blob--2" aria-hidden="true" />
-    <div class="blob blob--3" aria-hidden="true" />
 
-    <main class="login-shell">
-      <section class="signin-card" aria-labelledby="signin-title">
-        <form class="signin-form" @submit.prevent="submitCurrentStep">
+    <!-- Brand panel — lijeva polovica (desktop), sakriva se na mobileu -->
+    <div class="brand-panel">
+      <div class="brand-panel__blob" aria-hidden="true" />
+      <div class="brand-panel__content">
+        <div class="brand-panel__brand">
+          <img
+            src="/veleri_logo_solo.svg"
+            alt="Veleučilište u Rijeci"
+            class="brand-panel__logo"
+          />
+          <span class="brand-panel__name">nabava<span class="brand-panel__name-accent">.XP</span></span>
+        </div>
+        <h2 class="brand-panel__claim">Digitalizacija nabave za Veleučilište u Rijeci</h2>
+        <ul class="brand-panel__points">
+          <li>
+            <q-icon name="bolt" size="16px" />
+            <span>Pratite zahtjeve u stvarnom vremenu</span>
+          </li>
+          <li>
+            <q-icon name="inventory_2" size="16px" />
+            <span>Centralizirana nabava</span>
+          </li>
+          <li>
+            <q-icon name="history" size="16px" />
+            <span>Potpuna povijest aktivnosti</span>
+          </li>
+        </ul>
+      </div>
+    </div>
 
-          <div class="brand-row">
-            <img
-              src="/veleri-logo-horizontal.svg"
-              alt="Veleučilište u Rijeci"
-              class="brand-logo"
+    <!-- Form panel — desna polovica, na mobileu puna širina -->
+    <div class="form-panel">
+      <main class="login-shell">
+        <section class="signin-card" aria-labelledby="signin-title">
+          <form class="signin-form" @submit.prevent="submitCurrentStep">
+
+            <div class="brand-row">
+              <img
+                src="/veleri-logo-horizontal.svg"
+                alt="Veleučilište u Rijeci"
+                class="brand-logo"
+              />
+            </div>
+
+            <AuthFormHeader
+              title-id="signin-title"
+              :title="step === 'email' ? 'Prijava' : 'Unesite lozinku'"
+              :subtitle="step === 'email' ? 'Prijavite se u nabava.XP' : 'Unesite svoju lozinku'"
+              :show-back="step === 'password'"
+              :back-text="email"
+              @back="goBackToEmail"
             />
-          </div>
 
-          <button
-            v-if="step === 'password'"
-            type="button"
-            class="back-step"
-            :disabled="loading"
-            @click="goBackToEmail"
-          >
-            <q-icon name="arrow_back" size="16px" />
-            <span>{{ email }}</span>
-          </button>
-
-          <h1 id="signin-title" class="signin-title">
-            {{ step === 'email' ? 'Dobrodošli u sustav veleri.XP' : 'Unesite lozinku' }}
-          </h1>
-          <p v-if="step === 'email'" class="signin-subtitle">Platforma za digitalizaciju poslovnih procesa</p>
-
-          <div v-if="step === 'email'" class="field">
-            <label class="field-label" for="login-email">E-mail adresa</label>
-            <input
-              id="login-email"
-              v-model="email"
-              type="email"
-              class="text-input"
-              placeholder="ime.prezime@veleri.hr"
-              autocomplete="username"
-              :disabled="loading"
-              autofocus
-            />
-          </div>
-
-          <div v-else class="field">
-            <label class="field-label" for="login-password">Lozinka</label>
-            <div class="password-field">
+            <div v-if="step === 'email'" class="field">
+              <label class="field-label" for="login-email">E-mail adresa</label>
               <input
-                id="login-password"
-                v-model="password"
-                :type="showPassword ? 'text' : 'password'"
+                id="login-email"
+                v-model="email"
+                type="email"
                 class="text-input"
-                placeholder="••••••••"
-                autocomplete="current-password"
+                placeholder="ime.prezime@veleri.hr"
+                autocomplete="username"
                 :disabled="loading"
                 autofocus
               />
-              <button
-                type="button"
-                class="password-toggle"
-                :title="showPassword ? 'Sakrij lozinku' : 'Prikaži lozinku'"
-                :disabled="loading"
-                @click="showPassword = !showPassword"
-              >
-                <q-icon :name="showPassword ? 'visibility_off' : 'visibility'" size="18px" />
+            </div>
+
+            <div v-else class="field">
+              <label class="field-label" for="login-password">Lozinka</label>
+              <div class="password-field">
+                <input
+                  id="login-password"
+                  v-model="password"
+                  :type="showPassword ? 'text' : 'password'"
+                  class="text-input"
+                  placeholder="••••••••"
+                  autocomplete="current-password"
+                  :disabled="loading"
+                  autofocus
+                />
+                <button
+                  type="button"
+                  class="password-toggle"
+                  :title="showPassword ? 'Sakrij lozinku' : 'Prikaži lozinku'"
+                  :disabled="loading"
+                  @click="showPassword = !showPassword"
+                >
+                  <q-icon :name="showPassword ? 'visibility_off' : 'visibility'" size="18px" />
+                </button>
+              </div>
+            </div>
+
+            <div v-if="errorMessage" class="form-error" role="alert">
+              {{ errorMessage }}
+            </div>
+
+            <div class="actions">
+              <button type="submit" class="primary-btn" :disabled="loading">
+                <q-spinner v-if="loading" size="16px" color="white" />
+                <span v-else>{{ step === 'email' ? 'Dalje' : 'Prijavi se' }}</span>
               </button>
             </div>
-          </div>
 
-          <div v-if="errorMessage" class="form-error" role="alert">
-            {{ errorMessage }}
-          </div>
+            <div class="help-section">
+              <p class="help-title">Trebate pomoć?</p>
+              <p class="help-desc">Nemate korisnički račun ili imate problem s prijavom (zaboravljena lozinka, greška pri pristupu)?</p>
+              <a
+                href="mailto:ipetkovic@veleri.hr?subject=Upit%20vezan%20uz%20pristup%20sustavu%20nabava.XP"
+                class="help-cta"
+              >
+                Kontaktirajte administratora sustava
+                <q-icon name="arrow_forward" size="14px" />
+              </a>
+            </div>
 
-          <div class="actions">
-            <button type="submit" class="primary-btn" :disabled="loading">
-              <q-spinner v-if="loading" size="16px" color="white" />
-              <span v-else>{{ step === 'email' ? 'Dalje' : 'Prijavi se' }}</span>
-            </button>
-          </div>
+          </form>
+        </section>
+      </main>
 
-          <div class="help-section">
-            <p class="help-title">Trebate pomoć?</p>
-            <p class="help-desc">Nemate korisnički račun ili imate problem s prijavom (zaboravljena lozinka, greška pri pristupu)?</p>
-            <a
-              href="mailto:ipetkovic@veleri.hr?subject=Upit%20vezan%20uz%20pristup%20sustavu%20veleri.XP"
-              class="help-cta"
-            >
-              Kontaktirajte administratora sustava
-              <q-icon name="arrow_forward" size="14px" />
-            </a>
-          </div>
+      <footer class="login-footer">
+        <span>© {{ currentYear }} Veleučilište u Rijeci. Sva prava pridržana.</span>
+      </footer>
+    </div>
 
-        </form>
-      </section>
-    </main>
-
-    <footer class="login-footer">
-      <span>© {{ currentYear }} Veleučilište u Rijeci. Sva prava pridržana.</span>
-    </footer>
   </q-page>
 </template>
 
@@ -108,6 +132,7 @@
 import { computed, nextTick, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from 'boot/axios';
+import AuthFormHeader from 'components/AuthFormHeader.vue';
 
 const router = useRouter();
 
@@ -203,21 +228,9 @@ const handleLogin = async () => {
 
 @keyframes blob1 {
   0%, 100% { transform: translate(0, 0) scale(1); }
-  25%       { transform: translate(40px, -30px) scale(1.08); }
-  50%       { transform: translate(-20px, 40px) scale(0.95); }
-  75%       { transform: translate(30px, 20px) scale(1.03); }
-}
-
-@keyframes blob2 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33%       { transform: translate(-50px, 30px) scale(1.06); }
-  66%       { transform: translate(30px, -40px) scale(0.97); }
-}
-
-@keyframes blob3 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  40%       { transform: translate(25px, 50px) scale(1.04); }
-  80%       { transform: translate(-35px, -20px) scale(0.96); }
+  25%       { transform: translate(30px, -20px) scale(1.06); }
+  50%       { transform: translate(-15px, 25px) scale(0.96); }
+  75%       { transform: translate(20px, 15px) scale(1.02); }
 }
 
 @keyframes card-enter {
@@ -230,75 +243,147 @@ const handleLogin = async () => {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Page & blobs ──────────────────────────────── */
+/* ── Page shell — split screen ─────────────────── */
 
 .login-page {
   position: relative;
-  display: flex;
-  min-height: 100vh;
-  align-items: center;
-  justify-content: center;
+  height: 100vh !important;
+  min-height: 100vh !important;
   overflow: hidden;
-  background: transparent;
   color: #111827;
   font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  padding: 48px 24px;
 }
 
-.blob {
+/* ── Brand panel (lijevo) ──────────────────────── */
+/* Apsolutno pozicionirano na puni .login-page (100vh), umjesto flex-stretch
+   koji se nepouzdano ponašao unutar Quasarovog q-page/q-page-container lanca. */
+
+.brand-panel {
   position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 50%;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background: linear-gradient(160deg, #16294e 0%, #102038 60%, #0d1b30 100%);
+  padding: 64px;
+  box-sizing: border-box;
+}
+
+.brand-panel__blob {
+  position: absolute;
+  width: 480px;
+  height: 480px;
+  right: -150px;
+  bottom: -150px;
+  background: #00afdb;
+  opacity: 0.22;
   border-radius: 50%;
-  filter: blur(90px);
+  filter: blur(120px);
   pointer-events: none;
+  animation: blob1 20s ease-in-out infinite;
 }
 
-.blob--1 {
-  width: 560px;
-  height: 560px;
-  background: #16294e;
-  opacity: 0.65;
-  top: -140px;
-  left: -180px;
-  animation: blob1 18s ease-in-out infinite;
+.brand-panel__content {
+  position: relative;
+  z-index: 1;
+  max-width: 440px;
 }
 
-.blob--2 {
-  width: 520px;
-  height: 520px;
-  background: #00afdb;
-  opacity: 0.55;
-  bottom: -120px;
-  right: -140px;
-  animation: blob2 20s ease-in-out infinite;
+.brand-panel__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
+  animation: logo-fade 0.6s ease 0.1s both;
 }
 
-.blob--3 {
-  width: 400px;
-  height: 400px;
-  background: #00afdb;
-  opacity: 0.35;
-  top: 38%;
-  left: 45%;
-  animation: blob3 15s ease-in-out infinite;
+.brand-panel__logo {
+  display: block;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.brand-panel__name {
+  color: #ffffff;
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.brand-panel__name-accent {
+  color: #00afdb;
+}
+
+.brand-panel__claim {
+  margin: 0 0 28px;
+  color: #ffffff;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.brand-panel__points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.brand-panel__points li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+}
+
+.brand-panel__points .q-icon {
+  color: #00afdb;
+  flex-shrink: 0;
+}
+
+/* ── Form panel (desno) ────────────────────────── */
+
+.form-panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  padding: 48px 24px;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
 /* ── Card ──────────────────────────────────────── */
 
 .login-shell {
-  position: relative;
-  z-index: 1;
-  width: min(420px, 100%);
+  width: min(400px, 100%);
 }
 
 .signin-card {
   width: 100%;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  border-radius: 16px;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
-  padding: 36px 40px 32px;
+  /* Fiksna min-height (viša od oba koraka) sprječava da centrirani .form-panel
+     "skoči" kad se sadržaj forme promijeni između email/lozinka koraka.
+     Kraći korak jednostavno ostavlja prazninu na dnu — to je namjerno. */
+  min-height: 420px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
   box-sizing: border-box;
   animation: card-enter 0.5s ease forwards;
 }
@@ -310,66 +395,18 @@ const handleLogin = async () => {
   flex-direction: column;
 }
 
-/* ── Logo ──────────────────────────────────────── */
+/* ── Logo (mobile-only mini header, brand panel je sakriven) ── */
 
 .brand-row {
-  margin-bottom: 24px;
-  display: flex;
-  justify-content: center;
+  display: none;
 }
 
 .brand-logo {
   display: block;
-  width: 270px;
+  width: 220px;
   height: auto;
   object-fit: contain;
   animation: logo-fade 0.6s ease 0.1s both;
-}
-
-/* ── Back button ───────────────────────────────── */
-
-.back-step {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 16px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #4b5563;
-  font: inherit;
-  font-size: 0.8125rem;
-  cursor: pointer;
-  transition: color 0.15s;
-}
-
-.back-step:hover { color: #111827; }
-
-.back-step span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ── Typography ────────────────────────────────── */
-
-.signin-title {
-  margin: 0 0 4px;
-  color: #16294e;
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  line-height: 1.2;
-  text-align: center;
-}
-
-.signin-subtitle {
-  margin: 0 0 24px;
-  color: #6b7280;
-  font-size: 0.8125rem;
-  font-weight: 400;
-  text-align: center;
 }
 
 /* ── Fields ────────────────────────────────────── */
@@ -419,6 +456,13 @@ const handleLogin = async () => {
   background: #f9fafb;
   color: #9ca3af;
   cursor: not-allowed;
+}
+
+.text-input:-webkit-autofill,
+.text-input:-webkit-autofill:hover,
+.text-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px white inset !important;
+  -webkit-text-fill-color: #16294E !important;
 }
 
 .password-field {
@@ -501,9 +545,9 @@ const handleLogin = async () => {
 .help-section {
   margin-top: 20px;
   padding: 12px 14px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.5);
+  background: #f9fafb;
 }
 
 .help-title {
@@ -539,37 +583,44 @@ const handleLogin = async () => {
 /* ── Footer ────────────────────────────────────── */
 
 .login-footer {
-  position: absolute;
-  right: 20px;
-  bottom: 14px;
-  z-index: 1;
-  color: rgba(255, 255, 255, 0.5);
+  margin-top: 28px;
+  color: #9ca3af;
   font-size: 0.75rem;
+  text-align: center;
 }
 
-/* ── Mobile ────────────────────────────────────── */
+/* ── Tablet / mobile (<768px) — brand panel se sakriva, forma puna širina ── */
 
-@media (max-width: 560px) {
+@media (max-width: 768px) {
   .login-page {
-    align-items: flex-start;
-    padding: 0;
+    height: auto !important;
+    overflow: visible;
   }
 
-  .blob {
+  .brand-panel {
     display: none;
+  }
+
+  .form-panel {
+    position: static;
+    width: 100%;
+    min-height: 100vh;
+  }
+
+  .brand-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+}
+
+@media (max-width: 560px) {
+  .form-panel {
+    padding: 32px 24px;
   }
 
   .login-shell {
     width: 100%;
-  }
-
-  .signin-card {
-    border-radius: 0;
-    border: none;
-    box-shadow: none;
-    padding: 32px 24px 36px;
-    min-height: 100vh;
-    background: rgba(255, 255, 255, 0.95);
   }
 
   .login-footer {
