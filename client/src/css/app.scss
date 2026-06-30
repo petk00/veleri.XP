@@ -108,6 +108,16 @@ body {
   border-color: rgba(197, 15, 31, 0.5);
 }
 
+.btn--text-danger {
+  background: transparent;
+  color: #c50f1f;
+  border-color: transparent;
+}
+.btn--text-danger:hover:not(:disabled) {
+  background: rgba(197, 15, 31, 0.06);
+  border-color: rgba(197, 15, 31, 0.2);
+}
+
 .btn--warning {
   background: rgba(183, 121, 31, 0.06);
   color: #B7791F;
