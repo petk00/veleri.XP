@@ -142,7 +142,7 @@
               </div>
 
               <!-- ──────────── UPLOAD ──────────── -->
-              <div v-else-if="currentStep === 'upload'" key="upload" class="hero-card">
+              <div v-else-if="currentStep === 'upload'" key="upload" class="hero-card hero-card--compact">
                 <div class="hero-card__head">
                   <h2 class="hero-card__title hero-card__title--lg">Dodajte ponudu:</h2>
                 </div>
@@ -943,6 +943,8 @@ onMounted(() => fetchReferenceData());
   overflow: hidden;
 }
 
+.hero-card--compact { min-height: 312px; }
+
 
 .hero-card__head { margin-bottom: 28px; }
 
@@ -958,7 +960,7 @@ onMounted(() => fetchReferenceData());
   margin: 0; line-height: 1.5; opacity: 0.8;
 }
 
-.hero-card__body { position: relative; z-index: 1; flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+.hero-card__body { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; }
 
 /* ─── Hero inputs ─── */
 .hero-input :deep(.q-field__control) {
@@ -1077,14 +1079,14 @@ onMounted(() => fetchReferenceData());
 /* ─── Upload zone ─── */
 .upload-zone {
   display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 8px; padding: 32px 16px;
+  justify-content: center; gap: 8px; padding: 17px 16px;
   flex: 1;
   border: 2px dashed rgba(0,175,219,0.4); border-radius: 12px;
   background: rgba(255,255,255,0.6); cursor: pointer;
   transition: border-color 0.15s, background 0.15s; text-align: center;
 }
 .upload-zone:hover { border-color: #00afdb; background: rgba(255,255,255,0.9); }
-.upload-zone__icon { width: 64px; height: 64px; opacity: 0.35; transition: opacity 0.15s; }
+.upload-zone__icon { width: 48px; height: 48px; opacity: 0.35; transition: opacity 0.15s; }
 .upload-zone:hover .upload-zone__icon { opacity: 0.6; }
 .upload-zone__text { font-size: 1.125rem; font-weight: 600; color: #1b2d59; }
 .upload-zone__hint { font-size: 0.875rem; color: #6b7280; }

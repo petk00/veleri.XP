@@ -33,36 +33,20 @@
             </h2>
           </div>
           <div class="card__body">
-            <div class="field-grid">
-              <div class="field">
-                <label class="field__label">Odjel / Služba / Projekt *</label>
-                <q-select
-                  v-model="form.fk_department"
-                  :options="departmentOptions"
-                  outlined dense
-                  emit-value map-options
-                  placeholder="Odaberite..."
-                  class="field__input"
-                >
-                  <template #prepend>
-                    <q-icon name="business" size="16px" />
-                  </template>
-                </q-select>
-              </div>
-
-              <div class="field">
-                <label class="field__label">Fiskalna godina</label>
-                <q-input
-                  :model-value="fiscalYear"
-                  outlined dense readonly
-                  class="field__input field__input--readonly"
-                >
-                  <template #prepend>
-                    <q-icon name="event" size="16px" />
-                  </template>
-                </q-input>
-                <div class="field__hint">Fiskalna godina se ne može mijenjati.</div>
-              </div>
+            <div class="field field--half">
+              <label class="field__label">Odjel / Služba / Projekt *</label>
+              <q-select
+                v-model="form.fk_department"
+                :options="departmentOptions"
+                outlined dense
+                emit-value map-options
+                placeholder="Odaberite..."
+                class="field__input"
+              >
+                <template #prepend>
+                  <q-icon name="business" size="16px" />
+                </template>
+              </q-select>
             </div>
 
             <div class="field">
@@ -115,7 +99,6 @@
               <q-icon name="folder" size="16px" />
               <span>Priložena ponuda</span>
             </h2>
-            <span class="card__count">{{ ponudaAttachments.length }}</span>
           </div>
           <div class="card__body card__body--flush">
             <ul class="ponuda-list">
@@ -186,7 +169,6 @@
               <q-icon name="local_shipping" size="16px" />
               <span>Priložena otpremnica</span>
             </h2>
-            <span class="card__count">{{ otpremnicaAttachments.length }}</span>
           </div>
           <div class="card__body card__body--flush">
             <ul class="ponuda-list">
@@ -670,92 +652,143 @@ const saveChanges = async () => {
 };
 
 const goBack = () => router.push(`/zahtjevi/${route.params.id}`);
+// Odustani na formi: router guard (onBeforeRouteLeave) intercepts navigation
+// i prikazuje dijalog za potvrdu ako isDirty — ne treba duplikat ovdje.
 
 onMounted(() => fetchData());
 </script>
 
 <style scoped>
+/* ─── Page shell — ograničena širina, identično s RequestDetailsPage ─── */
 .page {
-  padding: 32px 40px;
+  padding: 0;
   background: transparent;
   color: #111827;
   font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .page-shell {
-  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px 40px 100px; /* bottom padding da sticky action-bar ne prekriva sadržaj */
 }
 
+/* ─── Page header ─── */
 .page-header {
-  margin-bottom: 28px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 20px;
 }
 
+.page-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 0.6875rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+/* ─── Content shell ─── */
 .content-shell {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 14px;
 }
 
+/* ─── Card overrides — isti pattern kao section-header u RequestDetailsPage ─── */
+.card__header {
+  padding: 10px 14px;
+  background: transparent;
+}
+
+.card__title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #16294e;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.card__title .q-icon { color: #16294e; }
+
+/* count-pill identično s RequestDetailsPage */
+.card__count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: 9999px;
+  background: rgba(0, 175, 219, 0.12);
+  color: #0e7490;
+  font-size: 0.6875rem; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.card__body { padding: 14px 18px; }
+.card__body--flush { padding: 0; }
+
+/* ─── Polja ─── */
 .field {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 .field:last-child { margin-bottom: 0; }
 
+/* Labele polja — podređene section naslovima, isti stil kao info-cell dt u RequestDetailsPage */
 .field__label {
   display: block;
-  margin-bottom: 7px;
-  color: #374151;
-  font-size: 0.75rem;
+  margin-bottom: 5px;
+  font-size: 0.6875rem;
   font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .field__hint {
-  margin-top: 7px;
+  margin-top: 5px;
   color: #6b7280;
   font-size: 0.75rem;
   line-height: 1.4;
 }
 
+/* Odjel zauzima ~50% širine — uravnoteženije od pune širine za kratki select */
+.field--half { max-width: 50%; }
+
 .field-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  gap: 14px;
 }
 
+/* ─── Input styling ─── */
 .field__input :deep(.q-field__control) {
-  height: 44px;
-  border-radius: 12px !important;
-  background: rgba(255,255,255,0.85);
+  height: 40px;
+  border-radius: 10px !important;
+  background: #fff;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .field__input :deep(.q-field--outlined .q-field__control::before),
 .field__input :deep(.q-field__control::before) {
-  border-color: rgba(0,175,219,0.3);
-  border-radius: 12px;
+  border-color: #e5e7eb;
+  border-radius: 10px;
 }
 .field__input :deep(.q-field--outlined.q-field--focused .q-field__control::after) {
   border-color: #00afdb;
   border-width: 1.5px;
-  border-radius: 12px;
+  border-radius: 10px;
   box-shadow: 0 0 0 3px rgba(0,175,219,0.1);
 }
 .field__input :deep(.q-field__native) {
-  color: #1b2d59;
+  color: #111827;
   font-size: 0.875rem;
-  font-weight: 500;
 }
 .field__input :deep(.q-field__prepend),
 .field__input :deep(.q-field__suffix) {
-  color: #6b7280;
+  color: #9ca3af;
   font-size: 0.75rem;
 }
 .field__input--readonly :deep(.q-field__control) { background: #fafafa; }
-.field__input--readonly :deep(.q-field__native) { color: #6b7280; }
+.field__input--readonly :deep(.q-field__native)  { color: #6b7280; }
 .field__input--textarea :deep(.q-field__control) {
   height: auto;
-  min-height: 96px;
+  min-height: 88px;
   padding-top: 6px;
   padding-bottom: 6px;
 }
@@ -765,231 +798,187 @@ onMounted(() => fetchData());
   line-height: 1.5;
 }
 
-.card__body--flush { padding: 0; }
-
+/* ─── Dokument redovi — identični s doc-slot u RequestDetailsPage ─── */
 .ponuda-list { list-style: none; margin: 0; padding: 0; }
+
 .ponuda-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 11px 18px;
+  gap: 10px;
+  padding: 9px 18px;
   border-bottom: 1px solid #f0f0f0;
 }
 .ponuda-row:last-child { border-bottom: none; }
 
 .ponuda-icon {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  border: 1px solid #e5e7eb;
-  background: #fafafa;
   color: #00afdb;
-  border-radius: 4px;
+  background: rgba(0,175,219,0.07);
+  border: 1px solid rgba(0,175,219,0.2);
+  border-radius: 6px;
 }
 .ponuda-info { flex: 1; min-width: 0; }
 .ponuda-name {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: #111827;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 0.8125rem; font-weight: 500; color: #111827;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.ponuda-meta { font-size: 0.6875rem; color: #6b7280; margin-top: 2px; }
+.ponuda-meta { font-size: 0.6875rem; color: #6b7280; margin-top: 1px; }
 .ponuda-actions { display: flex; gap: 2px; flex-shrink: 0; }
 
 .ponuda-hint {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 18px;
-  font-size: 0.75rem;
-  color: #0e7490;
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 18px;
+  font-size: 0.75rem; color: #0e7490;
   background: #f0fbfe;
   border-top: 1px solid #e0f6fd;
 }
 
+/* ─── Upload zona ─── */
 .upload-zone {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 20px 16px;
-  border: 2px dashed rgba(0,175,219,0.4);
-  border-radius: 12px;
-  background: rgba(255,255,255,0.6);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 5px; padding: 18px 16px;
+  border: 2px dashed rgba(0,175,219,0.35);
+  border-radius: 10px;
+  background: #fafafa;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
   text-align: center;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
-.upload-zone:hover { border-color: #00afdb; background: rgba(255,255,255,0.92); }
-.upload-zone__icon { color: rgba(0,175,219,0.5); transition: color 0.15s; }
+.upload-zone:hover { border-color: #00afdb; background: #f0fbfe; }
+.upload-zone__icon { color: rgba(0,175,219,0.45); transition: color 0.15s; }
 .upload-zone:hover .upload-zone__icon { color: #00afdb; }
 .upload-zone__text { font-size: 0.875rem; font-weight: 500; color: #374151; word-break: break-all; }
 .upload-zone__hint { font-size: 0.75rem; color: #9ca3af; }
 
-.upload-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-.upload-error {
-  font-size: 0.8125rem;
-  color: #dc2626;
-  margin-top: 6px;
-}
+.upload-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.upload-error { font-size: 0.8125rem; color: #dc2626; margin-top: 6px; }
 
+/* ─── Dodaj stavku ─── */
 .add-item {
-  margin-bottom: 14px;
-  padding: 14px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
   border: 1px solid #e5e7eb;
-  background: #fafafa;
+  border-radius: 10px;
+  background: #f9fafb;
 }
 
 .add-item__label {
-  margin-bottom: 9px;
+  margin-bottom: 8px;
   color: #6b7280;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 0.6875rem; font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase;
 }
 
 .add-item__field-labels {
   display: grid;
   grid-template-columns: 1fr 1.4fr 80px;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 4px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: #6b7280;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  font-size: 0.6875rem; font-weight: 600;
+  color: #9ca3af;
+  letter-spacing: 0.02em; text-transform: uppercase;
 }
 
 .add-item__row {
   display: grid;
   grid-template-columns: 1fr 1.4fr 80px auto;
-  gap: 10px;
+  gap: 8px;
   align-items: stretch;
 }
 
 .add-item__category :deep(.q-field__control),
-.add-item__name :deep(.q-field__control),
-.add-item__qty :deep(.q-field__control) {
-  height: 34px;
-  border-radius: 0;
+.add-item__name     :deep(.q-field__control),
+.add-item__qty      :deep(.q-field__control) {
+  height: 36px;
+  border-radius: 8px !important;
   background: #fff;
 }
 .add-item__category :deep(.q-field__native),
-.add-item__name :deep(.q-field__native),
-.add-item__qty :deep(.q-field__native) {
+.add-item__name     :deep(.q-field__native),
+.add-item__qty      :deep(.q-field__native) {
   color: #111827;
   font-size: 0.8125rem;
 }
-.add-item__btn { height: 34px; }
+.add-item__btn { height: 36px; border-radius: 8px !important; }
 
+/* ─── Lista stavki ─── */
 .item-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
+  list-style: none; margin: 0; padding: 0;
   border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
   background: #fff;
 }
-
 .item-list__row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px;
   border-bottom: 1px solid #f0f0f0;
 }
 .item-list__row:last-child { border-bottom: none; }
 
 .item-list__index {
-  display: flex;
-  width: 24px;
-  height: 24px;
-  align-items: center;
-  justify-content: center;
+  display: flex; width: 22px; height: 22px;
+  align-items: center; justify-content: center;
   flex-shrink: 0;
-  border: 1px solid #e5e7eb;
+  border-radius: 50%;
+  background: rgba(0,175,219,0.1);
   color: #0e7490;
-  font-size: 0.6875rem;
-  font-weight: 600;
+  font-size: 0.6875rem; font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-
 .item-list__content { flex: 1; min-width: 0; }
-.item-list__name {
-  color: #111827;
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-.item-list__category {
-  margin-top: 2px;
-  color: #6b7280;
-  font-size: 0.75rem;
-}
-
+.item-list__name     { color: #111827; font-size: 0.8125rem; font-weight: 500; }
+.item-list__category { margin-top: 1px; color: #6b7280; font-size: 0.75rem; }
 .item-list__qty {
   flex-shrink: 0;
-  color: #0e7490;
-  font-size: 0.75rem;
-  font-weight: 600;
+  color: #0e7490; font-size: 0.75rem; font-weight: 600;
   font-variant-numeric: tabular-nums;
+  background: rgba(0,175,219,0.08);
+  padding: 2px 8px; border-radius: 20px;
 }
 
+/* ─── Empty state ─── */
 .empty-block {
-  padding: 36px 16px;
-  border: 1px dashed #d1d5db;
+  padding: 28px 16px;
+  border: 1px dashed #e5e7eb;
+  border-radius: 10px;
   background: #fafafa;
   text-align: center;
 }
-.empty-block--page {
-  padding: 56px 24px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-}
-.empty-block__icon {
-  margin-bottom: 8px;
-  color: #9ca3af;
-}
-.empty-block__text {
-  color: #374151;
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-.empty-block__hint {
-  margin-top: 4px;
-  color: #6b7280;
-  font-size: 0.75rem;
-}
+.empty-block--page { padding: 56px 24px; border-style: solid; background: #fff; }
+.empty-block__icon { margin-bottom: 6px; color: #9ca3af; }
+.empty-block__text { color: #374151; font-size: 0.8125rem; font-weight: 500; }
+.empty-block__hint { margin-top: 4px; color: #6b7280; font-size: 0.75rem; }
 
+/* ─── Sticky action bar ─── */
 .action-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 20px;
-  padding: 16px 0 0;
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
   border-top: 1px solid #e5e7eb;
+  margin-top: 20px;
 }
 
+/* ─── Responsive ─── */
 @media (max-width: 700px) {
   .field-grid { grid-template-columns: 1fr; }
+  .field--half { max-width: 100%; }
   .add-item__row { grid-template-columns: 1fr 1fr; }
+  .add-item__field-labels { grid-template-columns: 1fr 1fr; }
   .add-item__btn { grid-column: 1 / -1; }
 }
 
 @media (max-width: 600px) {
-  .page { padding: 20px 16px; }
-  .page-header__title { font-size: 1.7rem; }
+  .page-shell { padding: 16px 16px 100px; }
   .action-bar { flex-direction: column-reverse; }
   .action-bar .btn { width: 100%; }
 }
