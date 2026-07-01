@@ -54,14 +54,15 @@ body {
   transition: all 0.15s;
   letter-spacing: 0.01em;
 }
-.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn:disabled,
+.btn--disabled { opacity: 0.45; cursor: not-allowed; }
 
 .btn--primary {
   background: rgba(0, 175, 219, 0.1);
   color: #0e7490;
   border-color: rgba(0, 175, 219, 0.45);
 }
-.btn--primary:hover:not(:disabled) {
+.btn--primary:hover:not(:disabled):not(.btn--disabled) {
   background: rgba(0, 175, 219, 0.18);
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(0, 175, 219, 0.1);

@@ -377,9 +377,6 @@
 
             </transition>
 
-            <!-- Proceed hint -->
-            <p v-if="proceedHint" class="proceed-hint">{{ proceedHint }}</p>
-
             <!-- Nav -->
             <div class="wizard__nav">
               <button
@@ -396,11 +393,12 @@
               <button
                 v-if="currentStep !== 'potvrda'"
                 class="btn btn--primary"
-                :disabled="!canProceed"
+                :class="{ 'btn--disabled': !canProceed }"
                 @click="goNext"
               >
                 <span>Dalje</span>
                 <q-icon name="arrow_forward" size="16px" />
+                <q-tooltip v-if="!canProceed">{{ proceedHint }}</q-tooltip>
               </button>
               <button
                 v-else
@@ -1359,12 +1357,6 @@ onMounted(() => fetchReferenceData());
   line-height: 1.6;
 }
 .svrha-box__input::placeholder { color: #94a3b8; font-weight: 400; }
-
-/* ─── Proceed hint ─── */
-.proceed-hint {
-  margin: 10px 0 0; font-size: 0.6875rem; font-weight: 500;
-  color: #9ca3af; text-align: center; line-height: 1.4;
-}
 
 /* ─── Qty stepper ─── */
 .qty-stepper {
