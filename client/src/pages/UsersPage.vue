@@ -67,17 +67,29 @@
                   {{ u.is_active ? 'Aktivan' : 'Neaktivan' }}
                 </span>
                 <div class="user-actions">
-                  <button class="icon-btn" title="Uredi" @click="openEditDialog(u)">
+                  <button class="icon-btn" @click="openEditDialog(u)">
                     <q-icon name="edit" size="16px" />
+                    <q-tooltip>Uredi</q-tooltip>
                   </button>
-                  <button class="icon-btn" title="Pošalji link za postavljanje lozinke" @click="resetLink(u)">
+                  <button class="icon-btn" @click="resetLink(u)">
                     <q-icon name="key" size="16px" />
+                    <q-tooltip>Resetiraj lozinku</q-tooltip>
                   </button>
-                  <button class="icon-btn" :title="u.is_active ? 'Deaktiviraj' : 'Aktiviraj'" @click="toggleStatus(u)">
+                  <button
+                    class="icon-btn"
+                    :class="{ 'icon-btn--blocked': !!statusBlockReason(u) }"
+                    @click="toggleStatus(u)"
+                  >
                     <q-icon :name="u.is_active ? 'person_off' : 'person'" size="16px" />
+                    <q-tooltip>{{ statusBlockReason(u) || (u.is_active ? 'Deaktiviraj korisnika' : 'Aktiviraj korisnika') }}</q-tooltip>
                   </button>
-                  <button class="icon-btn icon-btn--danger" title="Obriši korisnika" @click="deleteUser(u)">
+                  <button
+                    class="icon-btn icon-btn--danger"
+                    :class="{ 'icon-btn--blocked': !!deleteBlockReason(u) }"
+                    @click="deleteUser(u)"
+                  >
                     <q-icon name="delete_outline" size="16px" />
+                    <q-tooltip>{{ deleteBlockReason(u) || 'Obriši korisnika' }}</q-tooltip>
                   </button>
                 </div>
               </li>
@@ -178,6 +190,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
+import { getStoredUser } from 'src/utils/authStorage';
 
 const $q = useQuasar();
 
@@ -187,6 +200,28 @@ const roles = ref([]);
 const searchQuery = ref('');
 const sortKey = ref('name');
 const sortDir = ref('asc');
+const currentUser = ref(getStoredUser());
+
+const isSelf = (u) => !!currentUser.value && u.id_user === currentUser.value.id_user;
+
+const activeAdminCount = computed(() =>
+  users.value.filter(u => u.role_name === 'Administrator' && u.is_active).length
+);
+
+const isLastActiveAdmin = (u) =>
+  u.role_name === 'Administrator' && u.is_active && activeAdminCount.value <= 1;
+
+const statusBlockReason = (u) => {
+  if (isSelf(u)) return 'Ne možete deaktivirati vlastiti račun';
+  if (isLastActiveAdmin(u)) return 'Mora postojati barem jedan administrator';
+  return '';
+};
+
+const deleteBlockReason = (u) => {
+  if (isSelf(u)) return 'Ne možete obrisati vlastiti račun';
+  if (isLastActiveAdmin(u)) return 'Mora postojati barem jedan administrator';
+  return '';
+};
 
 const toggleSort = (key) => {
   if (sortKey.value === key) {
@@ -303,22 +338,32 @@ const copyLink = async () => {
   }
 };
 
-const resetLink = async (u) => {
-  try {
-    const { data } = await api.post(`/users/${u.id_user}/reset-link`);
-    inviteDialog.value = {
-      open: true,
-      link: data.inviteLink,
-      name: `${u.first_name} ${u.last_name}`,
-      copied: false,
-      isReset: true,
-    };
-  } catch {
-    $q.notify({ type: 'negative', message: 'Greška pri generiranju linka.' });
-  }
+const resetLink = (u) => {
+  $q.dialog({
+    title: 'Reset lozinke',
+    message: `Poslati link za resetiranje lozinke korisniku <strong>${u.first_name} ${u.last_name}</strong>?`,
+    html: true,
+    cancel: { label: 'Odustani', flat: true },
+    ok: { label: 'Pošalji', color: 'primary' },
+    persistent: true,
+  }).onOk(async () => {
+    try {
+      const { data } = await api.post(`/users/${u.id_user}/reset-link`);
+      inviteDialog.value = {
+        open: true,
+        link: data.inviteLink,
+        name: `${u.first_name} ${u.last_name}`,
+        copied: false,
+        isReset: true,
+      };
+    } catch {
+      $q.notify({ type: 'negative', message: 'Greška pri generiranju linka.' });
+    }
+  });
 };
 
 const deleteUser = (u) => {
+  if (deleteBlockReason(u)) return;
   $q.dialog({
     title: 'Brisanje korisnika',
     message: `Jeste li sigurni da želite obrisati korisnika <strong>${u.first_name} ${u.last_name}</strong>?`,
@@ -339,6 +384,7 @@ const deleteUser = (u) => {
 };
 
 const toggleStatus = async (u) => {
+  if (statusBlockReason(u)) return;
   const deactivating = u.is_active;
   $q.dialog({
     title: deactivating ? 'Deaktivacija korisnika' : 'Aktivacija korisnika',
@@ -477,7 +523,7 @@ onMounted(async () => {
   transition: background 0.12s;
 }
 .user-row:last-child { border-bottom: none; }
-.user-row:hover { background: #f0fbfe; }
+.user-row:hover { background: #f0fbfe; box-shadow: inset 3px 0 0 #00afdb; }
 
 .user-col-name {
   display: flex;
@@ -522,6 +568,10 @@ onMounted(async () => {
 .user-status--inactive { color: #991b1b; background: #fee2e2; }
 
 .user-actions { display: flex; width: 100%; justify-content: space-between; }
+
+.icon-btn--blocked { opacity: 0.35; cursor: not-allowed; }
+.icon-btn--blocked:hover { background: transparent; color: #6b7280; }
+.icon-btn--danger.icon-btn--blocked:hover { background: transparent; color: #6b7280; }
 
 /* ── Dialog fields ── */
 .field-row { display: flex; gap: 12px; }
