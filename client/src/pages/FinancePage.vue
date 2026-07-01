@@ -26,41 +26,57 @@
           <!-- Gornji red -->
           <div class="fy-top-row">
 
-            <div v-if="!loadingDetail" class="budget-summary">
-              <div class="budget-summary__item">
-                <div class="budget-summary__label">
-                  <q-icon name="account_balance_wallet" size="13px" /> Godišnji budžet
-                </div>
-                <div class="budget-summary__value budget-summary__value--total">{{ formatEUR(fyBudget) }}</div>
+            <div v-if="!loadingDetail" class="card budget-summary-card">
+              <div class="section-header">
+                <span class="card__title">
+                  <q-icon name="account_balance_wallet" size="15px" />
+                  <span>Pregled budžeta</span>
+                </span>
               </div>
-              <div class="budget-summary__item">
-                <div class="budget-summary__label">
-                  <q-icon name="shopping_cart" size="13px" /> Potrošeno
+              <div class="budget-summary">
+                <div class="budget-summary__item">
+                  <div class="budget-summary__label">
+                    <q-icon name="account_balance_wallet" size="13px" /> Godišnji budžet
+                  </div>
+                  <div class="budget-summary__value budget-summary__value--total">{{ formatEUR(fyBudget) }}</div>
                 </div>
-                <div class="budget-summary__value budget-summary__value--spent">{{ formatEUR(totalSpent) }}</div>
+                <div class="budget-summary__item">
+                  <div class="budget-summary__label">
+                    <q-icon name="shopping_cart" size="13px" /> Potrošeno
+                  </div>
+                  <div class="budget-summary__value" :class="spentOverBudget ? 'budget-summary__value--over' : 'budget-summary__value--spent'">
+                    <q-icon v-if="spentOverBudget" name="warning" size="15px" />
+                    {{ formatEUR(totalSpent) }}
+                  </div>
+                  <div v-if="spentOverBudget" class="budget-summary__over-hint">+{{ spentPercent - 100 }}% preko budžeta</div>
+                </div>
+                <div class="budget-summary__item">
+                  <div class="budget-summary__label">
+                    <q-icon name="pie_chart" size="13px" /> Alocirano
+                  </div>
+                  <div class="budget-summary__value" :class="totalAllocated > fyBudget ? 'budget-summary__value--over' : 'budget-summary__value--allocated'">
+                    {{ formatEUR(totalAllocated) }}
+                  </div>
+                </div>
+                <div class="budget-summary__item">
+                  <div class="budget-summary__label">
+                    <q-icon name="savings" size="13px" /> Slobodno
+                  </div>
+                  <div class="budget-summary__value" :class="totalFree < 0 ? 'budget-summary__value--over' : 'budget-summary__value--available'">
+                    {{ formatEUR(totalFree) }}
+                  </div>
+                </div>
+                <div class="budget-summary__item budget-summary__item--full">
+                  <div class="budget-bar budget-bar--stacked">
+                    <div
+                      class="budget-bar__fill"
+                      :class="spentOverBudget ? 'budget-bar__fill--critical budget-bar__fill--striped' : 'budget-bar__fill--spent'"
+                      :style="{ width: Math.min(spentPercent, 100) + '%' }"
+                    />
+                    <div class="budget-bar__fill budget-bar__fill--allocated" :style="{ width: Math.max(0, Math.min(allocationPercent, 100) - Math.min(spentPercent, 100)) + '%' }" />
+                  </div>
+                </div>
               </div>
-              <div class="budget-summary__item">
-                <div class="budget-summary__label">
-                  <q-icon name="pie_chart" size="13px" /> Alocirano
-                </div>
-                <div class="budget-summary__value" :class="totalAllocated > fyBudget ? 'budget-summary__value--over' : 'budget-summary__value--allocated'">
-                  {{ formatEUR(totalAllocated) }}
-                </div>
-              </div>
-              <div class="budget-summary__item">
-                <div class="budget-summary__label">
-                  <q-icon name="savings" size="13px" /> Slobodno
-                </div>
-                <div class="budget-summary__value" :class="totalFree < 0 ? 'budget-summary__value--over' : 'budget-summary__value--available'">
-                  {{ formatEUR(totalFree) }}
-                </div>
-              </div>
-              <div class="budget-summary__item budget-summary__item--full">
-                <div class="budget-bar budget-bar--stacked">
-                  <div class="budget-bar__fill budget-bar__fill--spent" :style="{ width: Math.min(spentPercent, 100) + '%' }" />
-                  <div class="budget-bar__fill budget-bar__fill--allocated" :style="{ width: Math.max(0, Math.min(allocationPercent, 100) - Math.min(spentPercent, 100)) + '%' }" />
-                </div>
-                </div>
             </div>
 
             <!-- Kartica: postotak + akcije -->
@@ -70,31 +86,34 @@
                   <button
                     v-if="!selected.is_closed"
                     class="icon-btn"
-                    title="Uredi godišnji budžet"
                     @click="openBudgetDialog(selected)"
                   >
                     <q-icon name="edit" size="16px" />
+                    <q-tooltip>Uredi godišnji budžet</q-tooltip>
                   </button>
                   <button
                     v-if="!selected.is_closed"
                     class="icon-btn icon-btn--danger"
-                    title="Zatvori godinu"
                     @click="closeYear(selected)"
                   >
                     <q-icon name="lock_open" size="16px" />
+                    <q-tooltip>Zatvori godinu</q-tooltip>
                   </button>
-                  <q-icon v-else name="lock" size="14px" class="fy-tab__lock-icon" />
+                  <q-icon v-else name="lock" size="14px" class="fy-tab__lock-icon">
+                    <q-tooltip>Godina je zatvorena</q-tooltip>
+                  </q-icon>
                   <button
                     class="icon-btn"
                     :disabled="hasOpenYear"
-                    :title="hasOpenYear ? 'Zatvorite tekuću godinu prije otvaranja nove' : 'Nova poslovna godina'"
                     @click="openCreateDialog"
                   >
                     <q-icon name="add" size="16px" />
+                    <q-tooltip>{{ hasOpenYear ? 'Zatvorite tekuću godinu prije otvaranja nove' : 'Nova poslovna godina' }}</q-tooltip>
                   </button>
-                  <button class="fy-year-switch" title="Promijeni godinu">
+                  <button class="fy-year-switch">
                     <span class="fy-year-switch__label">{{ selected.year }}</span>
                     <q-icon name="expand_more" size="13px" />
+                    <q-tooltip>Promijeni godinu</q-tooltip>
                     <q-menu anchor="bottom right" self="top right" :offset="[0, 6]" class="fy-year-menu">
                       <div class="fy-year-menu__list">
                         <button
@@ -121,8 +140,11 @@
               </div>
               <div class="fy-stat-wrap">
                 <div class="budget-summary__year-pct-row">
-                  <div class="fy-stat__number">{{ remainingPercent }}<span class="fy-stat__pct">%</span></div>
-                  <span class="budget-summary__year-suffix">preostalog budžeta u <strong>{{ selected.year }}</strong>. godini</span>
+                  <div class="fy-stat__number" :class="{ 'fy-stat__number--over': remainingPercent < 0 }">{{ remainingPercent }}<span class="fy-stat__pct">%</span></div>
+                  <span class="budget-summary__year-suffix">
+                    {{ remainingPercent >= 0 ? 'nepotrošenog' : 'premašenog' }} budžeta u <strong>{{ selected.year }}</strong>. godini
+                    <br>(100% − Potrošeno, vidi kartice iznad)
+                  </span>
                 </div>
               </div>
             </div>
@@ -132,6 +154,15 @@
           <!-- Odjeli + Kategorije -->
           <div class="cards-row">
             <div class="card cards-row__main">
+            <div class="section-header">
+              <span class="card__title">
+                <q-icon name="account_balance" size="15px" />
+                <span>Iskorištenost po odjelima</span>
+              </span>
+              <button v-if="!selected.is_closed" class="btn btn--ghost btn--sm" @click="openDeptDialog()">
+                <q-icon name="add" size="14px" /> Dodaj
+              </button>
+            </div>
             <div v-if="loadingDetail" class="loading-block loading-block--sm">
               <q-spinner color="primary" size="20px" />
             </div>
@@ -145,11 +176,7 @@
                 <span class="dept-col dept-col--bar">Iskorištenost</span>
                 <span class="dept-col dept-col--pct">%</span>
                 <span class="dept-col dept-col--amounts">Potrošeno / Limit</span>
-                <span class="dept-col dept-col--actions">
-                  <button v-if="!selected.is_closed" class="btn btn--ghost btn--sm" @click="openDeptDialog()">
-                    <q-icon name="add" size="14px" /> Dodaj
-                  </button>
-                </span>
+                <span class="dept-col dept-col--actions"></span>
               </div>
               <div
                 v-for="d in sortedDepartments"
@@ -169,25 +196,33 @@
                 </span>
                 <span class="dept-col dept-col--pct">
                   <template v-if="deptPct(d) === null">
-                    <span class="dept-no-limit">Nema limita</span>
+                    <span class="dept-no-limit">
+                      Nema limita
+                      <q-tooltip>Trošak se ne prati protiv limita jer odjel nema definiran budžet — nije nužno upozorenje.</q-tooltip>
+                    </span>
                   </template>
                   <template v-else-if="deptPct(d) > 100">
-                    <q-icon name="warning" size="14px" color="negative" />
-                    {{ deptPct(d) }}%
+                    <span class="dept-pct--over">
+                      <q-icon name="warning" size="14px" />
+                      {{ deptPct(d) }}%
+                    </span>
+                    <q-tooltip>+{{ deptPct(d) - 100 }}% preko limita</q-tooltip>
                   </template>
                   <template v-else>{{ deptPct(d) }}%</template>
                 </span>
                 <span class="dept-col dept-col--amounts">
-                  <span class="budget-spent">{{ formatEUR(d.spent_amount) }}</span>
+                  <span class="budget-spent" :class="{ 'budget-spent--neutral': deptPct(d) === null }">{{ formatEUR(d.spent_amount) }}</span>
                   <span class="budget-sep">/</span>
                   <span class="budget-limit">{{ formatEUR(d.department_limit) }}</span>
                 </span>
                 <span class="dept-col dept-col--actions" v-if="!selected.is_closed">
-                  <button class="icon-btn" title="Uredi" @click="openDeptDialog(d)">
+                  <button class="icon-btn" @click="openDeptDialog(d)">
                     <q-icon name="edit" size="15px" />
+                    <q-tooltip>Uredi</q-tooltip>
                   </button>
-                  <button class="icon-btn icon-btn--danger" title="Obriši" @click="deleteDept(d)">
+                  <button class="icon-btn icon-btn--danger" @click="deleteDept(d)">
                     <q-icon name="delete_outline" size="15px" />
+                    <q-tooltip>Obriši</q-tooltip>
                   </button>
                 </span>
               </div>
@@ -196,6 +231,15 @@
 
             <!-- Kategorije artikala -->
             <div class="card cards-row__side">
+            <div class="section-header">
+              <span class="card__title">
+                <q-icon name="sell" size="15px" />
+                <span>Kategorije artikala</span>
+              </span>
+              <button v-if="!selected.is_closed" class="btn btn--ghost btn--sm" @click="openCatDialog()">
+                <q-icon name="add" size="14px" /> Dodaj
+              </button>
+            </div>
             <div v-if="loadingDetail" class="loading-block loading-block--sm">
               <q-spinner color="primary" size="20px" />
             </div>
@@ -203,14 +247,7 @@
               <div class="empty-state__title">Nema kategorija</div>
               <div v-if="!selected.is_closed" class="empty-state__hint">Dodajte prvu kategoriju.</div>
             </div>
-            <div v-else>
-              <div class="cat-table__header">
-                <span class="cat-col--name">Kategorija</span>
-                <button v-if="!selected.is_closed" class="btn btn--ghost btn--sm" @click="openCatDialog()">
-                  <q-icon name="add" size="14px" /> Dodaj
-                </button>
-              </div>
-              <ul class="cat-grid">
+            <ul v-else class="cat-grid">
               <li
                 v-for="c in categories"
                 :key="c.id_item_category"
@@ -218,16 +255,17 @@
               >
                 <span class="cat-chip__name">{{ c.name }}</span>
                 <div v-if="!selected.is_closed" class="cat-chip__actions">
-                  <button class="icon-btn" title="Uredi" @click="openCatDialog(c)">
+                  <button class="icon-btn" @click="openCatDialog(c)">
                     <q-icon name="edit" size="14px" />
+                    <q-tooltip>Uredi</q-tooltip>
                   </button>
-                  <button class="icon-btn icon-btn--danger" title="Obriši" @click="deleteCat(c)">
+                  <button class="icon-btn icon-btn--danger" @click="deleteCat(c)">
                     <q-icon name="delete_outline" size="14px" />
+                    <q-tooltip>Obriši</q-tooltip>
                   </button>
                 </div>
               </li>
             </ul>
-            </div>
           </div>
 
           </div><!-- /.cards-row -->
@@ -402,7 +440,8 @@ const totalSpent = computed(() => departments.value.reduce((s, d) => s + Number(
 const totalFree = computed(() => fyBudget.value - totalAllocated.value);
 const allocationPercent = computed(() => fyBudget.value > 0 ? Math.round(totalAllocated.value / fyBudget.value * 100) : 0);
 const spentPercent = computed(() => fyBudget.value > 0 ? Math.round(totalSpent.value / fyBudget.value * 100) : 0);
-const remainingPercent = computed(() => fyBudget.value > 0 ? Math.max(0, Math.round((fyBudget.value - totalSpent.value) / fyBudget.value * 100)) : 0);
+const remainingPercent = computed(() => fyBudget.value > 0 ? Math.round((fyBudget.value - totalSpent.value) / fyBudget.value * 100) : 0);
+const spentOverBudget = computed(() => fyBudget.value > 0 && totalSpent.value > fyBudget.value);
 
 const deptPct = (d) => {
   const limit = Number(d.department_limit);
@@ -846,6 +885,22 @@ onMounted(loadYears);
   letter-spacing: -0.02em;
 }
 
+/* ── Section header (isti pattern kao RequestDetailsPage) ── */
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.section-header .card__title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #16294E;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.section-header .card__title .q-icon { color: #16294E; }
+
 /* ── Budget summary ── */
 
 .fy-top-row {
@@ -856,13 +911,18 @@ onMounted(loadYears);
   margin-bottom: 16px;
 }
 
+.budget-summary-card { display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
+
 .budget-summary {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  overflow: hidden;
+}
+
+.budget-summary__over-hint {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #c50f1f;
+  margin-top: 2px;
 }
 
 /* ── Year info card ── */
@@ -908,6 +968,8 @@ onMounted(loadYears);
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
+.fy-stat__number--over { color: #c50f1f; }
+.fy-stat__number--over .fy-stat__pct { color: #c50f1f; }
 .fy-stat__pct {
   font-size: 1.5rem;
   font-weight: 600;
@@ -969,15 +1031,16 @@ onMounted(loadYears);
 
 .budget-summary__year-pct-row {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
 .budget-summary__year-suffix {
   font-size: 0.75rem;
   font-weight: 500;
   color: #9ca3af;
-  white-space: nowrap;
+  line-height: 1.4;
 }
 
 .budget-summary__year-top {
@@ -1066,6 +1129,9 @@ onMounted(loadYears);
 }
 
 .budget-summary__value {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 1.25rem;
   font-weight: 700;
   color: #111827;
@@ -1097,7 +1163,7 @@ onMounted(loadYears);
 .budget-bar__fill--ok        { background: #10b981; }
 .budget-bar__fill--warn      { background: #f59e0b; }
 .budget-bar__fill--over      { background: #ef4444; }
-.budget-bar__fill--critical  { background: #dc2626; }
+.budget-bar__fill--critical  { background: #dc2626; box-shadow: 0 0 8px rgba(220, 38, 38, 0.55); }
 .budget-bar__fill--allocated { background: #3b82f6; }
 .budget-bar__fill--spent     { background: #f87171; }
 
@@ -1121,6 +1187,14 @@ onMounted(loadYears);
   font-size: 0.75rem;
   font-weight: 500;
   color: #6b7280;
+}
+
+.dept-pct--over {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #c50f1f;
+  font-weight: 700;
 }
 
 .dept-col--bar .budget-bar { background: #e5e7eb; }
@@ -1149,7 +1223,7 @@ onMounted(loadYears);
   transition: background 0.12s;
 }
 .dept-table__row:last-child { border-bottom: none; }
-.dept-table__row:hover { background: #f0fbfe; }
+.dept-table__row:hover { background: #f0fbfe; box-shadow: inset 3px 0 0 #00afdb; }
 
 .dept-col { font-size: 0.875rem; }
 .dept-col--name { color: #111827; font-weight: 500; padding-right: 16px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -1180,6 +1254,7 @@ onMounted(loadYears);
 .dept-table__header .dept-col--amounts { justify-content: flex-start; }
 
 .budget-spent { color: #f87171; font-weight: 600; }
+.budget-spent--neutral { color: #111827; font-weight: 500; }
 .budget-sep   { color: #d1d5db; }
 .budget-limit { color: #6b7280; }
 
@@ -1195,21 +1270,6 @@ onMounted(loadYears);
 .cards-row__side { margin: 0; }
 
 /* ── Category list ── */
-.cat-table__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 40px;
-  padding: 0 20px;
-  background: #f9fafb;
-  border-top: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #9ca3af;
-}
 
 .cat-grid {
   list-style: none;
@@ -1228,7 +1288,7 @@ onMounted(loadYears);
   transition: background 0.12s;
 }
 .cat-chip:last-child { border-bottom: none; }
-.cat-chip:hover { background: #f0fbfe; }
+.cat-chip:hover { background: #f0fbfe; box-shadow: inset 3px 0 0 #00afdb; }
 .cat-chip__name { font-size: 0.875rem; color: #111827; font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cat-chip__actions { display: flex; gap: 2px; flex-shrink: 0; }
 

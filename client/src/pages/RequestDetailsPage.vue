@@ -866,7 +866,7 @@ onMounted(() => { currentUser.value = getStoredUser(); fetchRequestDetails(); })
 
 /* ── Page body ── */
 .loading-block { display: flex; justify-content: center; align-items: center; min-height: 240px; }
-.page-body { max-width: 1120px; margin: 0 auto; padding: 24px 40px 40px; display: flex; flex-direction: column; gap: 16px; }
+.page-body { max-width: 1120px; margin: 0 auto; padding: 32px 40px 40px; display: flex; flex-direction: column; gap: 16px; }
 .empty-page { display: flex; flex-direction: column; align-items: center; padding: 60px; }
 
 /* ── Alert box ── */
