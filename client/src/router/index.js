@@ -25,6 +25,12 @@ export default route(function () {
     const publicRoutes = ['/login', '/set-password'];
     const isPublic = publicRoutes.some(p => to.path === p || to.path.startsWith(p + '/'));
 
+    // Nepostojeća stranica (404) je uvijek dostupna — ne postoji resurs za zaštititi.
+    if (to.name === 'not-found') {
+      next();
+      return;
+    }
+
     if (!isLoggedIn && !isPublic) {
       next('/login');
       return;
