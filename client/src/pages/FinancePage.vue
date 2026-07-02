@@ -18,7 +18,10 @@
 
         <div v-if="!selected" class="main-empty">
           <q-icon name="calendar_month" size="36px" color="grey-4" />
-          <p>Odaberite poslovnu godinu</p>
+          <p>{{ fiscalYears.length === 0 ? 'Još nema poslovnih godina' : 'Odaberite poslovnu godinu' }}</p>
+          <button v-if="fiscalYears.length === 0" class="btn btn--primary" @click="openCreateDialog">
+            <q-icon name="add" size="16px" /> Nova poslovna godina
+          </button>
         </div>
 
         <template v-else>
@@ -869,6 +872,7 @@ onMounted(loadYears);
   font-size: 0.9375rem;
 }
 .main-empty p { margin: 0; }
+.main-empty .btn { margin-top: 6px; }
 
 /* ── Year header ── */
 .year-header {
