@@ -69,11 +69,11 @@
                 <template v-if="canUploadAny">
                   <label v-if="canUploadPonuda" class="btn btn--ghost btn--sm" style="cursor:pointer;">
                     <q-icon name="upload_file" size="13px" /><span>Dodaj ponudu</span>
-                    <q-file v-model="ponudaFileInput" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none" @update:model-value="val => { if (val) uploadDirect(val, 'Ponuda') }" />
+                    <q-file v-model="ponudaFileInput" accept=".pdf,.docx,.xlsx,.jpg,.jpeg,.png,.zip" style="display:none" @update:model-value="val => { if (val) uploadDirect(val, 'Ponuda') }" />
                   </label>
                   <label v-if="canUploadOtpremnica" class="btn btn--ghost btn--sm" style="cursor:pointer;">
                     <q-icon name="upload_file" size="13px" /><span>Dodaj otpremnicu</span>
-                    <q-file v-model="otpremnicaFileInput" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none" @update:model-value="val => { if (val) uploadDirect(val, 'Otpremnica') }" />
+                    <q-file v-model="otpremnicaFileInput" accept=".pdf,.docx,.xlsx,.jpg,.jpeg,.png,.zip" style="display:none" @update:model-value="val => { if (val) uploadDirect(val, 'Otpremnica') }" />
                   </label>
                   <div class="action-bar__vsep" />
                 </template>

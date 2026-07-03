@@ -150,10 +150,10 @@
                   <label class="upload-zone">
                     <img src="/file-send-svgrepo-com.svg" alt="" class="upload-zone__icon" />
                     <span class="upload-zone__text">Klikni ili povuci datoteku ovdje</span>
-                    <span class="upload-zone__hint">PDF, Word, Excel, slike — najviše 10 MB po datoteci</span>
+                    <span class="upload-zone__hint">PDF, DOCX, XLSX, slike, ZIP — najviše 10 MB po datoteci</span>
                     <q-file
                       v-model="newOfferFile"
-                      accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt,.zip"
+                      accept=".pdf,.docx,.xlsx,.jpg,.jpeg,.png,.zip"
                       style="display: none"
                       @update:model-value="onAddOffer"
                     />
@@ -446,15 +446,14 @@ const $q = useQuasar();
 const router = useRouter();
 
 const MAX_OFFER_FILE_SIZE = 10 * 1024 * 1024;
+// Mora odgovarati ALLOWED_TYPES na backendu (requestAttachmentRoutes.js) —
+// samo formati koje magic-bytes provjera zna verificirati.
 const ALLOWED_OFFER_MIME_TYPES = [
   'application/pdf',
-  'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'image/jpeg',
   'image/png',
-  'text/plain',
   'application/zip',
 ];
 

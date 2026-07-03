@@ -328,11 +328,12 @@ Dozvoljeni MIME tipovi u trenutnoj implementaciji:
 | Vrsta | MIME tipovi |
 |---|---|
 | PDF | `application/pdf` |
-| Word | `application/msword`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document` |
-| Excel | `application/vnd.ms-excel`, `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` |
+| Word | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` (DOCX) |
+| Excel | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` (XLSX) |
 | Slike | `image/jpeg`, `image/png` |
-| Tekst | `text/plain` |
 | Arhiva | `application/zip` |
+
+Stari DOC/XLS i TXT formati nisu podržani jer backend uz MIME whitelist verificira i magic bytes datoteke (`file-type`), a ti formati nemaju pouzdan binarni potpis.
 
 Ograničenje veličine datoteke:
 
