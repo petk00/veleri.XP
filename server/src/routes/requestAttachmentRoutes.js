@@ -24,15 +24,14 @@ const UPLOAD_RULES = {
 
 const DOCUMENT_TYPES = Object.keys(UPLOAD_RULES);
 
+// Samo formati čije magic bytes file-type zna verificirati — text/plain i
+// stari .doc/.xls (CFB) nemaju pouzdan potpis pa bi provjera uvijek vratila 415.
 const ALLOWED_TYPES = [
   'application/pdf',
-  'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'image/jpeg',
   'image/png',
-  'text/plain',
   'application/zip',
 ];
 

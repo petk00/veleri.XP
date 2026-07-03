@@ -392,15 +392,14 @@ multipart/form-data
 
 ```text
 application/pdf
-application/msword
 application/vnd.openxmlformats-officedocument.wordprocessingml.document
-application/vnd.ms-excel
 application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 image/jpeg
 image/png
-text/plain
 application/zip
 ```
+
+Uz MIME whitelist, backend provjerava i stvarne magic bytes datoteke (`file-type`) — datoteka čiji sadržaj ne odgovara dozvoljenom tipu odbija se s `415`. Zato stari DOC/XLS i TXT formati nisu podržani (nemaju pouzdan binarni potpis).
 
 Maksimalna veličina datoteke:
 

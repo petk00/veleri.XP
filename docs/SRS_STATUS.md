@@ -79,7 +79,7 @@ Procjena MVP workflowa nabave: **~95%**.
 | 5.4 | Dodavanje otpremnice | Implementirano | Otpremnica se može dodati u statusu `Naručeno` i uvjet je za zatvaranje. | Gotovo |
 | 5.5 | Brisanje dokumenata | Implementirano | Dokumenti se mogu brisati prema pravilima role/statusa; zaključani statusi ne dopuštaju brisanje. | Gotovo |
 | 5.6 | Pregled dokumenata | Implementirano | Detalji zahtjeva prikazuju dokumente s mogućnošću preuzimanja. | Gotovo |
-| 5.7 | Dozvoljeni formati | Djelomično | Limit 10 MB po datoteci. Dopušteni su i formati širi od SRS-a (Excel, TXT, ZIP) — svjesno odstupanje. | Nisko |
+| 5.7 | Dozvoljeni formati | Djelomično | Limit 10 MB po datoteci. Dozvoljeni: PDF, DOCX, XLSX, JPG, PNG, ZIP. Stari DOC/XLS i TXT su isključeni jer magic-bytes provjera (`file-type`) ne može verificirati te formate — svjesno odstupanje od SRS-a (koji navodi i DOC) u korist sigurnosti; XLSX i ZIP su prošireni formati. | Nisko |
 | 6.1 | Pregled vlastitih zahtjeva | Implementirano | Zaposlenik kroz backend vidi samo zahtjeve koje je kreirao. | Gotovo |
 | 6.2 | Pregled svih zahtjeva | Implementirano | Administrator kroz backend vidi sve zahtjeve. | Gotovo |
 | 6.3 | Pretraživanje i filtriranje | Implementirano | Serverski filteri po statusu, odjelu, korisniku, poslovnoj godini, predmetu nabave i tekstu pretrage. | Gotovo |
@@ -113,4 +113,4 @@ Preostale dorade, poredane po prioritetu:
 - Financijsko praćenje limita treba opisati kao planiranu doradu ili budući rad dok se ne implementira.
 - Status `Na odobrenju` u trenutnom kodu funkcionalno predstavlja fazu obrade, ali naziv nije potpuno isti kao `U obradi` iz SRS-a.
 - Status `Odobreno` postoji u bazi kao stariji status, ali trenutni workflow prelazi iz `Na odobrenju` u `Naručeno`.
-- Dozvoljeni formati dokumenata u aplikaciji trenutno su širi od SRS-a, pa to treba navesti kao svjesno odstupanje ili uskladiti implementaciju.
+- Dozvoljeni formati dokumenata odstupaju od SRS-a u oba smjera: prošireni su XLSX-om i ZIP-om, a isključeni su stari DOC/XLS i TXT jer njihove magic bytes nije moguće pouzdano verificirati (sigurnosna provjera stvarnog sadržaja datoteke). Frontend `accept` liste i backend whitelist su usklađeni.

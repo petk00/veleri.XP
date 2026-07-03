@@ -145,8 +145,8 @@
             <label class="upload-zone">
               <q-icon :name="uploadFilePonuda ? 'insert_drive_file' : 'upload_file'" size="26px" class="upload-zone__icon" />
               <span class="upload-zone__text">{{ uploadFilePonuda ? uploadFilePonuda.name : 'Klikni ili povuci datoteku ovdje' }}</span>
-              <span v-if="!uploadFilePonuda" class="upload-zone__hint">PDF, Word, Excel, slike — najviše 5 MB</span>
-              <q-file v-model="uploadFilePonuda" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt" style="display: none" />
+              <span v-if="!uploadFilePonuda" class="upload-zone__hint">PDF, DOCX, XLSX, slike, ZIP — najviše 10 MB</span>
+              <q-file v-model="uploadFilePonuda" accept=".pdf,.docx,.xlsx,.jpg,.jpeg,.png,.zip" style="display: none" />
             </label>
             <div class="upload-actions">
               <button v-if="uploadFilePonuda" class="btn btn--ghost" type="button" @click="uploadFilePonuda = null">
@@ -211,8 +211,8 @@
             <label class="upload-zone">
               <q-icon :name="uploadFileOtpremnica ? 'insert_drive_file' : 'upload_file'" size="26px" class="upload-zone__icon" />
               <span class="upload-zone__text">{{ uploadFileOtpremnica ? uploadFileOtpremnica.name : 'Klikni ili povuci datoteku ovdje' }}</span>
-              <span v-if="!uploadFileOtpremnica" class="upload-zone__hint">PDF, Word, Excel, slike — najviše 5 MB</span>
-              <q-file v-model="uploadFileOtpremnica" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt" style="display: none" />
+              <span v-if="!uploadFileOtpremnica" class="upload-zone__hint">PDF, DOCX, XLSX, slike, ZIP — najviše 10 MB</span>
+              <q-file v-model="uploadFileOtpremnica" accept=".pdf,.docx,.xlsx,.jpg,.jpeg,.png,.zip" style="display: none" />
             </label>
             <div class="upload-actions">
               <button v-if="uploadFileOtpremnica" class="btn btn--ghost" type="button" @click="uploadFileOtpremnica = null">

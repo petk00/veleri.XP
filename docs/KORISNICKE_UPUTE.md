@@ -120,7 +120,7 @@ Ako korisnik ima ponudu ili račun, potrebno je unijeti:
 - kategoriju nabave,
 - svrhu nabave.
 
-Podržane datoteke uključuju PDF, Word, Excel, slike, tekstualne datoteke i ZIP arhive.
+Podržane datoteke su PDF, Word (DOCX), Excel (XLSX), slike (JPG, PNG) i ZIP arhive.
 Najveća dopuštena veličina pojedine datoteke je 10 MB.
 
 Ako je dodano više ponuda, u polje iznosa upisuje se ukupni zbroj.
