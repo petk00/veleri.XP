@@ -30,9 +30,10 @@ Aplikacija ima implementiran kompletan MVP proces nabave:
 Preostale neimplementirane cjeline:
 
 - proširene vrste dokumenata (Narudžbenica, Ostalo),
-- financijski limiti i analitika,
-- automatizirani testovi,
-- produkcijski deployment.
+- financijski limiti u workflowu zahtjeva i analitika (budžeti i potrošnja po odjelu postoje na stranici Financije),
+- produkcijski deployment (SSL, instalacijska skripta — Docker compose postoji).
+
+Automatizirani testovi postoje: unit (Jest, Vitest), e2e (Playwright) i CI (GitHub Actions); e2e pokrivenost workflow akcija još je djelomična.
 
 ## Prioriteti
 
@@ -141,20 +142,20 @@ Ova faza pokriva zahtjev 2.2 iz SRS-a i priprema teren za limite.
 - Korišteni šifrarnik se ne briše fizički.
 - Zaključana poslovna godina ne dopušta izmjene šifrarnika.
 
-## Faza 5: Provjera poslovne godine kod zahtjeva
+## Faza 5: Provjera poslovne godine kod zahtjeva ✅ DOVRŠENO
 
 Prioritet: **Srednje**
 
-Ova faza dodatno učvršćuje zahtjev 3.2 iz SRS-a.
+Ova faza dodatno učvršćuje zahtjev 3.2 iz SRS-a. Backend u POST i PUT rutama zahtjeva validira da odjel i sve kategorije stavki pripadaju poslovnoj godini zahtjeva te odbija kreiranje u zaključanoj godini (requestRoutes.js).
 
 ### Zadaci
 
 | ID | Zadatak | Napomena |
 |---|---|---|
-| GOD-ZAH-01 | Backend provjera da odabrano mjesto troška pripada poslovnoj godini zahtjeva. | Kod kreiranja i uređivanja. |
-| GOD-ZAH-02 | Backend provjera da svaki predmet nabave/stavka pripada poslovnoj godini zahtjeva. | Kod kreiranja i uređivanja. |
-| GOD-ZAH-03 | Spriječiti kreiranje zahtjeva u zaključanoj poslovnoj godini. | Samo aktivna godina. |
-| GOD-ZAH-04 | U frontend formama prikazivati samo šifrarnike aktivne godine. | Već djelomično postoji. |
+| GOD-ZAH-01 | Backend provjera da odabrano mjesto troška pripada poslovnoj godini zahtjeva. | Implementirano (POST i PUT). |
+| GOD-ZAH-02 | Backend provjera da svaki predmet nabave/stavka pripada poslovnoj godini zahtjeva. | Implementirano (POST i PUT). |
+| GOD-ZAH-03 | Spriječiti kreiranje zahtjeva u zaključanoj poslovnoj godini. | Implementirano (provjera `is_closed`). |
+| GOD-ZAH-04 | U frontend formama prikazivati samo šifrarnike aktivne godine. | Implementirano (`/api/reference` vraća aktivnu godinu). |
 
 ### Kriteriji dovršenosti
 
@@ -252,11 +253,13 @@ Ova faza pokriva zahtjeve 8.2, 9.1 i 9.2 iz SRS-a.
 - Notifikacije ostaju vidljive dok ih korisnik ne pročita.
 - Povijest radnji ostaje dostupna na detalju zahtjeva.
 
-## Faza 10: Limiti i financijsko praćenje
+## Faza 10: Limiti i financijsko praćenje — DJELOMIČNO ZAPOČETO
 
 Prioritet: **Odgođeno**
 
 Ova faza se ostavlja za kraj jer se oslanja na poslovne godine, šifrarnike, statusni workflow i storniranje.
+
+Implementirano na stranici Financije: godišnji budžet poslovne godine, limiti po odjelu (LIM-01) i potrošnja po odjelu iz zahtjeva u statusima Naručeno/Zatvoreno (LIM-03). Preostaje: limiti/potrošnja po predmetu nabave, provjera limita u workflowu zahtjeva s upozorenjem kod prekoračenja te analitički pregled.
 
 ### Zadaci
 

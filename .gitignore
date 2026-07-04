@@ -27,3 +27,8 @@ node_modules/
 
 # Build output
 dist/
+
+# Test coverage i e2e artefakti (generirano, ne commitati)
+coverage/
+e2e/test-results/
+e2e/playwright-report/

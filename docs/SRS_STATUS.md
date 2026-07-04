@@ -84,10 +84,10 @@ Procjena MVP workflowa nabave: **~95%**.
 | 6.2 | Pregled svih zahtjeva | Implementirano | Administrator kroz backend vidi sve zahtjeve. | Gotovo |
 | 6.3 | Pretraživanje i filtriranje | Implementirano | Serverski filteri po statusu, odjelu, korisniku, poslovnoj godini, predmetu nabave i tekstu pretrage. | Gotovo |
 | 6.4 | Paginacija | Implementirano | Serverska paginacija s 10 zahtjeva po stranici. | Gotovo |
-| 7.1 | Praćenje limita | Nije implementirano | Nema evidentiranja potrošnje po predmetu nabave i mjestu troška. | Odgođeno |
-| 7.2 | Pregled potrošnje | Nije implementirano | Nema admin pregleda potrošnje po šifrarnicima. | Odgođeno |
-| 7.3 | Prekoračenje limita | Nije implementirano | Nema upozorenja administratoru kod prekoračenja limita. | Odgođeno |
-| 7.4 | Analitički pregled | Nije implementirano | Postoji osnovni dashboard, ali ne analitički pregled zahtjeva i potrošnje po SRS-u. | Odgođeno |
+| 7.1 | Praćenje limita | Djelomično | Godišnji budžet i limiti po odjelu (mjestu troška) unose se na stranici Financije; potrošnja po odjelu računa se iz zahtjeva u statusima Naručeno/Zatvoreno. Nema praćenja po predmetu nabave. | Srednje |
+| 7.2 | Pregled potrošnje | Djelomično | Stranica Financije prikazuje potrošnju i preostali budžet po odjelu za odabranu poslovnu godinu. Nema pregleda po kategorijama artikala. | Srednje |
+| 7.3 | Prekoračenje limita | Nije implementirano | Workflow zahtjeva ne provjerava limite — nema upozorenja administratoru kod odobravanja zahtjeva koji prekoračuje limit. | Odgođeno |
+| 7.4 | Analitički pregled | Nije implementirano | Postoji osnovni dashboard i pregled budžeta po odjelima, ali ne analitički pregled zahtjeva i potrošnje po SRS-u. | Odgođeno |
 | 8.1 | Datum kreiranja | Implementirano | `PurchaseRequest.created_at` automatski bilježi kreiranje. | Gotovo |
 | 8.2 | Datum zadnje izmjene | Djelomično | `updated_at` postoji; zadnji izmjenitelj vidljiv kroz `RequestStatusHistory`. | Nisko |
 | 8.3 | Povijest radnji | Implementirano | `RequestStatusHistory` zapisuje promjene statusa, korisnika, vrijeme i komentar; prikaz postoji na detalju zahtjeva. | Gotovo |
@@ -98,19 +98,18 @@ Procjena MVP workflowa nabave: **~95%**.
 
 Preostale dorade, poredane po prioritetu:
 
-1. Dodati tip dokumenta `Narudžbenica`.
-2. Dodati tip dokumenta `Ostalo`.
-3. Implementirati praćenje limita po mjestu troška i predmetu nabave.
-4. Dodati upozorenja kod prekoračenja limita.
-5. Dodati administrativni pregled potrošnje i analitiku.
-6. Implementirati automatizirane testove (unit + end-user).
+1. Dodati provjeru limita u workflow zahtjeva (upozorenje administratoru kod prekoračenja).
+2. Proširiti praćenje potrošnje na predmete nabave (po mjestu troška postoji).
+3. Dodati administrativni analitički pregled potrošnje.
+4. Dodati tip dokumenta `Narudžbenica`.
+5. Dodati tip dokumenta `Ostalo`.
+6. Proširiti e2e testove na workflow akcije storno, naruči i zatvori te na upload dokumenata (unit i osnovni e2e testovi postoje, CI je postavljen).
 7. Pripremiti produkcijski deployment (instalacijska skripta, SSL).
 
 ## Napomene za dokumentaciju
 
 - Trenutni projekt se može opisati kao MVP aplikacija za digitalizaciju osnovnog procesa zahtjeva za nabavu.
-- Nije dobro tvrditi da su poslovne godine, šifrarnici i limiti potpuno implementirani.
-- Financijsko praćenje limita treba opisati kao planiranu doradu ili budući rad dok se ne implementira.
+- Poslovne godine i šifrarnici su implementirani; financijsko praćenje je djelomično — budžeti i potrošnja po odjelu postoje (stranica Financije), ali workflow zahtjeva još ne provjerava limite niti postoji potrošnja po predmetu nabave.
 - Status `Na odobrenju` u trenutnom kodu funkcionalno predstavlja fazu obrade, ali naziv nije potpuno isti kao `U obradi` iz SRS-a.
 - Status `Odobreno` postoji u bazi kao stariji status, ali trenutni workflow prelazi iz `Na odobrenju` u `Naručeno`.
 - Dozvoljeni formati dokumenata odstupaju od SRS-a u oba smjera: prošireni su XLSX-om i ZIP-om, a isključeni su stari DOC/XLS i TXT jer njihove magic bytes nije moguće pouzdano verificirati (sigurnosna provjera stvarnog sadržaja datoteke). Frontend `accept` liste i backend whitelist su usklađeni.
