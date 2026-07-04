@@ -6,6 +6,7 @@ import {
   createWebHistory,
 } from 'vue-router';
 import routes from './routes';
+import { getStoredUser } from 'src/utils/authStorage';
 
 export default route(function () {
   const createHistory = process.env.SERVER
@@ -21,7 +22,8 @@ export default route(function () {
   });
 
   Router.beforeEach((to, from, next) => {
-    const isLoggedIn = !!localStorage.getItem('user');
+    const user = getStoredUser();
+    const isLoggedIn = !!user;
     const publicRoutes = ['/login', '/set-password'];
     const isPublic = publicRoutes.some(p => to.path === p || to.path.startsWith(p + '/'));
 
@@ -40,6 +42,13 @@ export default route(function () {
 
     if (isLoggedIn && isLoginRoute) {
       next('/dashboard');
+      return;
+    }
+
+    // Admin stranice — zaposlenika vrati na dashboard (backend ionako vraća 403,
+    // ali ovako ne vidi razlomljenu stranicu s error porukama)
+    if (to.meta.requiresAdmin && user?.role_name !== 'Administrator') {
+      next('/');
       return;
     }
 
