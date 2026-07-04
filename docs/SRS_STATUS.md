@@ -86,7 +86,7 @@ Procjena MVP workflowa nabave: **~95%**.
 | 6.4 | Paginacija | Implementirano | Serverska paginacija s 10 zahtjeva po stranici. | Gotovo |
 | 7.1 | Praćenje limita | Djelomično | Godišnji budžet i limiti po odjelu (mjestu troška) unose se na stranici Financije; potrošnja po odjelu računa se iz zahtjeva u statusima Naručeno/Zatvoreno. Nema praćenja po predmetu nabave. | Srednje |
 | 7.2 | Pregled potrošnje | Djelomično | Stranica Financije prikazuje potrošnju i preostali budžet po odjelu za odabranu poslovnu godinu. Nema pregleda po kategorijama artikala. | Srednje |
-| 7.3 | Prekoračenje limita | Nije implementirano | Workflow zahtjeva ne provjerava limite — nema upozorenja administratoru kod odobravanja zahtjeva koji prekoračuje limit. | Odgođeno |
+| 7.3 | Prekoračenje limita | Implementirano | Dijalog odobravanja prikazuje adminu potrošnju, limit i projekciju nakon odobrenja s upozorenjem kod prekoračenja (ne blokira); prekoračenje se automatski bilježi u povijest aktivnosti. | Gotovo |
 | 7.4 | Analitički pregled | Nije implementirano | Postoji osnovni dashboard i pregled budžeta po odjelima, ali ne analitički pregled zahtjeva i potrošnje po SRS-u. | Odgođeno |
 | 8.1 | Datum kreiranja | Implementirano | `PurchaseRequest.created_at` automatski bilježi kreiranje. | Gotovo |
 | 8.2 | Datum zadnje izmjene | Djelomično | `updated_at` postoji; zadnji izmjenitelj vidljiv kroz `RequestStatusHistory`. | Nisko |
@@ -98,8 +98,7 @@ Procjena MVP workflowa nabave: **~95%**.
 
 Preostale dorade, poredane po prioritetu:
 
-1. Dodati provjeru limita u workflow zahtjeva (upozorenje administratoru kod prekoračenja).
-2. Proširiti praćenje potrošnje na predmete nabave (po mjestu troška postoji).
+1. Proširiti praćenje potrošnje na predmete nabave (po mjestu troška postoji).
 3. Dodati administrativni analitički pregled potrošnje.
 4. Dodati tip dokumenta `Narudžbenica`.
 5. Dodati tip dokumenta `Ostalo`.

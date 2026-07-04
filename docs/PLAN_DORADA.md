@@ -259,7 +259,7 @@ Prioritet: **Odgođeno**
 
 Ova faza se ostavlja za kraj jer se oslanja na poslovne godine, šifrarnike, statusni workflow i storniranje.
 
-Implementirano na stranici Financije: godišnji budžet poslovne godine, limiti po odjelu (LIM-01) i potrošnja po odjelu iz zahtjeva u statusima Naručeno/Zatvoreno (LIM-03). Preostaje: limiti/potrošnja po predmetu nabave, provjera limita u workflowu zahtjeva s upozorenjem kod prekoračenja te analitički pregled.
+Implementirano: godišnji budžet i limiti po odjelu s kontrolom alokacije (LIM-01), potrošnja po odjelu iz zahtjeva u statusima Naručeno/Zatvoreno (LIM-03, LIM-05: zahtjev utječe na potrošnju od statusa Naručeno; LIM-06: odbijeni/stornirani ne troše), pregled potrošnje po odjelu na stranici Financije (LIM-08 djelomično) te upozorenje administratoru kod prekoračenja u dijalogu odobravanja s automatskom bilješkom u povijesti aktivnosti (LIM-07 — ne blokira). Preostaje: limiti/potrošnja po predmetu nabave (LIM-02, LIM-04) i analitički pregled (LIM-09).
 
 ### Zadaci
 

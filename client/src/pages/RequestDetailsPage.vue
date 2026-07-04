@@ -359,6 +359,37 @@
           <div class="dialog-desc">{{ dialogDescription }}</div>
         </div>
         <div class="dialog-body">
+          <div
+            v-if="pendingAction === 'odobri' && budgetImpact"
+            class="dialog-budget"
+            :class="{ 'dialog-budget--over': budgetImpact.over }"
+          >
+            <div class="dialog-budget__row">
+              <span class="dialog-budget__label">Odjel</span>
+              <span class="dialog-budget__value">{{ request.department_name }}</span>
+            </div>
+            <div class="dialog-budget__row">
+              <span class="dialog-budget__label">Potrošeno / limit</span>
+              <span class="dialog-budget__value">
+                {{ formatCurrency(budgetImpact.spent) }} /
+                {{ budgetImpact.noLimit ? 'bez limita' : formatCurrency(budgetImpact.limit) }}
+              </span>
+            </div>
+            <div v-if="!budgetImpact.noAmount" class="dialog-budget__row">
+              <span class="dialog-budget__label">Nakon odobrenja</span>
+              <span class="dialog-budget__value" :class="{ 'dialog-budget__value--over': budgetImpact.over }">
+                {{ formatCurrency(budgetImpact.after) }}
+                <template v-if="budgetImpact.pct !== null"> ({{ budgetImpact.pct }} %)</template>
+              </span>
+            </div>
+            <div v-if="budgetImpact.over" class="dialog-budget__warn">
+              <q-icon name="warning" size="14px" />
+              Ovim odobrenjem odjel prelazi limit. Odobrenje nije blokirano, ali će prekoračenje biti zabilježeno u povijesti.
+            </div>
+            <div v-else-if="budgetImpact.noAmount" class="dialog-budget__hint">
+              Zahtjev nema unesen iznos — potrošnja odjela neće biti evidentirana do zatvaranja.
+            </div>
+          </div>
           <q-input
             v-model="actionComment"
             type="textarea"
@@ -462,6 +493,26 @@ const uploading         = ref(false);
 const uploadForm        = ref({ document_type: null, file: null });
 const actionDialog      = ref(false);
 const pendingAction     = ref(null);
+
+// Utjecaj odobrenja na budžet odjela — podaci dolaze iz GET /requests/:id
+// (department_limit/department_spent postoje samo za admina)
+const budgetImpact = computed(() => {
+  const r = request.value;
+  if (!r || r.department_limit === undefined || r.department_limit === null) return null;
+  const limit  = Number(r.department_limit) || 0;
+  const spent  = Number(r.department_spent) || 0;
+  const amount = Number(r.total_amount) || 0;
+  const after  = spent + amount;
+  return {
+    limit,
+    spent,
+    after,
+    pct: limit > 0 ? Math.round((after / limit) * 100) : null,
+    over: limit > 0 && after > limit,
+    noAmount: !(amount > 0),
+    noLimit: limit <= 0,
+  };
+});
 const actionComment     = ref('');
 const submittingAction  = ref(false);
 const pdfGenerating     = ref(false);

@@ -103,6 +103,8 @@ const ACTIONS = {
   },
 };
 
+const { calcBudgetImpact } = require('../services/budgetService');
+
 const isAdmin = (user) => user.role_name === 'Administrator';
 
 const getRequestAccessCondition = (user) => {
@@ -389,6 +391,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
         pr.id_purchase_request,
         pr.request_number,
         fy.year AS fiscal_year,
+        pr.fk_department,
         d.name AS department_name,
         pr.fk_request_status,
         CONCAT(u.first_name, ' ', u.last_name) AS created_by,
@@ -448,6 +451,29 @@ router.get('/:id', authenticateToken, async (req, res) => {
         STATUS_LABELS[requestRows[0].fk_request_status]
         || `Status #${requestRows[0].fk_request_status}`,
     };
+
+    // Adminu dodaj stanje budžeta odjela — za prikaz utjecaja odobrenja
+    // u dijalogu. Potrošnja = isti izračun kao na stranici Financije.
+    if (isAdmin(req.user)) {
+      const [budgetRows] = await db.query(
+        `
+        SELECT
+          d.department_limit,
+          COALESCE(SUM(pr2.total_amount), 0) AS department_spent
+        FROM Department d
+        LEFT JOIN PurchaseRequest pr2
+          ON pr2.fk_department = d.id_department
+          AND pr2.fk_request_status IN (?, ?)
+        WHERE d.id_department = ?
+        GROUP BY d.id_department
+        `,
+        [STATUS.NARUCENO, STATUS.ZATVORENO, requestRows[0].fk_department]
+      );
+      if (budgetRows.length > 0) {
+        request.department_limit = Number(budgetRows[0].department_limit);
+        request.department_spent = Number(budgetRows[0].department_spent);
+      }
+    }
 
     res.json({
       request,
@@ -699,7 +725,7 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
 
     const [requestRows] = await connection.query(
       `
-      SELECT fk_request_status, fk_created_by_user, total_amount
+      SELECT fk_request_status, fk_created_by_user, total_amount, fk_department
       FROM PurchaseRequest
       WHERE id_purchase_request = ?
       FOR UPDATE
@@ -775,6 +801,36 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       }
     }
 
+    // Kod odobrenja provjeri utjecaj na limit odjela — prekoračenje ne
+    // blokira (SRS 7.3), ali se trajno bilježi u povijest aktivnosti.
+    let overLimitNote = '';
+    if (action === 'odobri') {
+      const [budgetRows] = await connection.query(
+        `
+        SELECT
+          d.department_limit,
+          COALESCE(SUM(pr2.total_amount), 0) AS department_spent
+        FROM Department d
+        LEFT JOIN PurchaseRequest pr2
+          ON pr2.fk_department = d.id_department
+          AND pr2.fk_request_status IN (?, ?)
+        WHERE d.id_department = ?
+        GROUP BY d.id_department
+        `,
+        [STATUS.NARUCENO, STATUS.ZATVORENO, requestRows[0].fk_department]
+      );
+      if (budgetRows.length > 0) {
+        const impact = calcBudgetImpact(
+          budgetRows[0].department_limit,
+          budgetRows[0].department_spent,
+          requestRows[0].total_amount
+        );
+        if (impact.overLimit) {
+          overLimitNote = ` (odobreno uz prekoračenje limita odjela: ${impact.percentAfter} % iskorištenosti)`;
+        }
+      }
+    }
+
     await connection.query(
       `
       UPDATE PurchaseRequest
@@ -785,7 +841,7 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     );
 
     const historyComment =
-      comment && comment.trim() ? comment.trim() : definition.defaultComment;
+      (comment && comment.trim() ? comment.trim() : definition.defaultComment) + overLimitNote;
 
     await connection.query(
       `

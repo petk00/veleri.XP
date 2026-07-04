@@ -128,6 +128,8 @@ Pravila pristupa:
 - administrator može dohvatiti bilo koji zahtjev,
 - zaposlenik može dohvatiti samo vlastiti zahtjev.
 
+Polja `department_limit` i `department_spent` (stanje budžeta odjela — potrošnja iz zahtjeva u statusima Naručeno/Zatvoreno) vraćaju se **samo administratoru**; koriste se za prikaz utjecaja odobrenja u dijalogu odobravanja.
+
 #### Uspješan odgovor
 
 ```json
@@ -136,6 +138,7 @@ Pravila pristupa:
     "id_purchase_request": 1,
     "request_number": "PR-2026-0001",
     "fiscal_year": 2026,
+    "fk_department": 3,
     "department_name": "IT",
     "fk_request_status": 1,
     "created_by": "Ivan Horvat",
@@ -143,7 +146,9 @@ Pravila pristupa:
     "justification": "Nabava opreme za rad.",
     "created_at": "2026-04-23T21:21:14.000Z",
     "updated_at": "2026-04-23T21:33:14.000Z",
-    "status_name": "Poslano"
+    "status_name": "Poslano",
+    "department_limit": 10000,
+    "department_spent": 8200
   },
   "items": [
     {
@@ -305,7 +310,7 @@ Polje `comment` je obavezno samo za određene akcije.
 |---|---|---|---|---|
 | `preuzmi` | Poslano | Na odobrenju | Administrator | Nema posebnih uvjeta. |
 | `odbij` | Poslano | Odbijeno | Administrator | Komentar je obavezan. |
-| `odobri` | Na odobrenju | Naručeno | Administrator | Zahtjev mora imati ponudu. |
+| `odobri` | Na odobrenju | Naručeno | Administrator | Zahtjev mora imati ponudu. Ako iznos zahtjeva premašuje limit odjela, odobrenje se ne blokira, ali se u povijest aktivnosti automatski dopisuje bilješka o prekoračenju. |
 | `vrati-na-izmjenu` | Na odobrenju | Vraćeno na dopunu/izmjenu | Administrator | Komentar je obavezan. |
 | `resubmit` | Vraćeno na dopunu/izmjenu | Poslano | Vlasnik zahtjeva ili administrator | Zahtjev ne smije biti zaključan. |
 | `zavrsi` | Naručeno | Zatvoreno | Administrator | Zahtjev mora imati ponudu, otpremnicu i iznos. |
