@@ -746,7 +746,9 @@ const clearDept = () => { form.value.department = null; deptSearch.value = ''; }
 
 watch(deptSearch, (val) => {
   const q = val.trim().toLowerCase();
-  if (!q) { form.value.department = null; return; }
+  // Prazan tekst ne dira odabir — selectDept() čisti input NAKON postavljanja
+  // odjela, pa bi resetiranje ovdje poništilo klik na stavku iz liste.
+  if (!q) return;
   const matches = departmentOptions.value.filter(x => x.label.toLowerCase().includes(q));
   if (matches.length === 1) form.value.department = matches[0].value;
   else form.value.department = null;
