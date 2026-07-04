@@ -38,6 +38,12 @@ jest.mock('../src/middleware/authMiddleware', () => (req, res, next) => {
   next();
 });
 
+// file-type magic-bytes provjera — global.__mockDetectedMime__ kontrolira
+// "detektirani" MIME po testu (null = format nije prepoznat, npr. TXT).
+jest.mock('../src/services/fileTypeService', () => ({
+  detectMimeType: jest.fn(async () => global.__mockDetectedMime__),
+}));
+
 const supertest = require('supertest');
 const express  = require('express');
 const db       = require('../src/config/db');
@@ -80,21 +86,21 @@ beforeEach(() => {
   jest.clearAllMocks();
   global.__testUser__ = { id_user: 1, role_name: 'Zaposlenik' };
   global.__mockFile__ = MOCK_PDF_FILE;
+  global.__mockDetectedMime__ = 'application/pdf';  // magic bytes odgovaraju PDF-u
 });
 
 // ---------------------------------------------------------------------------
 // 1. Čisti unit testovi za ALLOWED_TYPES (bez routea, bez HTTP)
 // ---------------------------------------------------------------------------
 describe('ALLOWED_TYPES — dozvoljeni MIME tipovi', () => {
+  // Mora odgovarati ALLOWED_TYPES u requestAttachmentRoutes.js —
+  // samo formati koje magic-bytes provjera (file-type) zna verificirati.
   const ALLOWED_TYPES = [
     'application/pdf',
-    'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'image/jpeg',
     'image/png',
-    'text/plain',
     'application/zip',
   ];
 
@@ -118,6 +124,12 @@ describe('ALLOWED_TYPES — dozvoljeni MIME tipovi', () => {
 
   test('5. video/mp4 NIJE dozvoljen', () => {
     expect(ALLOWED_TYPES).not.toContain('video/mp4');
+  });
+
+  test('5a. TXT, stari DOC i XLS NISU dozvoljeni — file-type ih ne može verificirati', () => {
+    expect(ALLOWED_TYPES).not.toContain('text/plain');
+    expect(ALLOWED_TYPES).not.toContain('application/msword');
+    expect(ALLOWED_TYPES).not.toContain('application/vnd.ms-excel');
   });
 });
 
@@ -213,6 +225,35 @@ describe('UPLOAD_RULES — pravila uploada po statusu zahtjeva', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/zaključan/i);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// 3. Magic bytes — provjera stvarnog sadržaja datoteke (anti-spoofing)
+// ---------------------------------------------------------------------------
+describe('Magic bytes — verifikacija stvarnog sadržaja datoteke', () => {
+
+  test('13. spoofana datoteka (deklarirani PDF, stvarni sadržaj GIF) vraća 415', async () => {
+    global.__mockDetectedMime__ = 'image/gif';  // stvarni sadržaj nije na whitelisti
+
+    const res = await supertest(app)
+      .post('/1/attachments')
+      .send({ document_type: 'Ponuda' });
+
+    expect(res.status).toBe(415);
+    expect(res.body.message).toMatch(/tip fajla nije dozvoljen/i);
+  });
+
+  test('14. neprepoznatljiv sadržaj (npr. čisti tekst) vraća 415', async () => {
+    global.__mockDetectedMime__ = null;  // file-type ne prepoznaje format
+
+    const res = await supertest(app)
+      .post('/1/attachments')
+      .send({ document_type: 'Ponuda' });
+
+    expect(res.status).toBe(415);
+    expect(res.body.message).toMatch(/tip fajla nije dozvoljen/i);
   });
 
 });

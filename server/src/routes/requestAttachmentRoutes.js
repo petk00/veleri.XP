@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const db = require('../config/db');
 const authenticateToken = require('../middleware/authMiddleware');
+const { detectMimeType } = require('../services/fileTypeService');
 
 const STATUS = {
   POSLANO: 1,
@@ -115,9 +116,8 @@ router.post('/:id/attachments', authenticateToken, upload.single('file'), async 
   }
 
   // Verify actual file magic bytes — prevents MIME spoofing
-  const { fileTypeFromFile } = await import('file-type');
-  const detected = await fileTypeFromFile(req.file.path);
-  if (!detected || !ALLOWED_TYPES.includes(detected.mime)) {
+  const detectedMime = await detectMimeType(req.file.path);
+  if (!detectedMime || !ALLOWED_TYPES.includes(detectedMime)) {
     cleanupUploadedFile(req.file.path);
     return res.status(415).json({ message: 'Tip fajla nije dozvoljen.' });
   }
