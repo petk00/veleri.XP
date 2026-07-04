@@ -252,6 +252,32 @@ body {
 .dialog-body { padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 16px; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
+// Budžet odjela u dijalogu odobravanja
+.dialog-budget {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  font-size: 0.8125rem;
+}
+.dialog-budget--over { border-color: #fecaca; background: #fef2f2; }
+.dialog-budget__row { display: flex; justify-content: space-between; gap: 12px; }
+.dialog-budget__label { color: #6b7280; }
+.dialog-budget__value { font-weight: 600; color: var(--text-primary); }
+.dialog-budget__value--over { color: #c50f1f; }
+.dialog-budget__warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 4px;
+  color: #991b1b;
+  line-height: 1.4;
+}
+.dialog-budget__hint { margin-top: 4px; color: #6b7280; line-height: 1.4; }
+
 // ── Form error ───────────────────────────────────────────────────────────────
 .form-error {
   padding: 9px 12px;
