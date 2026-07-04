@@ -34,8 +34,8 @@ const routes = [
       { path: 'requests/:id',      redirect: to => `/zahtjevi/${to.params.id}` },
       { path: 'requests/:id/edit', redirect: to => `/zahtjevi/${to.params.id}/edit` },
 
-      { path: 'korisnici',          component: () => import('pages/UsersPage.vue') },
-      { path: 'financije',          component: () => import('pages/FinancePage.vue') },
+      { path: 'korisnici',          component: () => import('pages/UsersPage.vue'),   meta: { requiresAdmin: true } },
+      { path: 'financije',          component: () => import('pages/FinancePage.vue'), meta: { requiresAdmin: true } },
     ],
   },
 
