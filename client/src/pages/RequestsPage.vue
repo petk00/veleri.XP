@@ -209,10 +209,11 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { api } from 'boot/axios';
 import { getStoredUser } from 'src/utils/authStorage';
 
+const route  = useRoute();
 const router = useRouter();
 
 const loading      = ref(false);
@@ -436,6 +437,21 @@ const setStatusFilter = (status) => {
   pagination.value.page = 1;
 };
 
+// Status filter iz URL querya (?status=Poslano) — koriste ga grupne
+// notifikacije koje vode na filtriranu listu.
+const applyStatusFromQuery = (value) => {
+  if (!value || value === 'all') return false;
+  const valid = statusOptions.some((o) => o.value === value) || !!CARD_FILTER_LABELS[value];
+  if (!valid || statusFilter.value === value) return false;
+  statusFilter.value    = value;
+  pagination.value.page = 1;
+  return true;
+};
+
+watch(() => route.query.status, (value) => {
+  applyStatusFromQuery(value);
+});
+
 let searchTimer = null;
 watch(searchQuery, () => {
   clearTimeout(searchTimer);
@@ -467,7 +483,9 @@ const formatDate = (value) => {
 onMounted(async () => {
   currentUser.value = getStoredUser();
   isAdmin.value     = currentUser.value?.role_name === 'Administrator';
-  await Promise.all([fetchRequests(), fetchMeta()]);
+  // Ako je filter stigao kroz query, watcher na statusFilter već pokreće fetch
+  const applied = applyStatusFromQuery(route.query.status);
+  await Promise.all([applied ? Promise.resolve() : fetchRequests(), fetchMeta()]);
 });
 </script>
 

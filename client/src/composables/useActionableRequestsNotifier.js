@@ -11,6 +11,9 @@ import { getStoredUser } from 'src/utils/authStorage';
  *
  * Permanent ključ sadrži user.id_user tako da različiti korisnici u istom
  * browseru ne dijele dedup state.
+ *
+ * Više novih zahtjeva u istom scenariju grupira se u JEDNU notifikaciju
+ * ("5 zahtjeva čeka pregled") s linkom na filtriranu listu zahtjeva.
  */
 const SESSION_KEY = 'notifiedActionableRequests';
 const permanentKey = (userId) => `notifiedActionableRequestsPermanent_${userId}`;
@@ -35,19 +38,37 @@ const persistIdSet = (ids, mode, userId) => {
   }
 };
 
+/**
+ * Hrvatska množina po pravilu paukala:
+ * 1/21/31 → one, 2-4/22-24 → few, ostalo (uklj. 11-14) → many.
+ */
+const pluralForm = (n, { one, few, many }) => {
+  const m10 = n % 10;
+  const m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  return many;
+};
+
+const brojZahtjeva = (n) => `${n} ${pluralForm(n, { one: 'zahtjev', few: 'zahtjeva', many: 'zahtjeva' })}`;
+
 export function useActionableRequestsNotifier() {
   const $q = useQuasar();
   const router = useRouter();
 
+  const notifyOptions = ({ icon, message, caption, type }) => ({
+    position: 'bottom',
+    timeout: 0,                 // sticky — ostaje dok korisnik ne reagira
+    progress: false,
+    icon,
+    message,
+    caption,
+    classes: `actionable-request-notify actionable-request-notify--${type || 'action'}`,
+  });
+
   const showNotification = ({ requestId, message, caption, icon, type }) => {
     $q.notify({
-      position: 'bottom',
-      timeout: 0,                 // sticky — ostaje dok korisnik ne reagira
-      progress: false,
-      icon,
-      message,
-      caption,
-      classes: `actionable-request-notify actionable-request-notify--${type || 'action'}`,
+      ...notifyOptions({ icon, message, caption, type }),
       actions: [
         {
           label: 'Pregledaj',
@@ -68,6 +89,60 @@ export function useActionableRequestsNotifier() {
   };
 
   /**
+   * Grupna notifikacija za više zahtjeva odjednom — "Pregledaj" vodi na
+   * listu zahtjeva filtriranu po odgovarajućem statusu.
+   */
+  const showGroupNotification = ({ message, caption, icon, type, statusFilter }) => {
+    $q.notify({
+      ...notifyOptions({ icon, message, caption, type }),
+      actions: [
+        {
+          label: 'Pregledaj',
+          color: 'white',
+          class: 'notify-action--accent',
+          handler: () => {
+            router.push({ path: '/zahtjevi', query: { status: statusFilter } });
+          },
+        },
+        {
+          label: 'Zatvori',
+          color: 'white',
+          flat: true,
+          handler: () => { /* dismiss */ },
+        },
+      ],
+    });
+  };
+
+  /**
+   * Zajednička logika: izdvoji zahtjeve koji još nisu notificirani (dedup),
+   * pa prikaži pojedinačnu notifikaciju (1 novi) ili grupnu (2+ novih).
+   */
+  const notifyNewRequests = ({ ids, keyPrefix, requests, icon, type, single, group, statusFilter }) => {
+    const fresh = requests.filter((req) => !ids.has(`${keyPrefix}:${req.id_purchase_request}`));
+    for (const req of fresh) ids.add(`${keyPrefix}:${req.id_purchase_request}`);
+
+    if (fresh.length === 1) {
+      const req = fresh[0];
+      showNotification({
+        requestId: req.id_purchase_request,
+        icon,
+        type,
+        message: single.message(req),
+        caption: single.caption,
+      });
+    } else if (fresh.length > 1) {
+      showGroupNotification({
+        icon,
+        type,
+        message: group.message(fresh.length),
+        caption: group.caption,
+        statusFilter,
+      });
+    }
+  };
+
+  /**
    * SCENARIJ 1 — zahtjevi čekaju pregled (samo admin, session dedup)
    */
   const checkPendingReview = async (userId) => {
@@ -77,20 +152,22 @@ export function useActionableRequestsNotifier() {
     const list = Array.isArray(data.data) ? data.data : [];
     const pending = list.filter((r) => r.status_name === 'Poslano');
 
-    for (const req of pending) {
-      const key = `pending:${req.id_purchase_request}`;
-      if (ids.has(key)) continue;
-
-      showNotification({
-        requestId: req.id_purchase_request,
-        icon: 'inbox',
-        type: 'review',
-        message: `Zahtjev ${req.request_number} čeka pregled`,
+    notifyNewRequests({
+      ids,
+      keyPrefix: 'pending',
+      requests: pending,
+      icon: 'inbox',
+      type: 'review',
+      single: {
+        message: (req) => `Zahtjev ${req.request_number} čeka pregled`,
         caption: 'Preuzmite zahtjev na obradu.',
-      });
-
-      ids.add(key);
-    }
+      },
+      group: {
+        message: (n) => `${brojZahtjeva(n)} ${pluralForm(n, { one: 'čeka', few: 'čekaju', many: 'čeka' })} pregled`,
+        caption: 'Otvorite filtriranu listu i preuzmite ih na obradu.',
+      },
+      statusFilter: 'Poslano',
+    });
 
     persistIdSet(ids, 'session', userId);
   };
@@ -105,20 +182,22 @@ export function useActionableRequestsNotifier() {
     const list = Array.isArray(data.data) ? data.data : [];
     const returned = list.filter((r) => r.status_name === 'Zahtjeva izmjene');
 
-    for (const req of returned) {
-      const key = `revision:${req.id_purchase_request}`;
-      if (ids.has(key)) continue;
-
-      showNotification({
-        requestId: req.id_purchase_request,
-        icon: 'undo',
-        type: 'revision',
-        message: `Zahtjev ${req.request_number} vraćen je na izmjenu`,
+    notifyNewRequests({
+      ids,
+      keyPrefix: 'revision',
+      requests: returned,
+      icon: 'undo',
+      type: 'revision',
+      single: {
+        message: (req) => `Zahtjev ${req.request_number} vraćen je na izmjenu`,
         caption: 'Uredi zahtjev prema komentaru i pošalji ga ponovno.',
-      });
-
-      ids.add(key);
-    }
+      },
+      group: {
+        message: (n) => `${brojZahtjeva(n)} ${pluralForm(n, { one: 'vraćen je', few: 'vraćena su', many: 'vraćeno je' })} na izmjenu`,
+        caption: 'Uredite zahtjeve prema komentarima i pošaljite ih ponovno.',
+      },
+      statusFilter: 'Zahtjeva izmjene',
+    });
 
     persistIdSet(ids, 'session', userId);
   };
@@ -133,20 +212,22 @@ export function useActionableRequestsNotifier() {
     const list = Array.isArray(data.data) ? data.data : [];
     const rejected = list.filter((r) => r.status_name === 'Odbijeno');
 
-    for (const req of rejected) {
-      const key = `rejected:${req.id_purchase_request}`;
-      if (ids.has(key)) continue;
-
-      showNotification({
-        requestId: req.id_purchase_request,
-        icon: 'cancel',
-        type: 'rejected',
-        message: `Zahtjev ${req.request_number} je odbijen`,
+    notifyNewRequests({
+      ids,
+      keyPrefix: 'rejected',
+      requests: rejected,
+      icon: 'cancel',
+      type: 'rejected',
+      single: {
+        message: (req) => `Zahtjev ${req.request_number} je odbijen`,
         caption: 'Pregledajte razlog odbijanja.',
-      });
-
-      ids.add(key);
-    }
+      },
+      group: {
+        message: (n) => `${brojZahtjeva(n)} ${pluralForm(n, { one: 'je odbijen', few: 'su odbijena', many: 'je odbijeno' })}`,
+        caption: 'Pregledajte razloge odbijanja.',
+      },
+      statusFilter: 'Odbijeno',
+    });
 
     persistIdSet(ids, 'permanent', userId);
   };
@@ -160,20 +241,22 @@ export function useActionableRequestsNotifier() {
     const { data } = await api.get('/requests', { params: { status: 'Na odobrenju', limit: 500 } });
     const list = Array.isArray(data.data) ? data.data : [];
 
-    for (const req of list) {
-      const key = `review:${req.id_purchase_request}`;
-      if (ids.has(key)) continue;
-
-      showNotification({
-        requestId: req.id_purchase_request,
-        icon: 'manage_search',
-        type: 'underReview',
-        message: `Zahtjev ${req.request_number} je preuzet na obradu`,
+    notifyNewRequests({
+      ids,
+      keyPrefix: 'review',
+      requests: list,
+      icon: 'manage_search',
+      type: 'underReview',
+      single: {
+        message: (req) => `Zahtjev ${req.request_number} je preuzet na obradu`,
         caption: 'Administrator pregledava vaš zahtjev.',
-      });
-
-      ids.add(key);
-    }
+      },
+      group: {
+        message: (n) => `${brojZahtjeva(n)} ${pluralForm(n, { one: 'preuzet je', few: 'preuzeta su', many: 'preuzeto je' })} na obradu`,
+        caption: 'Administrator pregledava vaše zahtjeve.',
+      },
+      statusFilter: 'Na odobrenju',
+    });
 
     persistIdSet(ids, 'session', userId);
   };
@@ -187,20 +270,22 @@ export function useActionableRequestsNotifier() {
     const { data } = await api.get('/requests', { params: { status: 'Naručeno', limit: 500 } });
     const list = Array.isArray(data.data) ? data.data : [];
 
-    for (const req of list) {
-      const key = `approved:${req.id_purchase_request}`;
-      if (ids.has(key)) continue;
-
-      showNotification({
-        requestId: req.id_purchase_request,
-        icon: 'check_circle',
-        type: 'approved',
-        message: `Zahtjev ${req.request_number} je odobren`,
+    notifyNewRequests({
+      ids,
+      keyPrefix: 'approved',
+      requests: list,
+      icon: 'check_circle',
+      type: 'approved',
+      single: {
+        message: (req) => `Zahtjev ${req.request_number} je odobren`,
         caption: 'Vaš zahtjev je odobren i upućen na nabavu.',
-      });
-
-      ids.add(key);
-    }
+      },
+      group: {
+        message: (n) => `${brojZahtjeva(n)} ${pluralForm(n, { one: 'je odobren', few: 'su odobrena', many: 'je odobreno' })}`,
+        caption: 'Vaši zahtjevi su odobreni i upućeni na nabavu.',
+      },
+      statusFilter: 'Naručeno',
+    });
 
     persistIdSet(ids, 'permanent', userId);
   };
@@ -214,20 +299,22 @@ export function useActionableRequestsNotifier() {
     const { data } = await api.get('/requests', { params: { status: 'Zatvoreno', limit: 500 } });
     const list = Array.isArray(data.data) ? data.data : [];
 
-    for (const req of list) {
-      const key = `closed:${req.id_purchase_request}`;
-      if (ids.has(key)) continue;
-
-      showNotification({
-        requestId: req.id_purchase_request,
-        icon: 'task_alt',
-        type: 'closed',
-        message: `Zahtjev ${req.request_number} je zatvoren`,
+    notifyNewRequests({
+      ids,
+      keyPrefix: 'closed',
+      requests: list,
+      icon: 'task_alt',
+      type: 'closed',
+      single: {
+        message: (req) => `Zahtjev ${req.request_number} je zatvoren`,
         caption: 'Nabava je završena i zahtjev je zatvoren.',
-      });
-
-      ids.add(key);
-    }
+      },
+      group: {
+        message: (n) => `${brojZahtjeva(n)} ${pluralForm(n, { one: 'je zatvoren', few: 'su zatvorena', many: 'je zatvoreno' })}`,
+        caption: 'Nabava je završena i zahtjevi su zatvoreni.',
+      },
+      statusFilter: 'Zatvoreno',
+    });
 
     persistIdSet(ids, 'permanent', userId);
   };
@@ -254,23 +341,26 @@ export function useActionableRequestsNotifier() {
       ),
     );
 
-    for (const { req, attachments } of results) {
-      const key = `delivery:${req.id_purchase_request}`;
-      if (ids.has(key)) continue;
+    const missing = results
+      .filter(({ attachments }) => !attachments.some((a) => a.document_type === 'Otpremnica'))
+      .map(({ req }) => req);
 
-      const hasOtpremnica = attachments.some((a) => a.document_type === 'Otpremnica');
-      if (hasOtpremnica) continue;
-
-      showNotification({
-        requestId: req.id_purchase_request,
-        icon: 'local_shipping',
-        type: 'action',
-        message: `Zahtjev ${req.request_number} čeka otpremnicu`,
+    notifyNewRequests({
+      ids,
+      keyPrefix: 'delivery',
+      requests: missing,
+      icon: 'local_shipping',
+      type: 'action',
+      single: {
+        message: (req) => `Zahtjev ${req.request_number} čeka otpremnicu`,
         caption: 'Dodaj otpremnicu kako bi zahtjev mogao biti zatvoren.',
-      });
-
-      ids.add(key);
-    }
+      },
+      group: {
+        message: (n) => `${brojZahtjeva(n)} ${pluralForm(n, { one: 'čeka', few: 'čekaju', many: 'čeka' })} otpremnicu`,
+        caption: 'Dodajte otpremnice kako bi zahtjevi mogli biti zatvoreni.',
+      },
+      statusFilter: 'ceka_otpremnicu',
+    });
 
     persistIdSet(ids, mode, userId);
   };

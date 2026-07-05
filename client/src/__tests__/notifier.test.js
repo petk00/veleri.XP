@@ -167,3 +167,81 @@ describe('checkActionableRequests', () => {
     );
   });
 });
+
+describe('grupiranje notifikacija', () => {
+  const mockPendingRequests = (requests) => {
+    vi.mocked(getStoredUser).mockReturnValue({ id_user: 1, role_name: 'Administrator' });
+    vi.mocked(api.get).mockImplementation((url, config) => {
+      if (config?.params?.status === 'Poslano') {
+        return Promise.resolve({ data: { data: requests } });
+      }
+      return emptyGet();
+    });
+  };
+
+  test('više novih zahtjeva grupira se u jednu notifikaciju (2-4: "čekaju")', async () => {
+    mockPendingRequests([
+      adminRequest(1, 'NAB-2026-0001'),
+      adminRequest(2, 'NAB-2026-0002'),
+      adminRequest(3, 'NAB-2026-0003'),
+    ]);
+
+    const { checkActionableRequests } = useActionableRequestsNotifier();
+    await checkActionableRequests();
+
+    expect(mockNotify).toHaveBeenCalledOnce();
+    expect(mockNotify).toHaveBeenCalledWith(
+      expect.objectContaining({ message: '3 zahtjeva čekaju pregled' }),
+    );
+  });
+
+  test('paukal: 5+ zahtjeva → "čeka"', async () => {
+    mockPendingRequests([1, 2, 3, 4, 5].map((i) => adminRequest(i, `NAB-2026-000${i}`)));
+
+    const { checkActionableRequests } = useActionableRequestsNotifier();
+    await checkActionableRequests();
+
+    expect(mockNotify).toHaveBeenCalledOnce();
+    expect(mockNotify).toHaveBeenCalledWith(
+      expect.objectContaining({ message: '5 zahtjeva čeka pregled' }),
+    );
+  });
+
+  test('"Pregledaj" na grupnoj notifikaciji vodi na filtriranu listu', async () => {
+    const mockPush = vi.fn();
+    vi.mocked(useRouter).mockReturnValue({ push: mockPush });
+    mockPendingRequests([adminRequest(1, 'NAB-2026-0001'), adminRequest(2, 'NAB-2026-0002')]);
+
+    const { checkActionableRequests } = useActionableRequestsNotifier();
+    await checkActionableRequests();
+
+    const pregledaj = mockNotify.mock.calls[0][0].actions.find((a) => a.label === 'Pregledaj');
+    pregledaj.handler();
+
+    expect(mockPush).toHaveBeenCalledWith({ path: '/zahtjevi', query: { status: 'Poslano' } });
+  });
+
+  test('grupna notifikacija bilježi sve zahtjeve u dedup', async () => {
+    mockPendingRequests([adminRequest(1, 'NAB-2026-0001'), adminRequest(2, 'NAB-2026-0002')]);
+
+    const { checkActionableRequests } = useActionableRequestsNotifier();
+    await checkActionableRequests();
+    await checkActionableRequests(); // ista dva zahtjeva — ne smije notificirati ponovno
+
+    expect(mockNotify).toHaveBeenCalledOnce();
+    const stored = JSON.parse(sessionStorage.getItem(SESSION_KEY) || '[]');
+    expect(stored).toEqual(expect.arrayContaining(['pending:1', 'pending:2']));
+  });
+
+  test('jedan novi zahtjev i dalje dobiva pojedinačnu notifikaciju s brojem zahtjeva', async () => {
+    mockPendingRequests([adminRequest(7, 'NAB-2026-0007')]);
+
+    const { checkActionableRequests } = useActionableRequestsNotifier();
+    await checkActionableRequests();
+
+    expect(mockNotify).toHaveBeenCalledOnce();
+    expect(mockNotify).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Zahtjev NAB-2026-0007 čeka pregled' }),
+    );
+  });
+});
