@@ -139,8 +139,9 @@ async function createRequest(page, { withOffer = false, amount = '150' } = {}) {
   expect(response.status()).toBe(201);
   const data = await response.json();
 
-  // Wizard preusmjerava na dashboard nakon uspjeha
-  await expect(page.locator('.avatar-btn')).toBeVisible();
+  // Pričekaj da wizardov redirect na dashboard stvarno završi — inače
+  // router.push('/dashboard') može pregaziti sljedeću navigaciju u testu
+  await page.waitForURL(/\/#\/$/);
   return { id: data.id_purchase_request, number: data.request_number };
 }
 

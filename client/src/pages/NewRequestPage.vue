@@ -142,12 +142,12 @@
               </div>
 
               <!-- ──────────── UPLOAD ──────────── -->
-              <div v-else-if="currentStep === 'upload'" key="upload" class="hero-card hero-card--compact">
+              <div v-else-if="currentStep === 'upload'" key="upload" class="hero-card hero-card--compact hero-card--upload">
                 <div class="hero-card__head">
                   <h2 class="hero-card__title hero-card__title--lg">Dodajte ponudu:</h2>
                 </div>
                 <div class="hero-card__body">
-                  <label class="upload-zone">
+                  <label class="upload-zone" :class="{ 'upload-zone--compact': form.offerFiles.length > 0 }">
                     <img src="/file-send-svgrepo-com.svg" alt="" class="upload-zone__icon" />
                     <span class="upload-zone__text">Klikni ili povuci datoteku ovdje</span>
                     <span class="upload-zone__hint">PDF, DOCX, XLSX, slike, ZIP — najviše 10 MB po datoteci</span>
@@ -286,7 +286,7 @@
               </div>
 
               <!-- ──────────── STAVKE ──────────── -->
-              <div v-else-if="currentStep === 'stavke'" key="stavke" class="hero-card">
+              <div v-else-if="currentStep === 'stavke'" key="stavke" class="hero-card hero-card--compact hero-card--stavke">
                 <div class="hero-card__head">
                   <h2 class="hero-card__title hero-card__title--lg">Što trebate?</h2>
                 </div>
@@ -365,7 +365,7 @@
                   <div class="svrha-box">
                     <textarea
                       v-model="form.comment"
-                      rows="5"
+                      rows="4"
                       maxlength="500"
                       placeholder="Opcionalna napomena za administratora — možete preskočiti."
                       class="svrha-box__input"
@@ -1087,6 +1087,32 @@ onMounted(() => fetchReferenceData());
 .upload-zone:hover { border-color: #00afdb; background: rgba(255,255,255,0.9); }
 .upload-zone__icon { width: 48px; height: 48px; opacity: 0.35; transition: opacity 0.15s; }
 .upload-zone:hover .upload-zone__icon { opacity: 0.6; }
+
+/* Upload korak zadržava visinu ostalih koraka (312px): nakon dodane datoteke
+   zona postaje kompaktna traka, a lista datoteka skrola unutar kartice. */
+.hero-card--upload { max-height: 312px; }
+.hero-card--upload .hero-card__body { min-height: 0; }
+.hero-card--upload .file-list { min-height: 0; overflow-y: auto; overflow-x: hidden; flex-shrink: 1; }
+.upload-zone--compact {
+  flex: 0 0 auto; flex-direction: row; justify-content: flex-start;
+  gap: 10px; padding: 10px 16px; min-height: 0;
+}
+.upload-zone--compact .upload-zone__icon { width: 22px; height: 22px; }
+.upload-zone--compact .upload-zone__hint { display: none; }
+
+/* Korak stavki: defaultna visina kao ostali koraci (312px, kompaktni razmaci
+   i jednoredne stavke); s više stavki kartica raste — lista se ne skrola. */
+.hero-card--stavke { padding-top: 28px; padding-bottom: 22px; }
+.hero-card--stavke .hero-card__head { margin-bottom: 12px; }
+.hero-card--stavke .add-item { flex-shrink: 0; padding: 10px 14px; margin-bottom: 10px; }
+.hero-card--stavke .item-list__row { padding: 6px 14px; gap: 10px; }
+.hero-card--stavke .item-list__index { width: 20px; height: 20px; }
+.hero-card--stavke .item-list__content { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.hero-card--stavke .item-list__name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero-card--stavke .item-list__category { margin-top: 0; flex-shrink: 0; }
+.hero-card--stavke .item-list__footer { flex-shrink: 0; margin-top: 6px; }
+.hero-card--stavke .empty-block { min-height: 0; overflow: hidden; padding: 10px 16px; }
+.hero-card--stavke .empty-block__icon { width: 28px; height: 28px; margin-bottom: 6px; }
 .upload-zone__text { font-size: 1.125rem; font-weight: 600; color: #1b2d59; }
 .upload-zone__hint { font-size: 0.875rem; color: #6b7280; }
 

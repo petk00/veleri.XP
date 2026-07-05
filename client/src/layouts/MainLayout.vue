@@ -283,16 +283,14 @@ onMounted(() => {
   all: unset;
   display: flex;
   align-items: center;
-  border-radius: 50%;
   cursor: pointer;
   flex-shrink: 0;
   margin-left: 8px;
-  transition: opacity 0.12s, box-shadow 0.12s;
+  transition: opacity 0.12s;
 }
 
 .avatar-btn:hover {
   opacity: 0.85;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
 }
 </style>
 
