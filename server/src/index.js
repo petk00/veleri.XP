@@ -28,6 +28,11 @@ if (process.env.JWT_SECRET.length < 32) {
 
 const app = express();
 
+// U Dockeru/produkciji Express sjedi iza nginx proxyja — bez ovoga svi
+// zahtjevi izgledaju kao da dolaze s proxy IP-a pa rate limiter ne
+// razlikuje korisnike (i express-rate-limit baca ValidationError).
+app.set('trust proxy', 1);
+
 app.use(helmet({
   hsts: {
     maxAge: 31536000,

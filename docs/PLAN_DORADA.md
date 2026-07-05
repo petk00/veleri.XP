@@ -33,7 +33,7 @@ Preostale neimplementirane cjeline:
 - financijski limiti u workflowu zahtjeva i analitika (budžeti i potrošnja po odjelu postoje na stranici Financije),
 - produkcijski deployment (SSL, instalacijska skripta — Docker compose postoji).
 
-Automatizirani testovi postoje: unit (Jest, Vitest), e2e (Playwright) i CI (GitHub Actions); e2e pokrivenost workflow akcija još je djelomična.
+Automatizirani testovi postoje: unit (Jest, Vitest), e2e (Playwright) i CI (GitHub Actions); e2e pokriva puni workflow (odobri→naruči→završi, storno, vraćanje na dopunu) i upload dokumenata. Nedostaju API integracijski testovi s pravom bazom.
 
 ## Prioriteti
 
