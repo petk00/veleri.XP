@@ -42,9 +42,10 @@ app.use(helmet({
   },
 }));
 
+// Limiti se mogu povisiti kroz env za lokalni razvoj i e2e testove (default = produkcijski)
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: Number(process.env.LOGIN_RATE_LIMIT_MAX) || 20,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: 'Previše pokušaja prijave. Pokušajte ponovo za 15 minuta.' },
@@ -60,7 +61,7 @@ const setPasswordLimiter = rateLimit({
 
 const checkEmailLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 30,
+  max: Number(process.env.CHECK_EMAIL_RATE_LIMIT_MAX) || 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: 'Previše pokušaja. Pokušajte ponovo za 15 minuta.' },

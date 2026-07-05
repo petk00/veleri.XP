@@ -3,14 +3,15 @@
 Ovaj dokument mapira zahtjeve iz specifikacije na trenutno stanje aplikacije.
 Status je procijenjen prema kodu u repozitoriju, a ne prema potpunom end-to-end testiranju u pregledniku.
 
-Zadnja provjera: **2026-06-11**
+Zadnja provjera: **2026-07-05**
 
 Provjereni izvori:
 
 - backend rute u `server/src/routes`,
 - frontend stranice u `client/src/pages`,
 - dokumentacija u `docs`,
-- SQL dump u `database/dump-XP-202605061957.sql`.
+- SQL shema i seed u `db/01_schema.sql` i `db/02_seed.sql`,
+- e2e testovi u `e2e/tests`.
 
 ## Legenda
 
@@ -32,19 +33,19 @@ Provjereni izvori:
 | Workflow | 90% | Svi statusni prijelazi implementirani uključujući storno i vrati-u-obradu. |
 | Dokumentacija uz zahtjev | 100% | Ponuda i otpremnica s pravilima po statusima; narudžbenica i Ostalo izvan opsega projekta. |
 | Pregled i filtriranje | 95% | Serverska paginacija, filteri po godini/kategoriji/statusu/odjelu/korisniku/pretrazi. |
-| Financijsko praćenje | 10% | Limiti postoje u bazi, ali se ne koriste u aplikaciji. |
+| Financijsko praćenje | 60% | Budžet godine i limiti po odjelu (stranica Financije); potrošnja po odjelu i provjera limita pri odobravanju. Nema praćenja po kategorijama ni analitike. |
 | Evidencija i revizija | 80% | Povijest radnji postoji; zadnji izmjenitelj vidljiv kroz historiju. |
 | Notifikacije | 92% | In-app obavijesti za sve relevantne promjene statusa; email out of scope. |
 | Sigurnost | 90% | httpOnly cookie, CORS whitelist, rate limiting, Helmet, path traversal zaštita. |
 
-Ukupna procjena prema SRS-u: **~87%**.
+Ukupna procjena prema SRS-u: **~88%**.
 
 Procjena MVP workflowa nabave: **~95%**.
 
 ## Najvažnije nedovršene cjeline
 
-1. Financijski limiti, potrošnja i analitika nisu implementirani.
-2. Produkcijski deployment nije dokumentiran (nema Docker ni instalacijske skripte).
+1. Potrošnja i limiti po predmetu nabave te analitički pregled potrošnje (7.1/7.2 djelomično, 7.4) nisu implementirani.
+2. Deployment: Docker postava postoji (`docker-compose.yml`, Dockerfile za server i klijent, `.env.example`); preostaje SSL i dokumentirana produkcijska instalacija.
 
 ## Detaljna matrica zahtjeva
 
@@ -53,13 +54,13 @@ Procjena MVP workflowa nabave: **~95%**.
 | 1.1 | Registracija korisnika | Implementirano | Admin kreira korisnika kroz `/api/users`; sustav generira invite token; korisnik postavlja lozinku putem linka `/set-password`. | Gotovo |
 | 1.2 | Prijava u sustav | Implementirano | `POST /api/auth/login` provjerava email, lozinku i aktivnost korisnika; JWT se postavlja kao httpOnly cookie. | Gotovo |
 | 1.3 | Korisničke uloge | Implementirano | Baza ima role `Administrator` i `Zaposlenik`; backend ih koristi za sve provjere pristupa; admin može upravljati ulogama kroz UsersPage. | Gotovo |
-| 2.1 | Pokretanje poslovne godine | Implementirano | `POST /api/fiscal-years` otvara novu godinu i kopira šifrarnike iz prethodne; dostupno kroz FiscalYearPage. | Gotovo |
-| 2.2 | Uređivanje šifrarnika | Implementirano | CRUD za odjele i kategorije po godini dostupan adminu kroz FiscalYearPage i `/api/fiscal-years/:id/departments|categories`. | Gotovo |
+| 2.1 | Pokretanje poslovne godine | Implementirano | `POST /api/fiscal-years` otvara novu godinu i kopira šifrarnike iz prethodne; dostupno kroz stranicu Financije (FinancePage). | Gotovo |
+| 2.2 | Uređivanje šifrarnika | Implementirano | CRUD za odjele i kategorije po godini dostupan adminu kroz stranicu Financije i `/api/fiscal-years/:id/departments|categories`. | Gotovo |
 | 2.3 | Zaključavanje prethodne godine | Implementirano | `PATCH /api/fiscal-years/:id/close` zaključava godinu; zaključana godina ne dopušta izmjene šifrarnika. | Gotovo |
-| 2.4 | Pregled prethodnih godina | Implementirano | FiscalYearPage prikazuje sve godine s oznakom otvorena/zatvorena. | Gotovo |
+| 2.4 | Pregled prethodnih godina | Implementirano | Stranica Financije prikazuje sve godine s oznakom otvorena/zatvorena. | Gotovo |
 | 2.5 | Zabrana brisanja poslovne godine | Implementirano | API nema rutu za brisanje poslovne godine; funkcionalno pravilo je prisutno. | Gotovo |
-| 2.6 | Godišnji limiti | Nije implementirano | `department_limit` i `category_limit` postoje u bazi, ali API ih ne koristi u workflowu. | Odgođeno |
-| 3.1 | Kreiranje zahtjeva | Implementirano | Djelatnik može kreirati zahtjev. Backend generira broj u formatu `PR-GGGG-XXXX`. | Gotovo |
+| 2.6 | Godišnji limiti | Djelomično | Limiti po odjelu unose se na stranici Financije i provjeravaju se pri odobravanju zahtjeva (upozorenje uz zapis u povijest, bez blokade). `category_limit` postoji u bazi, ali se ne koristi. | Srednje |
+| 3.1 | Kreiranje zahtjeva | Implementirano | Djelatnik može kreirati zahtjev. Backend generira broj u formatu `NAB-GGGG-XXXX`. | Gotovo |
 | 3.2 | Odabir poslovne godine | Implementirano | Frontend dohvaća aktivnu poslovnu godinu. Backend provjerava da odabrani odjel i sve kategorije stavki pripadaju poslovnoj godini zahtjeva (transakcijska provjera i kod kreiranja i kod uređivanja). | Gotovo |
 | 3.3 | Odabir predmeta nabave | Implementirano | Korisnik bira kategoriju/predmet nabave iz `ItemCategory`. | Gotovo |
 | 3.4 | Odabir mjesta troška | Implementirano | Korisnik bira odjel/mjesto troška iz `Department`. | Gotovo |
@@ -99,16 +100,16 @@ Procjena MVP workflowa nabave: **~95%**.
 Preostale dorade, poredane po prioritetu:
 
 1. Proširiti praćenje potrošnje na predmete nabave (po mjestu troška postoji).
-3. Dodati administrativni analitički pregled potrošnje.
-4. Dodati tip dokumenta `Narudžbenica`.
-5. Dodati tip dokumenta `Ostalo`.
-6. Proširiti e2e testove na workflow akcije storno, naruči i zatvori te na upload dokumenata (unit i osnovni e2e testovi postoje, CI je postavljen).
-7. Pripremiti produkcijski deployment (instalacijska skripta, SSL).
+2. Dodati administrativni analitički pregled potrošnje.
+3. Dodati tip dokumenta `Narudžbenica`.
+4. Dodati tip dokumenta `Ostalo`.
+5. Dodati API integracijske testove s pravom bazom (unit, e2e i CI postoje; e2e pokriva i storno, puni ciklus odobri→naruči→završi te upload/brisanje dokumenata).
+6. Pripremiti produkcijski deployment na stvarnom serveru (SSL, dokumentirana instalacija; Docker postava postoji).
 
 ## Napomene za dokumentaciju
 
 - Trenutni projekt se može opisati kao MVP aplikacija za digitalizaciju osnovnog procesa zahtjeva za nabavu.
-- Poslovne godine i šifrarnici su implementirani; financijsko praćenje je djelomično — budžeti i potrošnja po odjelu postoje (stranica Financije), ali workflow zahtjeva još ne provjerava limite niti postoji potrošnja po predmetu nabave.
+- Poslovne godine i šifrarnici su implementirani; financijsko praćenje je djelomično — budžeti, limiti i potrošnja po odjelu postoje (stranica Financije), a workflow pri odobravanju prikazuje projekciju potrošnje i bilježi prekoračenja (SRS 7.3). Ne postoji potrošnja po predmetu nabave ni analitički pregled.
 - Status `Na odobrenju` u trenutnom kodu funkcionalno predstavlja fazu obrade, ali naziv nije potpuno isti kao `U obradi` iz SRS-a.
 - Status `Odobreno` postoji u bazi kao stariji status, ali trenutni workflow prelazi iz `Na odobrenju` u `Naručeno`.
 - Dozvoljeni formati dokumenata odstupaju od SRS-a u oba smjera: prošireni su XLSX-om i ZIP-om, a isključeni su stari DOC/XLS i TXT jer njihove magic bytes nije moguće pouzdano verificirati (sigurnosna provjera stvarnog sadržaja datoteke). Frontend `accept` liste i backend whitelist su usklađeni.

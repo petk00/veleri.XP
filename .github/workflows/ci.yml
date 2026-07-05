@@ -96,6 +96,7 @@ jobs:
         run: |
           mysql -h 127.0.0.1 -u root -proot XP < db/01_schema.sql
           mysql -h 127.0.0.1 -u root -proot XP < db/02_seed.sql
+          mysql -h 127.0.0.1 -u root -proot XP < e2e/seed.e2e.sql
 
       - name: Instaliraj backend ovisnosti
         working-directory: server
@@ -113,6 +114,8 @@ jobs:
           JWT_SECRET=ci-test-secret-key-minimalno-32-znaka-ok
           PORT=3000
           CLIENT_URL=http://localhost:9000
+          LOGIN_RATE_LIMIT_MAX=500
+          CHECK_EMAIL_RATE_LIMIT_MAX=500
           EOF
 
       - name: Pokreni backend

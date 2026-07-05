@@ -1,89 +1,108 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { ADMIN, EMPLOYEE, login } = require('./helpers');
+const { ADMIN, EMPLOYEE, FIXTURES, login, createRequest } = require('./helpers');
 
-// Pomoćna funkcija: otvori prvi zahtjev u statusu "Poslano"
-async function openFirstSentRequest(page) {
-  await page.goto('/#/requests');
-  await page.locator('select, .q-select').filter({ hasText: /Status|Sve/ }).first().click();
-  await page.locator('.q-item').filter({ hasText: 'Poslano' }).click();
-  await page.waitForTimeout(500);
-  await page.locator('tbody tr, .request-row').first().click();
-  await expect(page).toHaveURL(/\/requests\/\d+/);
-}
+test.describe.configure({ mode: 'serial' });
 
 test.describe('Workflow zahtjeva', () => {
 
+  /** Zahtjev s ponudom koji vodimo kroz cijeli životni ciklus. @type {{ id: number, number: string }} */
+  let req;
+
+  test('zaposlenik kreira zahtjev s ponudom i iznosom', async ({ page }) => {
+    await login(page, EMPLOYEE);
+    req = await createRequest(page, { withOffer: true, amount: '150' });
+    expect(req.id).toBeTruthy();
+
+    await page.goto(`/#/zahtjevi/${req.id}`);
+    await expect(page.locator('.stepper-label--active')).toHaveText('Poslano');
+    // Ponuda uploadana kroz wizard je priložena uz zahtjev
+    await expect(
+      page.locator('.doc-row', { hasText: 'Ponuda' }).locator('.doc-badge--ok')
+    ).toBeVisible();
+  });
+
   test('admin preuzima zahtjev — status prelazi u Na odobrenju', async ({ page }) => {
     await login(page, ADMIN);
-    await openFirstSentRequest(page);
+    await page.goto(`/#/zahtjevi/${req.id}`);
 
-    await page.getByRole('button', { name: 'Preuzmi' }).click();
-    await page.getByRole('button', { name: 'Potvrdi' }).click();
-
-    await expect(page.getByText('Na odobrenju')).toBeVisible();
+    await page.getByRole('button', { name: 'Preuzmi na obradu' }).click();
+    await expect(page.locator('.stepper-label--active')).toHaveText('Na odobrenju');
   });
 
-  test('admin vraća zahtjev na izmjenu — zaposlenik vidi obavijest', async ({ page }) => {
+  test('admin odobrava zahtjev uz pregled limita — status prelazi u Naručeno', async ({ page }) => {
     await login(page, ADMIN);
-    await openFirstSentRequest(page);
+    await page.goto(`/#/zahtjevi/${req.id}`);
 
-    // Preuzmi ako je još u Poslano
-    const preuzmiBtn = page.getByRole('button', { name: 'Preuzmi' });
-    if (await preuzmiBtn.isVisible()) {
-      await preuzmiBtn.click();
-      await page.getByRole('button', { name: 'Potvrdi' }).click();
-    }
+    await page.getByRole('button', { name: 'Odobri', exact: true }).click();
+    // Dijalog odobravanja prikazuje potrošnju i limit odjela (SRS 7.3)
+    await expect(page.locator('.dialog-budget')).toBeVisible();
+    await page.locator('.dialog-actions button', { hasText: 'Odobri' }).click();
 
-    await page.getByRole('button', { name: 'Vrati na izmjenu' }).click();
-    await page.getByLabel('Komentar').fill('Nedostaje obrazloženje — e2e test');
-    await page.getByRole('button', { name: 'Potvrdi' }).click();
-
-    await expect(page.getByText('Vraćeno')).toBeVisible();
-    await expect(page.getByText('Nedostaje obrazloženje — e2e test')).toBeVisible();
+    await expect(page.locator('.stepper-label--active')).toHaveText('Naručeno');
   });
 
-  test('zaposlenik ponovo šalje vraćeni zahtjev', async ({ page }) => {
-    // Pronađi vraćeni zahtjev kao zaposlenik
-    await login(page, EMPLOYEE);
-    await page.goto('/#/requests');
+  test('admin dodaje otpremnicu i završava zahtjev — status Zatvoreno', async ({ page }) => {
+    await login(page, ADMIN);
+    await page.goto(`/#/zahtjevi/${req.id}`);
 
-    await page.locator('select, .q-select').filter({ hasText: /Status|Sve/ }).first().click();
-    await page.locator('.q-item').filter({ hasText: 'Vraćeno' }).click();
-    await page.waitForTimeout(500);
+    await page.locator('label', { hasText: 'Dodaj otpremnicu' })
+      .locator('input[type="file"]')
+      .setInputFiles(FIXTURES.otpremnica);
+    await expect(page.getByText('Otpremnica uspješno dodana.')).toBeVisible();
 
-    const firstRow = page.locator('tbody tr, .request-row').first();
-    if (await firstRow.isVisible()) {
-      await firstRow.click();
-      await expect(page).toHaveURL(/\/requests\/\d+/);
-
-      await page.getByRole('button', { name: 'Pošalji ponovo' }).click();
-      await page.getByRole('button', { name: 'Potvrdi' }).click();
-
-      await expect(page.getByText('Poslano')).toBeVisible();
-    } else {
-      test.skip(true, 'Nema vraćenih zahtjeva za ovaj test');
-    }
+    await page.getByRole('button', { name: 'Označi završeno' }).click();
+    await expect(page.getByText('Zahtjev je označen kao završen.')).toBeVisible();
+    // Svi koraci steppera su završeni, a zahtjev je zaključan za izmjene
+    await expect(page.locator('.stepper-dot--done')).toHaveCount(5);
+    await expect(page.getByRole('button', { name: 'Uredi' })).not.toBeVisible();
   });
 
-  test('zatvoreni zahtjev ne dozvoljava izmjene', async ({ page }) => {
-    await login(page, EMPLOYEE);
-    await page.goto('/#/requests');
+  test('admin vraća zahtjev na dopunu, zaposlenik ga ponovno šalje', async ({ page, browser }) => {
+    // Zaposlenik kreira novi zahtjev u zasebnoj sesiji
+    const empContext = await browser.newContext();
+    const empPage = await empContext.newPage();
+    await login(empPage, EMPLOYEE);
+    const returned = await createRequest(empPage, { withOffer: false });
 
-    await page.locator('select, .q-select').filter({ hasText: /Status|Sve/ }).first().click();
-    await page.locator('.q-item').filter({ hasText: 'Zatvoreno' }).click();
-    await page.waitForTimeout(500);
+    // Admin: preuzmi pa vrati na dopunu s komentarom
+    await login(page, ADMIN);
+    await page.goto(`/#/zahtjevi/${returned.id}`);
+    await page.getByRole('button', { name: 'Preuzmi na obradu' }).click();
+    await expect(page.locator('.stepper-label--active')).toHaveText('Na odobrenju');
 
-    const firstRow = page.locator('tbody tr, .request-row').first();
-    if (await firstRow.isVisible()) {
-      await firstRow.click();
-      await expect(page).toHaveURL(/\/requests\/\d+/);
+    await page.getByRole('button', { name: 'Vrati na dopunu' }).click();
+    await page.getByLabel(/Komentar/).fill('Nedostaje obrazloženje — e2e test');
+    await page.locator('.dialog-actions button', { hasText: 'Vrati na dopunu' }).click();
+    await expect(page.getByText('Zahtijeva izmjene od podnositelja')).toBeVisible();
 
-      // Gumb za uređivanje ne smije biti vidljiv
-      await expect(page.getByRole('link', { name: 'Uredi' })).not.toBeVisible();
-    } else {
-      test.skip(true, 'Nema zatvorenih zahtjeva za ovaj test');
-    }
+    // Zaposlenik vidi komentar u povijesti aktivnosti i ponovno šalje
+    await empPage.goto(`/#/zahtjevi/${returned.id}`);
+    await empPage.getByRole('button', { name: /Povijest aktivnosti/ }).click();
+    await expect(empPage.getByText('Nedostaje obrazloženje — e2e test').first()).toBeVisible();
+    await empPage.getByRole('button', { name: 'Pošalji ponovno' }).click();
+    await expect(empPage.locator('.stepper-label--active')).toHaveText('Poslano');
+
+    await empContext.close();
+  });
+
+  test('admin stornira zahtjev — status Odbijeno', async ({ page, browser }) => {
+    const empContext = await browser.newContext();
+    const empPage = await empContext.newPage();
+    await login(empPage, EMPLOYEE);
+    const toCancel = await createRequest(empPage, { withOffer: false });
+    await empContext.close();
+
+    await login(page, ADMIN);
+    await page.goto(`/#/zahtjevi/${toCancel.id}`);
+
+    // Storno je u "..." overflow izborniku
+    await page.locator('.action-bar__actions .icon-btn', { hasText: 'more_vert' }).click();
+    await page.getByText('Storniraj zahtjev').click();
+    await page.getByLabel(/Komentar/).fill('Storno — e2e test');
+    await page.locator('.dialog-actions button', { hasText: 'Storniraj' }).click();
+
+    await expect(page.getByText('Zahtjev odbijen')).toBeVisible();
   });
 
 });
