@@ -3,7 +3,7 @@
 Ovaj dokument mapira zahtjeve iz specifikacije na trenutno stanje aplikacije.
 Status je procijenjen prema kodu u repozitoriju, a ne prema potpunom end-to-end testiranju u pregledniku.
 
-Zadnja provjera: **2026-07-05**
+Zadnja provjera: **2026-07-06**
 
 Provjereni izvori:
 
@@ -25,22 +25,24 @@ Provjereni izvori:
 
 ## Sažetak
 
-| Područje | Procjena | Napomena |
+Postoci su izračunati iz detaljne matrice zahtjeva: Implementirano = 1, Djelomično = 0,5; zahtjevi svjesno izvan opsega ne ulaze u izračun. Od 43 zahtjeva: 36 implementirano, 4 djelomično (3.6, 4.3, 5.7, 8.2), 3 izvan opsega (3.8, 5.3, 7.4).
+
+| Područje | Dovršenost | Napomena |
 |---|---:|---|
-| Korisnici i autentikacija | 95% | Prijava, odjava, invite link, postavljanje lozinke, admin CRUD korisnika. |
-| Šifrarnici i poslovne godine | 90% | Admin upravljanje godinama, odjelima i kategorijama; kopiranje šifrarnika. |
-| Kreiranje i upravljanje zahtjevom | 90% | Kreiranje (uklj. napomenu i iznos s ponudom), pregled, uređivanje, storno; draft izvan opsega. |
-| Workflow | 90% | Svi statusni prijelazi implementirani uključujući storno i vrati-u-obradu. |
-| Dokumentacija uz zahtjev | 100% | Ponuda i otpremnica s pravilima po statusima; narudžbenica i Ostalo izvan opsega projekta. |
-| Pregled i filtriranje | 95% | Serverska paginacija, filteri po godini/kategoriji/statusu/odjelu/korisniku/pretrazi. |
-| Financijsko praćenje | 90% | Budžet godine, limiti i potrošnja po odjelima i kategorijama (stranica Financije); provjera limita s projekcijom pri odobravanju. Analitički modul (7.4) izvan opsega. |
-| Evidencija i revizija | 80% | Povijest radnji postoji; zadnji izmjenitelj vidljiv kroz historiju. |
-| Notifikacije | 92% | In-app obavijesti za sve relevantne promjene statusa; email out of scope. |
-| Sigurnost | 90% | httpOnly cookie, CORS whitelist, rate limiting, Helmet, path traversal zaštita. |
+| Korisnici i autentikacija (1.x) | 100% | Prijava, odjava, invite link, postavljanje lozinke, admin CRUD korisnika. |
+| Šifrarnici i poslovne godine (2.x) | 100% | Upravljanje godinama, odjelima i kategorijama; kopiranje šifrarnika; limiti po odjelu i predmetu nabave. |
+| Kreiranje i upravljanje zahtjevom (3.x) | 93% | Kreiranje, pregled, uređivanje, storno; iznos bez ponude unosi se naknadno (3.6); draft izvan opsega. |
+| Workflow (4.x) | 92% | Svi statusni prijelazi implementirani; obrada bez tipa dokumenta Narudžbenica (4.3). |
+| Dokumentacija uz zahtjev (5.x) | 92% | Ponuda i otpremnica s pravilima po statusima; formati odstupaju od SRS-a radi sigurnosti (5.7); Narudžbenica/Ostalo izvan opsega. |
+| Pregled i filtriranje (6.x) | 100% | Serverska paginacija, filteri po godini/kategoriji/statusu/odjelu/korisniku/pretrazi. |
+| Financijsko praćenje (7.x) | 100% | Budžet, limiti i potrošnja po odjelima i kategorijama; projekcija limita pri odobravanju. Analitički modul (7.4) izvan opsega. |
+| Evidencija i revizija (8.x) | 83% | Povijest radnji postoji; zadnji izmjenitelj vidljiv samo kroz historiju (8.2). |
+| Notifikacije (9.x) | 100% | In-app obavijesti za sve relevantne promjene statusa; email izvan opsega. |
+| Sigurnost | 90% | Nije zasebno poglavlje SRS matrice — subjektivna procjena: httpOnly cookie, CORS whitelist, rate limiting, Helmet, path traversal zaštita. |
 
-Ukupna procjena prema SRS-u: **~93%** (unutar dogovorenog opsega — uz stavke svjesno isključene iz opsega, praktički potpuna).
+Ukupna dovršenost prema SRS-u (unutar dogovorenog opsega): **95%** — (36 + 4 × 0,5) / 40.
 
-Procjena MVP workflowa nabave: **~95%**.
+Procjena MVP workflowa nabave: **~98%** (svi koraci tijeka nabave rade end-to-end).
 
 ## Najvažnije nedovršene cjeline
 
@@ -58,7 +60,7 @@ Procjena MVP workflowa nabave: **~95%**.
 | 2.3 | Zaključavanje prethodne godine | Implementirano | `PATCH /api/fiscal-years/:id/close` zaključava godinu; zaključana godina ne dopušta izmjene šifrarnika. | Gotovo |
 | 2.4 | Pregled prethodnih godina | Implementirano | Stranica Financije prikazuje sve godine s oznakom otvorena/zatvorena. | Gotovo |
 | 2.5 | Zabrana brisanja poslovne godine | Implementirano | API nema rutu za brisanje poslovne godine; funkcionalno pravilo je prisutno. | Gotovo |
-| 2.6 | Godišnji limiti | Djelomično | Limiti po odjelu unose se na stranici Financije i provjeravaju se pri odobravanju zahtjeva (upozorenje uz zapis u povijest, bez blokade). `category_limit` postoji u bazi, ali se ne koristi. | Srednje |
+| 2.6 | Godišnji limiti | Implementirano | Limiti po odjelu i po predmetu nabave unose se na stranici Financije, uz kontrolu da zbroj limita ne premaši godišnji budžet; limit odjela provjerava se pri odobravanju (projekcija s upozorenjem, bez blokade). | Gotovo |
 | 3.1 | Kreiranje zahtjeva | Implementirano | Djelatnik može kreirati zahtjev. Backend generira broj u formatu `NAB-GGGG-XXXX`. | Gotovo |
 | 3.2 | Odabir poslovne godine | Implementirano | Frontend dohvaća aktivnu poslovnu godinu. Backend provjerava da odabrani odjel i sve kategorije stavki pripadaju poslovnoj godini zahtjeva (transakcijska provjera i kod kreiranja i kod uređivanja). | Gotovo |
 | 3.3 | Odabir predmeta nabave | Implementirano | Korisnik bira kategoriju/predmet nabave iz `ItemCategory`. | Gotovo |
