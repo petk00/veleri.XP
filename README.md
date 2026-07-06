@@ -75,6 +75,7 @@ veleri.XP/
 │   ├── src/
 │   │   ├── pages/       # Stranice aplikacije
 │   │   ├── layouts/     # AuthLayout, MainLayout
+│   │   ├── components/  # Dijeljene komponente
 │   │   ├── router/      # Routing i zaštita ruta
 │   │   ├── boot/        # Axios konfiguracija
 │   │   ├── composables/ # useActionableRequestsNotifier (in-app obavijesti)
@@ -91,7 +92,6 @@ veleri.XP/
 │   │   └── config/      # DB konfiguracija
 │   ├── __tests__/       # Jest unit testovi
 │   │   └── integration/ # API integracijski testovi (prava MySQL baza)
-│   ├── scripts/         # Pomoćne skripte (npr. migracija putanja)
 │   └── Dockerfile
 ├── e2e/                 # Playwright end-to-end testovi
 │   ├── tests/           # auth, requests, workflow, documents, financije, korisnici
