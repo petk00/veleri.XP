@@ -1,0 +1,19 @@
+# Normalizacija line endinga — bitno za Windows checkout:
+# git po defaultu (core.autocrlf=true) konvertira datoteke u CRLF,
+# a ove datoteke idu u Linux kontejnere pa moraju ostati LF.
+* text=auto
+
+*.sql  text eol=lf
+*.conf text eol=lf
+*.sh   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+Dockerfile text eol=lf
+.env.example text eol=lf
+
+# Binarne datoteke
+*.png  binary
+*.jpg  binary
+*.svg  text
+*.pdf  binary
+*.docx binary
