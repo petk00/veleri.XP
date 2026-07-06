@@ -115,16 +115,22 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+// Server se pokreće samo kad je datoteka izvršena direktno — integracijski
+// testovi importaju `app` i gađaju ga supertestom bez otvaranja porta.
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
 
-process.on('uncaughtException', (err) => {
-  console.error('[uncaughtException]', err);
-  process.exit(1);
-});
+  process.on('uncaughtException', (err) => {
+    console.error('[uncaughtException]', err);
+    process.exit(1);
+  });
 
-process.on('unhandledRejection', (reason) => {
-  console.error('[unhandledRejection]', reason);
-  process.exit(1);
-});
+  process.on('unhandledRejection', (reason) => {
+    console.error('[unhandledRejection]', reason);
+    process.exit(1);
+  });
+}
+
+module.exports = app;

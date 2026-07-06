@@ -29,11 +29,11 @@ Aplikacija ima implementiran kompletan MVP proces nabave:
 
 Preostale neimplementirane cjeline:
 
-- proširene vrste dokumenata (Narudžbenica, Ostalo),
-- financijski limiti u workflowu zahtjeva i analitika (budžeti i potrošnja po odjelu postoje na stranici Financije),
-- produkcijski deployment (SSL, instalacijska skripta — Docker compose postoji).
+- produkcijski deployment na stvarnom serveru (pravi TLS certifikat, instalacijska skripta — Docker compose postoji i verificiran je lokalno).
 
-Automatizirani testovi postoje: unit (Jest, Vitest), e2e (Playwright) i CI (GitHub Actions); e2e pokriva puni workflow (odobri→naruči→završi, storno, vraćanje na dopunu) i upload dokumenata. Nedostaju API integracijski testovi s pravom bazom.
+Svjesno isključeno iz opsega (odluke potvrđene 06.07.2026.): draft zahtjeva, tipovi dokumenata Narudžbenica i Ostalo, email obavijesti o statusima, centar/povijest obavijesti, analitički pregled potrošnje, audit log prijava, 2FA. Prekoračenje limita namjerno ne blokira odobrenje (upozorenje + zapis u povijest).
+
+Automatizirani testovi postoje: unit (Jest, Vitest), API integracijski (supertest + MySQL), e2e (Playwright — puni workflow, upload dokumenata, Financije, Korisnici) i CI (GitHub Actions).
 
 ## Prioriteti
 
@@ -181,9 +181,9 @@ Ova faza pokriva zahtjev 4.6 iz SRS-a. Zahtjev 3.8 (draft) je svjesno izostavlje
 - Stornirani zahtjev se ne može dalje obrađivati. ✅
 - Storniranje je vidljivo u povijesti aktivnosti. ✅
 
-## Faza 7: Proširenje dokumentacije uz zahtjev
+## Faza 7: Proširenje dokumentacije uz zahtjev — ✋ IZVAN OPSEGA
 
-Prioritet: **Srednje**
+Prioritet: **Izvan opsega** (odluka potvrđena 06.07.2026. — tipovi Narudžbenica i Ostalo se ne implementiraju; formati su usklađeni uz svjesno odstupanje opisano u SRS_STATUS 5.7)
 
 Ova faza pokriva zahtjeve 5.1, 5.3 i djelomično 5.7 iz SRS-a.
 
@@ -253,13 +253,13 @@ Ova faza pokriva zahtjeve 8.2, 9.1 i 9.2 iz SRS-a.
 - Notifikacije ostaju vidljive dok ih korisnik ne pročita.
 - Povijest radnji ostaje dostupna na detalju zahtjeva.
 
-## Faza 10: Limiti i financijsko praćenje — DJELOMIČNO ZAPOČETO
+## Faza 10: Limiti i financijsko praćenje ✅ DOVRŠENO (analitika izvan opsega)
 
-Prioritet: **Odgođeno**
+Prioritet: **Dovršeno**
 
 Ova faza se ostavlja za kraj jer se oslanja na poslovne godine, šifrarnike, statusni workflow i storniranje.
 
-Implementirano: godišnji budžet i limiti po odjelu s kontrolom alokacije (LIM-01), potrošnja po odjelu iz zahtjeva u statusima Naručeno/Zatvoreno (LIM-03, LIM-05: zahtjev utječe na potrošnju od statusa Naručeno; LIM-06: odbijeni/stornirani ne troše), pregled potrošnje po odjelu na stranici Financije (LIM-08 djelomično) te upozorenje administratoru kod prekoračenja u dijalogu odobravanja s automatskom bilješkom u povijesti aktivnosti (LIM-07 — ne blokira). Preostaje: limiti/potrošnja po predmetu nabave (LIM-02, LIM-04) i analitički pregled (LIM-09).
+Implementirano: godišnji budžet i limiti po odjelu i po predmetu nabave s kontrolom alokacije (LIM-01, LIM-02), potrošnja po odjelu i po kategoriji iz zahtjeva u statusima Naručeno/Zatvoreno (LIM-03, LIM-04, LIM-05: zahtjev utječe na potrošnju od statusa Naručeno; LIM-06: odbijeni/stornirani ne troše), pregled potrošnje po odjelima i kategorijama na stranici Financije (LIM-08) te upozorenje administratoru kod prekoračenja u dijalogu odobravanja s automatskom bilješkom u povijesti aktivnosti (LIM-07 — ne blokira). Napomena za LIM-04: iznos postoji na razini zahtjeva (stavke nemaju cijenu), pa se kategoriji pripisuju zahtjevi čije sve stavke dijele tu kategoriju, a miješani se iskazuju zbirno kao neraspodijeljeni. Analitički pregled (LIM-09) je izvan opsega — odluka 06.07.2026.
 
 ### Zadaci
 
@@ -273,7 +273,7 @@ Implementirano: godišnji budžet i limiti po odjelu s kontrolom alokacije (LIM-
 | LIM-06 | Definirati što se događa kod odbijanja, storniranja i zatvaranja. | Poslovno pravilo. |
 | LIM-07 | Prikazati administratoru upozorenje kod prekoračenja. | Ne blokira slanje. |
 | LIM-08 | Dodati pregled potrošnje. | Po godini, mjestu troška i predmetu nabave. |
-| LIM-09 | Dodati osnovni analitički pregled. | Željeni zahtjev. |
+| LIM-09 | ~~Dodati osnovni analitički pregled.~~ | Izvan opsega — odluka 06.07.2026. |
 
 ### Kriteriji dovršenosti
 
