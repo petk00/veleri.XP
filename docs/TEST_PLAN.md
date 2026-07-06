@@ -82,10 +82,18 @@ npm run test:ui   # interaktivni UI mod
 | `requests.spec.js` | Kreiranje zahtjeva bez ponude kroz wizard, zaposlenik ne vidi kolonu podnositelja, admin vidi sve zahtjeve |
 | `workflow.spec.js` | Puni životni ciklus: kreiranje s ponudom i iznosom → preuzimanje → odobravanje (s pregledom limita odjela, SRS 7.3) → upload otpremnice → zatvaranje; vraćanje na dopunu + ponovno slanje; storniranje |
 | `documents.spec.js` | Upload i brisanje ponude na detaljima zahtjeva |
+| `financije.spec.js` | Pregled budžeta; dodavanje/uređivanje/brisanje kategorije s limitom (SRS 7.1) |
+| `korisnici.spec.js` | Kreiranje korisnika s invite linkom, odbijanje emaila izvan @veleri.hr domene, aktivacija/deaktivacija/brisanje |
 
 Napomena: u CI-ju se prije e2e testova uvozi `e2e/seed.e2e.sql` (aktivna poslovna godina, odjeli i kategorije) jer produkcijski seed namjerno ne sadrži šifrarnike.
 
-## 4.3.3. Funkcijski end-user testovi (ručni)
+## 4.3.3. API integracijski testovi (prava baza)
+
+Integracijski testovi nalaze se u `server/__tests__/integration/` i za razliku od unit testova ne mockaju ništa: pri pokretanju kreiraju zasebnu bazu `XP_test` (iz `db/01_schema.sql`, `db/02_seed.sql` i `e2e/seed.e2e.sql`) pa supertestom gađaju montiranu Express aplikaciju kroz pune middleware lance (autentikacija, role, validacije, transakcije). Ako MySQL nije dostupan, testovi se preskaču s upozorenjem. Pokrivaju: login/cookie tok, zaštitu ruta po rolama, kreiranje korisnika s invite linkom i domenskim pravilom, validaciju limita kategorija protiv budžeta (SRS 7.1), workflow zahtjeva (kreiranje, preuzimanje, odbijanje odobrenja bez ponude) i izolaciju zahtjeva po korisniku. U CI-ju backend job ima MySQL servis.
+
+Pokretanje: `cd server && npx jest __tests__/integration`
+
+## 4.3.4. Funkcijski end-user testovi (ručni)
 
 Funkcijski end-user testovi provode se ručno iz perspektive stvarnog korisnika aplikacije.
 

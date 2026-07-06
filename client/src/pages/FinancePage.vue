@@ -250,25 +250,55 @@
               <div class="empty-state__title">Nema kategorija</div>
               <div v-if="!selected.is_closed" class="empty-state__hint">Dodajte prvu kategoriju.</div>
             </div>
-            <ul v-else class="cat-grid">
-              <li
-                v-for="c in categories"
-                :key="c.id_item_category"
-                class="cat-chip"
-              >
-                <span class="cat-chip__name">{{ c.name }}</span>
-                <div v-if="!selected.is_closed" class="cat-chip__actions">
-                  <button class="icon-btn" @click="openCatDialog(c)">
-                    <q-icon name="edit" size="14px" />
-                    <q-tooltip>Uredi</q-tooltip>
-                  </button>
-                  <button class="icon-btn icon-btn--danger" @click="deleteCat(c)">
-                    <q-icon name="delete_outline" size="14px" />
-                    <q-tooltip>Obriši</q-tooltip>
-                  </button>
-                </div>
-              </li>
-            </ul>
+            <template v-else>
+              <ul class="cat-grid">
+                <li
+                  v-for="c in categories"
+                  :key="c.id_item_category"
+                  class="cat-chip"
+                >
+                  <div class="cat-chip__main">
+                    <span class="cat-chip__name">{{ c.name }}</span>
+                    <span class="cat-chip__amounts">
+                      <span class="budget-spent" :class="{ 'budget-spent--neutral': catPct(c) === null }">{{ formatEUR(c.spent_amount) }}</span>
+                      <span class="budget-sep">/</span>
+                      <span v-if="Number(c.category_limit) > 0" class="budget-limit">{{ formatEUR(c.category_limit) }}</span>
+                      <span v-else class="cat-chip__no-limit">
+                        bez limita
+                        <q-tooltip>Trošak se ne prati protiv limita jer kategorija nema definiran budžet — nije nužno upozorenje.</q-tooltip>
+                      </span>
+                    </span>
+                  </div>
+                  <span v-if="catPct(c) !== null" class="cat-chip__pct" :class="{ 'dept-pct--over': catPct(c) > 100 }">
+                    <q-icon v-if="catPct(c) > 100" name="warning" size="12px" />
+                    {{ catPct(c) }}%
+                    <q-tooltip v-if="catPct(c) > 100">+{{ catPct(c) - 100 }}% preko limita</q-tooltip>
+                  </span>
+                  <div v-if="!selected.is_closed" class="cat-chip__actions">
+                    <button class="icon-btn" @click="openCatDialog(c)">
+                      <q-icon name="edit" size="14px" />
+                      <q-tooltip>Uredi</q-tooltip>
+                    </button>
+                    <button class="icon-btn icon-btn--danger" @click="deleteCat(c)">
+                      <q-icon name="delete_outline" size="14px" />
+                      <q-tooltip>Obriši</q-tooltip>
+                    </button>
+                  </div>
+                </li>
+              </ul>
+              <div v-if="catUnattributed.request_count > 0" class="cat-unattributed">
+                <q-icon name="call_split" size="13px" />
+                <span>
+                  {{ catUnattributed.request_count }}
+                  {{ catUnattributed.request_count === 1 ? 'zahtjev' : 'zahtjeva' }}
+                  s više kategorija ({{ formatEUR(catUnattributed.total_amount) }}) nije raspodijeljeno.
+                </span>
+                <q-tooltip>
+                  Iznos postoji samo na razini zahtjeva, pa se potrošnja pripisuje kategoriji
+                  samo kad sve stavke zahtjeva dijele istu kategoriju.
+                </q-tooltip>
+              </div>
+            </template>
           </div>
 
           </div><!-- /.cards-row -->
@@ -361,6 +391,13 @@
             <label class="field-label">Naziv kategorije</label>
             <input v-model="catDialog.name" type="text" class="text-input" placeholder="Naziv" required />
           </div>
+          <div class="field">
+            <label class="field-label">
+              Budžetski limit (€)
+              <span class="field-hint">Slobodno za alokaciju: {{ formatEUR(availableForCat) }}</span>
+            </label>
+            <input v-model.number="catDialog.limit" type="number" class="text-input" placeholder="0.00" min="0" step="0.01" :max="availableForCat" />
+          </div>
           <div v-if="catDialog.error" class="form-error">{{ catDialog.error }}</div>
           <div class="dialog-actions">
             <button type="button" class="btn btn--ghost" @click="catDialog.open = false">Odustani</button>
@@ -416,6 +453,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
+import { pctOfLimit, availableAllocation, sumLimits } from 'src/utils/budgetMath';
 
 const $q = useQuasar();
 
@@ -425,6 +463,7 @@ const fiscalYears = ref([]);
 const selectedId = ref(null);
 const departments = ref([]);
 const categories = ref([]);
+const catUnattributed = ref({ request_count: 0, total_amount: 0 });
 
 const selected = computed(() => fiscalYears.value.find(f => f.id_fiscal_year === selectedId.value) || null);
 const hasOpenYear = computed(() => fiscalYears.value.some(f => !f.is_closed));
@@ -446,12 +485,7 @@ const spentPercent = computed(() => fyBudget.value > 0 ? Math.round(totalSpent.v
 const remainingPercent = computed(() => fyBudget.value > 0 ? Math.round((fyBudget.value - totalSpent.value) / fyBudget.value * 100) : 0);
 const spentOverBudget = computed(() => fyBudget.value > 0 && totalSpent.value > fyBudget.value);
 
-const deptPct = (d) => {
-  const limit = Number(d.department_limit);
-  const spent = Number(d.spent_amount || 0);
-  if (!limit || limit <= 0) return null;
-  return Math.round(spent / limit * 100);
-};
+const deptPct = (d) => pctOfLimit(d.department_limit, d.spent_amount);
 
 const deptBarClass = (d) => {
   const pct = deptPct(d);
@@ -484,14 +518,26 @@ const availableForDept = computed(() => {
   const currentLimit = deptDialog.value.editId
     ? Number(departments.value.find(d => d.id_department === deptDialog.value.editId)?.department_limit || 0)
     : 0;
-  return Math.max(0, fyBudget.value - totalAllocated.value + currentLimit);
+  return availableAllocation(fyBudget.value, totalAllocated.value, currentLimit);
+});
+
+// Postotak iskorištenosti limita kategorije — null kad limita nema
+const catPct = (c) => pctOfLimit(c.category_limit, c.spent_amount);
+
+const totalCatAllocated = computed(() => sumLimits(categories.value, 'category_limit'));
+
+const availableForCat = computed(() => {
+  const currentLimit = catDialog.value.editId
+    ? Number(categories.value.find(c => c.id_item_category === catDialog.value.editId)?.category_limit || 0)
+    : 0;
+  return availableAllocation(fyBudget.value, totalCatAllocated.value, currentLimit);
 });
 
 const formatEUR = (val) => new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(val || 0);
 
 const createDialog = ref({ open: false, year: new Date().getFullYear() + 1, budget: 0, error: '', saving: false });
 const deptDialog = ref({ open: false, editId: null, name: '', limit: 0, error: '', saving: false });
-const catDialog = ref({ open: false, editId: null, name: '', error: '', saving: false });
+const catDialog = ref({ open: false, editId: null, name: '', limit: 0, error: '', saving: false });
 const budgetDialog = ref({ open: false, fyId: null, budget: 0, allocated: 0, error: '', saving: false });
 
 const openBudgetDialog = (fy) => {
@@ -550,7 +596,8 @@ const loadDetail = async () => {
       api.get(`/fiscal-years/${selectedId.value}/categories`),
     ]);
     departments.value = d.data;
-    categories.value = c.data;
+    categories.value = c.data.categories;
+    catUnattributed.value = c.data.unattributed || { request_count: 0, total_amount: 0 };
   } catch {
     $q.notify({ type: 'negative', message: 'Greška pri dohvatu podataka.' });
   } finally {
@@ -656,7 +703,7 @@ const deleteDept = (dept) => {
 
 // ── Kategorije ────────────────────────────────────────────────────────────────
 const openCatDialog = (cat = null) => {
-  catDialog.value = { open: true, editId: cat?.id_item_category || null, name: cat?.name || '', error: '', saving: false };
+  catDialog.value = { open: true, editId: cat?.id_item_category || null, name: cat?.name || '', limit: Number(cat?.category_limit || 0), error: '', saving: false };
 };
 
 const submitCat = async () => {
@@ -664,7 +711,7 @@ const submitCat = async () => {
   catDialog.value.saving = true;
   try {
     const fyId = selectedId.value;
-    const catPayload = { name: catDialog.value.name };
+    const catPayload = { name: catDialog.value.name, category_limit: catDialog.value.limit || 0 };
     if (catDialog.value.editId) {
       await api.put(`/fiscal-years/${fyId}/categories/${catDialog.value.editId}`, catPayload);
       $q.notify({ type: 'positive', message: 'Kategorija ažurirana.' });
@@ -1262,10 +1309,10 @@ onMounted(loadYears);
 .budget-sep   { color: #d1d5db; }
 .budget-limit { color: #6b7280; }
 
-/* ── Cards row (odjeli 3/4 + kategorije 1/4) ── */
+/* ── Cards row (odjeli + kategorije s limitima) ── */
 .cards-row {
   display: grid;
-  grid-template-columns: 4fr 1fr;
+  grid-template-columns: 3fr 2fr;
   gap: 16px;
   align-items: start;
 }
@@ -1286,10 +1333,27 @@ onMounted(loadYears);
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  height: 52px;
-  padding: 0 20px;
+  min-height: 52px;
+  padding: 8px 20px;
   border-bottom: 1px solid #f3f4f6;
   transition: background 0.12s;
+}
+
+.cat-chip__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cat-chip__amounts { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; }
+.cat-chip__no-limit { color: #9ca3af; font-style: italic; font-size: 0.75rem; cursor: help; }
+.cat-chip__pct {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 3px;
+  font-size: 0.75rem; font-weight: 600; color: #374151;
+  font-variant-numeric: tabular-nums;
+}
+
+.cat-unattributed {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 20px;
+  font-size: 0.75rem; color: #6b7280;
+  border-top: 1px dashed #e5e7eb;
+  cursor: help;
 }
 .cat-chip:last-child { border-bottom: none; }
 .cat-chip:hover { background: #f0fbfe; box-shadow: inset 3px 0 0 #00afdb; }

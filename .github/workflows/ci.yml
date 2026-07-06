@@ -11,6 +11,20 @@ jobs:
     name: Backend testovi (Jest)
     runs-on: ubuntu-latest
 
+    # MySQL za API integracijske testove (kreiraju vlastitu XP_test bazu)
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
     steps:
       - uses: actions/checkout@v4
 
@@ -28,6 +42,13 @@ jobs:
       - name: Pokreni testove s coverage
         working-directory: server
         run: npm run test:coverage
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: root
+          DB_NAME: XP
+          JWT_SECRET: ci-test-secret-key-minimalno-32-znaka-ok
 
       - name: Upload backend coverage
         uses: actions/upload-artifact@v4

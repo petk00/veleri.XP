@@ -29,23 +29,22 @@ Provjereni izvori:
 |---|---:|---|
 | Korisnici i autentikacija | 95% | Prijava, odjava, invite link, postavljanje lozinke, admin CRUD korisnika. |
 | Šifrarnici i poslovne godine | 90% | Admin upravljanje godinama, odjelima i kategorijama; kopiranje šifrarnika. |
-| Kreiranje i upravljanje zahtjevom | 85% | Kreiranje, pregled, uređivanje, storno implementirani; draft izvan opsega. |
+| Kreiranje i upravljanje zahtjevom | 90% | Kreiranje (uklj. napomenu i iznos s ponudom), pregled, uređivanje, storno; draft izvan opsega. |
 | Workflow | 90% | Svi statusni prijelazi implementirani uključujući storno i vrati-u-obradu. |
 | Dokumentacija uz zahtjev | 100% | Ponuda i otpremnica s pravilima po statusima; narudžbenica i Ostalo izvan opsega projekta. |
 | Pregled i filtriranje | 95% | Serverska paginacija, filteri po godini/kategoriji/statusu/odjelu/korisniku/pretrazi. |
-| Financijsko praćenje | 60% | Budžet godine i limiti po odjelu (stranica Financije); potrošnja po odjelu i provjera limita pri odobravanju. Nema praćenja po kategorijama ni analitike. |
+| Financijsko praćenje | 90% | Budžet godine, limiti i potrošnja po odjelima i kategorijama (stranica Financije); provjera limita s projekcijom pri odobravanju. Analitički modul (7.4) izvan opsega. |
 | Evidencija i revizija | 80% | Povijest radnji postoji; zadnji izmjenitelj vidljiv kroz historiju. |
 | Notifikacije | 92% | In-app obavijesti za sve relevantne promjene statusa; email out of scope. |
 | Sigurnost | 90% | httpOnly cookie, CORS whitelist, rate limiting, Helmet, path traversal zaštita. |
 
-Ukupna procjena prema SRS-u: **~88%**.
+Ukupna procjena prema SRS-u: **~93%** (unutar dogovorenog opsega — uz stavke svjesno isključene iz opsega, praktički potpuna).
 
 Procjena MVP workflowa nabave: **~95%**.
 
 ## Najvažnije nedovršene cjeline
 
-1. Potrošnja i limiti po predmetu nabave te analitički pregled potrošnje (7.1/7.2 djelomično, 7.4) nisu implementirani.
-2. Deployment: Docker postava postoji (`docker-compose.yml`, Dockerfile za server i klijent, `.env.example`); preostaje SSL i dokumentirana produkcijska instalacija.
+1. Deployment: Docker postava postoji i verificirana je lokalno (`docker-compose.yml`, Dockerfile za server i klijent, nginx s HTTPS preusmjeravanjem, `.env.example`); preostaje pravi TLS certifikat i dokumentirana instalacija na stvarnom serveru.
 
 ## Detaljna matrica zahtjeva
 
@@ -65,8 +64,8 @@ Procjena MVP workflowa nabave: **~95%**.
 | 3.3 | Odabir predmeta nabave | Implementirano | Korisnik bira kategoriju/predmet nabave iz `ItemCategory`. | Gotovo |
 | 3.4 | Odabir mjesta troška | Implementirano | Korisnik bira odjel/mjesto troška iz `Department`. | Gotovo |
 | 3.5 | Unos stavki zahtjeva | Implementirano | Forma omogućuje dinamičko dodavanje stavki s nazivom i količinom. Backend traži barem jednu stavku. | Gotovo |
-| 3.6 | Unos iznosa zahtjeva | Djelomično | Iznos je obavezan za zatvaranje zahtjeva; ne utječe na limite. | Nisko |
-| 3.7 | Napomena | Djelomično | Postoji `justification`/svrha nabave, ali nema odvojene slobodne napomene. | Nisko |
+| 3.6 | Unos iznosa zahtjeva | Djelomično | Na putu s ponudom iznos se unosi u wizardu; bez ponude unosi se naknadno (svjesna odluka — bez ponude dobavljača iznos nije poznat). Obavezan je za zatvaranje i koristi se u projekciji limita pri odobravanju (7.3). | — (svjesna odluka) |
+| 3.7 | Napomena | Implementirano | Wizard ima zaseban korak "Imate li kakvu napomenu?" (`PurchaseRequest.comment`, opcionalno, uz svrhu nabave); napomena se prikazuje na detaljima zahtjeva. | Gotovo |
 | 3.8 | Spremanje nacrta | Izvan opsega | Draft zahtjeva svjesno nije implementiran. Zahtjev se odmah šalje u obradu. | — |
 | 4.1 | Statusi zahtjeva | Implementirano | Podržani su `Poslano`, `Na odobrenju`, `Vraćeno`, `Odbijeno`, `Naručeno`, `Zatvoreno`. Status `Odobreno` postoji u bazi kao stari zapis, ali se ne koristi. | Gotovo |
 | 4.2 | Poslano | Implementirano | Novi zahtjev odmah dobiva status `Poslano`; admin prima in-app obavijest. | Gotovo |
@@ -76,7 +75,7 @@ Procjena MVP workflowa nabave: **~95%**.
 | 4.6 | Storniranje zahtjeva | Implementirano | Admin može stornirati zahtjev u bilo kojem aktivnom statusu (osim Zatvoreno) kroz akciju `storno`. | Gotovo |
 | 5.1 | Vrste dokumenata | Implementirano | Podržani su `Ponuda` i `Otpremnica` s pravilima po statusima. Tipovi `Narudžbenica` i `Ostalo` svjesno su izostavljeni iz opsega projekta. | Gotovo |
 | 5.2 | Dodavanje ponude | Implementirano | Djelatnik/admin mogu dodati ponudu u statusima Poslano, Na odobrenju, Vraćeno, Naručeno (za edge case). | Gotovo |
-| 5.3 | Dodavanje narudžbenice | Odgođeno | Tip dokumenta `Narudžbenica` izvan je opsega projekta — svjesno odlučeno. | — |
+| 5.3 | Dodavanje narudžbenice | Izvan opsega | Tipovi dokumenata `Narudžbenica` i `Ostalo` svjesno su isključeni iz opsega projekta (odluka potvrđena 06.07.2026.). | — |
 | 5.4 | Dodavanje otpremnice | Implementirano | Otpremnica se može dodati u statusu `Naručeno` i uvjet je za zatvaranje. | Gotovo |
 | 5.5 | Brisanje dokumenata | Implementirano | Dokumenti se mogu brisati prema pravilima role/statusa; zaključani statusi ne dopuštaju brisanje. | Gotovo |
 | 5.6 | Pregled dokumenata | Implementirano | Detalji zahtjeva prikazuju dokumente s mogućnošću preuzimanja. | Gotovo |
@@ -85,10 +84,10 @@ Procjena MVP workflowa nabave: **~95%**.
 | 6.2 | Pregled svih zahtjeva | Implementirano | Administrator kroz backend vidi sve zahtjeve. | Gotovo |
 | 6.3 | Pretraživanje i filtriranje | Implementirano | Serverski filteri po statusu, odjelu, korisniku, poslovnoj godini, predmetu nabave i tekstu pretrage. | Gotovo |
 | 6.4 | Paginacija | Implementirano | Serverska paginacija s 10 zahtjeva po stranici. | Gotovo |
-| 7.1 | Praćenje limita | Djelomično | Godišnji budžet i limiti po odjelu (mjestu troška) unose se na stranici Financije; potrošnja po odjelu računa se iz zahtjeva u statusima Naručeno/Zatvoreno. Nema praćenja po predmetu nabave. | Srednje |
-| 7.2 | Pregled potrošnje | Djelomično | Stranica Financije prikazuje potrošnju i preostali budžet po odjelu za odabranu poslovnu godinu. Nema pregleda po kategorijama artikala. | Srednje |
+| 7.1 | Praćenje limita | Implementirano | Godišnji budžet te limiti po odjelu I po predmetu nabave unose se na stranici Financije, uz kontrolu da zbroj limita ne premaši godišnji budžet. Potrošnja se računa iz zahtjeva u statusima Naručeno/Zatvoreno. | Gotovo |
+| 7.2 | Pregled potrošnje | Implementirano | Stranica Financije prikazuje potrošnju, limit i postotak iskorištenosti po odjelima i po kategorijama. Napomena: iznos postoji na razini zahtjeva (stavke nemaju cijenu), pa se kategoriji pripisuju zahtjevi čije sve stavke dijele tu kategoriju; miješani zahtjevi iskazuju se zbirno kao neraspodijeljeni. | Gotovo |
 | 7.3 | Prekoračenje limita | Implementirano | Dijalog odobravanja prikazuje adminu potrošnju, limit i projekciju nakon odobrenja s upozorenjem kod prekoračenja (ne blokira); prekoračenje se automatski bilježi u povijest aktivnosti. | Gotovo |
-| 7.4 | Analitički pregled | Nije implementirano | Postoji osnovni dashboard i pregled budžeta po odjelima, ali ne analitički pregled zahtjeva i potrošnje po SRS-u. | Odgođeno |
+| 7.4 | Analitički pregled | Izvan opsega | Postoji osnovni dashboard i pregled budžeta/potrošnje na stranici Financije; zaseban analitički modul svjesno je isključen iz opsega (odluka potvrđena 06.07.2026.). | — |
 | 8.1 | Datum kreiranja | Implementirano | `PurchaseRequest.created_at` automatski bilježi kreiranje. | Gotovo |
 | 8.2 | Datum zadnje izmjene | Djelomično | `updated_at` postoji; zadnji izmjenitelj vidljiv kroz `RequestStatusHistory`. | Nisko |
 | 8.3 | Povijest radnji | Implementirano | `RequestStatusHistory` zapisuje promjene statusa, korisnika, vrijeme i komentar; prikaz postoji na detalju zahtjeva. | Gotovo |
@@ -99,17 +98,16 @@ Procjena MVP workflowa nabave: **~95%**.
 
 Preostale dorade, poredane po prioritetu:
 
-1. Proširiti praćenje potrošnje na predmete nabave (po mjestu troška postoji).
-2. Dodati administrativni analitički pregled potrošnje.
-3. Dodati tip dokumenta `Narudžbenica`.
-4. Dodati tip dokumenta `Ostalo`.
-5. Dodati API integracijske testove s pravom bazom (unit, e2e i CI postoje; e2e pokriva i storno, puni ciklus odobri→naruči→završi te upload/brisanje dokumenata).
-6. Pripremiti produkcijski deployment na stvarnom serveru (SSL, dokumentirana instalacija; Docker postava postoji).
+1. Pripremiti produkcijski deployment na stvarnom serveru (pravi TLS certifikat, dokumentirana instalacija; Docker postava postoji i verificirana je lokalno).
+
+Dovršeno u srpnju 2026.: potrošnja i limiti po predmetu nabave (7.1/7.2), API integracijski testovi s pravom bazom (supertest + MySQL, 12 testova), e2e testovi za Financije i Korisnike.
+
+Svjesno isključeno iz opsega (odluke potvrđene 06.07.2026.): draft zahtjeva (3.8), tipovi dokumenata Narudžbenica i Ostalo (5.3), email obavijesti o promjeni statusa, centar/povijest obavijesti, analitički pregled potrošnje (7.4), audit log prijava i 2FA. Prekoračenje limita namjerno NE blokira odobrenje — admin dobiva upozorenje i prekoračenje se bilježi u povijest (7.3).
 
 ## Napomene za dokumentaciju
 
 - Trenutni projekt se može opisati kao MVP aplikacija za digitalizaciju osnovnog procesa zahtjeva za nabavu.
-- Poslovne godine i šifrarnici su implementirani; financijsko praćenje je djelomično — budžeti, limiti i potrošnja po odjelu postoje (stranica Financije), a workflow pri odobravanju prikazuje projekciju potrošnje i bilježi prekoračenja (SRS 7.3). Ne postoji potrošnja po predmetu nabave ni analitički pregled.
+- Poslovne godine i šifrarnici su implementirani; financijsko praćenje pokriva budžete, limite i potrošnju po odjelima i po kategorijama (stranica Financije), a workflow pri odobravanju prikazuje projekciju potrošnje i bilježi prekoračenja (SRS 7.3). Analitički modul (7.4) je svjesno izvan opsega.
 - Status `Na odobrenju` u trenutnom kodu funkcionalno predstavlja fazu obrade, ali naziv nije potpuno isti kao `U obradi` iz SRS-a.
 - Status `Odobreno` postoji u bazi kao stariji status, ali trenutni workflow prelazi iz `Na odobrenju` u `Naručeno`.
 - Dozvoljeni formati dokumenata odstupaju od SRS-a u oba smjera: prošireni su XLSX-om i ZIP-om, a isključeni su stari DOC/XLS i TXT jer njihove magic bytes nije moguće pouzdano verificirati (sigurnosna provjera stvarnog sadržaja datoteke). Frontend `accept` liste i backend whitelist su usklađeni.

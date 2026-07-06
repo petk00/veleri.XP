@@ -321,13 +321,56 @@ router.delete('/:id/departments/:deptId', authenticateToken, requireAdmin, async
 // ── Kategorije artikala ──────────────────────────────────────────────────────
 
 // GET /api/fiscal-years/:id/categories
+//
+// Potrošnja po kategoriji: iznos postoji samo na razini zahtjeva (stavke
+// nemaju cijenu), pa se kategoriji pripisuju samo zahtjevi čije SVE stavke
+// pripadaju toj kategoriji. Zahtjevi s više kategorija vraćaju se zbirno
+// kao `unattributed` da potrošnja nigdje ne bude tiho izgubljena.
 router.get('/:id/categories', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT id_item_category, name, is_active FROM ItemCategory WHERE fk_fiscal_year = ? ORDER BY name',
+      `SELECT c.id_item_category, c.name, c.is_active, c.category_limit,
+         COALESCE(s.spent_amount, 0) AS spent_amount
+       FROM ItemCategory c
+       LEFT JOIN (
+         SELECT single_cat.category_id, SUM(single_cat.total_amount) AS spent_amount
+         FROM (
+           SELECT pr.id_purchase_request,
+                  MIN(pri.fk_item_category) AS category_id,
+                  pr.total_amount
+           FROM PurchaseRequest pr
+           JOIN PurchaseRequestItem pri ON pri.fk_purchase_request = pr.id_purchase_request
+           WHERE pr.fk_request_status IN (6, 7) AND pr.total_amount IS NOT NULL
+           GROUP BY pr.id_purchase_request, pr.total_amount
+           HAVING COUNT(DISTINCT pri.fk_item_category) = 1
+         ) single_cat
+         GROUP BY single_cat.category_id
+       ) s ON s.category_id = c.id_item_category
+       WHERE c.fk_fiscal_year = ?
+       ORDER BY c.name`,
       [req.params.id]
     );
-    res.json(rows);
+
+    const [mixed] = await db.query(
+      `SELECT COUNT(*) AS request_count, COALESCE(SUM(total_amount), 0) AS total_amount
+       FROM (
+         SELECT pr.id_purchase_request, pr.total_amount
+         FROM PurchaseRequest pr
+         JOIN PurchaseRequestItem pri ON pri.fk_purchase_request = pr.id_purchase_request
+         WHERE pr.fk_fiscal_year = ? AND pr.fk_request_status IN (6, 7) AND pr.total_amount IS NOT NULL
+         GROUP BY pr.id_purchase_request, pr.total_amount
+         HAVING COUNT(DISTINCT pri.fk_item_category) > 1
+       ) mixed_requests`,
+      [req.params.id]
+    );
+
+    res.json({
+      categories: rows,
+      unattributed: {
+        request_count: Number(mixed[0].request_count) || 0,
+        total_amount: Number(mixed[0].total_amount) || 0,
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Greška pri dohvatu kategorija.' });
@@ -336,15 +379,28 @@ router.get('/:id/categories', authenticateToken, requireAdmin, async (req, res) 
 
 // POST /api/fiscal-years/:id/categories
 router.post('/:id/categories', authenticateToken, requireAdmin, async (req, res) => {
-  const { name } = req.body;
+  const { name, category_limit } = req.body;
   const fyId = req.params.id;
 
   if (!name?.trim()) return res.status(400).json({ message: 'Naziv kategorije je obavezan.' });
+  const limit = parseFloat(category_limit) >= 0 ? parseFloat(category_limit) : 0;
 
   try {
-    const [fy] = await db.query('SELECT is_closed FROM FiscalYear WHERE id_fiscal_year = ?', [fyId]);
+    const [fy] = await db.query('SELECT is_closed, total_budget FROM FiscalYear WHERE id_fiscal_year = ?', [fyId]);
     if (fy.length === 0) return res.status(404).json({ message: 'Godina nije pronađena.' });
     if (fy[0].is_closed) return res.status(400).json({ message: 'Zatvorena godina se ne može mijenjati.' });
+
+    const [sumResult] = await db.query(
+      'SELECT COALESCE(SUM(category_limit), 0) AS total_allocated FROM ItemCategory WHERE fk_fiscal_year = ?',
+      [fyId]
+    );
+    const totalAllocated = Number(sumResult[0].total_allocated);
+    const totalBudget = Number(fy[0].total_budget);
+    if (totalAllocated + limit > totalBudget) {
+      return res.status(400).json({
+        message: `Limiti kategorija (${(totalAllocated + limit).toFixed(2)} €) premašuju godišnji budžet (${totalBudget.toFixed(2)} €). Slobodno za alokaciju: ${(totalBudget - totalAllocated).toFixed(2)} €.`,
+      });
+    }
 
     const [dup] = await db.query(
       'SELECT id_item_category FROM ItemCategory WHERE fk_fiscal_year = ? AND name = ?',
@@ -353,8 +409,8 @@ router.post('/:id/categories', authenticateToken, requireAdmin, async (req, res)
     if (dup.length > 0) return res.status(409).json({ message: 'Kategorija s tim nazivom već postoji.' });
 
     const [result] = await db.query(
-      'INSERT INTO ItemCategory (fk_fiscal_year, name, category_limit, is_active) VALUES (?, ?, 0, 1)',
-      [fyId, name.trim()]
+      'INSERT INTO ItemCategory (fk_fiscal_year, name, category_limit, is_active) VALUES (?, ?, ?, 1)',
+      [fyId, name.trim(), limit]
     );
     res.status(201).json({ id_item_category: result.insertId, message: 'Kategorija dodana.' });
   } catch (err) {
@@ -365,15 +421,28 @@ router.post('/:id/categories', authenticateToken, requireAdmin, async (req, res)
 
 // PUT /api/fiscal-years/:id/categories/:catId
 router.put('/:id/categories/:catId', authenticateToken, requireAdmin, async (req, res) => {
-  const { name } = req.body;
+  const { name, category_limit } = req.body;
   const { id: fyId, catId } = req.params;
 
   if (!name?.trim()) return res.status(400).json({ message: 'Naziv kategorije je obavezan.' });
+  const limit = parseFloat(category_limit) >= 0 ? parseFloat(category_limit) : 0;
 
   try {
-    const [fy] = await db.query('SELECT is_closed FROM FiscalYear WHERE id_fiscal_year = ?', [fyId]);
+    const [fy] = await db.query('SELECT is_closed, total_budget FROM FiscalYear WHERE id_fiscal_year = ?', [fyId]);
     if (fy.length === 0) return res.status(404).json({ message: 'Godina nije pronađena.' });
     if (fy[0].is_closed) return res.status(400).json({ message: 'Zatvorena godina se ne može mijenjati.' });
+
+    const [sumResult] = await db.query(
+      'SELECT COALESCE(SUM(category_limit), 0) AS total_allocated FROM ItemCategory WHERE fk_fiscal_year = ? AND id_item_category != ?',
+      [fyId, catId]
+    );
+    const otherAllocated = Number(sumResult[0].total_allocated);
+    const totalBudget = Number(fy[0].total_budget);
+    if (otherAllocated + limit > totalBudget) {
+      return res.status(400).json({
+        message: `Limiti kategorija (${(otherAllocated + limit).toFixed(2)} €) premašuju godišnji budžet (${totalBudget.toFixed(2)} €). Slobodno za ovu kategoriju: ${(totalBudget - otherAllocated).toFixed(2)} €.`,
+      });
+    }
 
     const [dup] = await db.query(
       'SELECT id_item_category FROM ItemCategory WHERE fk_fiscal_year = ? AND name = ? AND id_item_category != ?',
@@ -382,8 +451,8 @@ router.put('/:id/categories/:catId', authenticateToken, requireAdmin, async (req
     if (dup.length > 0) return res.status(409).json({ message: 'Kategorija s tim nazivom već postoji.' });
 
     const [result] = await db.query(
-      'UPDATE ItemCategory SET name = ? WHERE id_item_category = ? AND fk_fiscal_year = ?',
-      [name.trim(), catId, fyId]
+      'UPDATE ItemCategory SET name = ?, category_limit = ? WHERE id_item_category = ? AND fk_fiscal_year = ?',
+      [name.trim(), limit, catId, fyId]
     );
     if (result.affectedRows === 0) return res.status(404).json({ message: 'Kategorija nije pronađena.' });
     res.json({ message: 'Kategorija ažurirana.' });
