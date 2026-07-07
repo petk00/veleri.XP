@@ -294,6 +294,34 @@ router.put('/:id/departments/:deptId', authenticateToken, requireAdmin, async (r
   }
 });
 
+// PATCH /api/fiscal-years/:id/departments/:deptId/status — aktiviraj/deaktiviraj
+// Deaktivirani odjel se ne nudi kod kreiranja novih zahtjeva (referenceRoutes
+// filtrira is_active = 1); postojeći zahtjevi ostaju netaknuti.
+router.patch('/:id/departments/:deptId/status', authenticateToken, requireAdmin, async (req, res) => {
+  const { id: fyId, deptId } = req.params;
+  const { is_active } = req.body;
+
+  if (typeof is_active !== 'boolean') {
+    return res.status(400).json({ message: 'is_active mora biti boolean.' });
+  }
+
+  try {
+    const [fy] = await db.query('SELECT is_closed FROM FiscalYear WHERE id_fiscal_year = ?', [fyId]);
+    if (fy.length === 0) return res.status(404).json({ message: 'Godina nije pronađena.' });
+    if (fy[0].is_closed) return res.status(400).json({ message: 'Zatvorena godina se ne može mijenjati.' });
+
+    const [result] = await db.query(
+      'UPDATE Department SET is_active = ? WHERE id_department = ? AND fk_fiscal_year = ?',
+      [is_active ? 1 : 0, deptId, fyId]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ message: 'Odjel nije pronađen.' });
+    res.json({ message: is_active ? 'Odjel aktiviran.' : 'Odjel deaktiviran — više se ne nudi kod novih zahtjeva.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Greška pri promjeni statusa odjela.' });
+  }
+});
+
 // DELETE /api/fiscal-years/:id/departments/:deptId
 router.delete('/:id/departments/:deptId', authenticateToken, requireAdmin, async (req, res) => {
   const { id: fyId, deptId } = req.params;
@@ -307,7 +335,7 @@ router.delete('/:id/departments/:deptId', authenticateToken, requireAdmin, async
     );
     if (inUse[0].cnt > 0) {
       return res.status(409).json({
-        message: `Odjel se koristi u ${inUse[0].cnt} zahtjevu i ne može se obrisati.`,
+        message: `Odjel se koristi u ${inUse[0].cnt} zahtjevu i ne može se obrisati. Umjesto brisanja ga deaktivirajte.`,
       });
     }
 
@@ -466,6 +494,32 @@ router.put('/:id/categories/:catId', authenticateToken, requireAdmin, async (req
   }
 });
 
+// PATCH /api/fiscal-years/:id/categories/:catId/status — aktiviraj/deaktiviraj
+router.patch('/:id/categories/:catId/status', authenticateToken, requireAdmin, async (req, res) => {
+  const { id: fyId, catId } = req.params;
+  const { is_active } = req.body;
+
+  if (typeof is_active !== 'boolean') {
+    return res.status(400).json({ message: 'is_active mora biti boolean.' });
+  }
+
+  try {
+    const [fy] = await db.query('SELECT is_closed FROM FiscalYear WHERE id_fiscal_year = ?', [fyId]);
+    if (fy.length === 0) return res.status(404).json({ message: 'Godina nije pronađena.' });
+    if (fy[0].is_closed) return res.status(400).json({ message: 'Zatvorena godina se ne može mijenjati.' });
+
+    const [result] = await db.query(
+      'UPDATE ItemCategory SET is_active = ? WHERE id_item_category = ? AND fk_fiscal_year = ?',
+      [is_active ? 1 : 0, catId, fyId]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ message: 'Kategorija nije pronađena.' });
+    res.json({ message: is_active ? 'Kategorija aktivirana.' : 'Kategorija deaktivirana — više se ne nudi kod novih zahtjeva.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Greška pri promjeni statusa kategorije.' });
+  }
+});
+
 // DELETE /api/fiscal-years/:id/categories/:catId
 router.delete('/:id/categories/:catId', authenticateToken, requireAdmin, async (req, res) => {
   const { id: fyId, catId } = req.params;
@@ -479,7 +533,7 @@ router.delete('/:id/categories/:catId', authenticateToken, requireAdmin, async (
     );
     if (inUse[0].cnt > 0) {
       return res.status(409).json({
-        message: `Kategorija se koristi u ${inUse[0].cnt} stavci i ne može se obrisati.`,
+        message: `Kategorija se koristi u ${inUse[0].cnt} stavci i ne može se obrisati. Umjesto brisanja je deaktivirajte.`,
       });
     }
 

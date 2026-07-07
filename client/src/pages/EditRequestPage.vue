@@ -536,15 +536,35 @@ const fetchData = async () => {
       value: c.id_item_category,
     }));
 
+    // Referentne rute vraćaju samo aktivne odjele/kategorije — ako je
+    // odjel ili kategorija zahtjeva u međuvremenu deaktivirana, dodaj je
+    // u opcije da uređivanje ne prikaže prazan select (backend dopušta
+    // ponovno slanje s postojećom vrijednošću).
+    if (request.fk_department
+        && !departmentOptions.value.some((d) => d.value === request.fk_department)) {
+      departmentOptions.value.push({
+        label: `${request.department_name} (neaktivan)`,
+        value: request.fk_department,
+      });
+    }
+    for (const it of items) {
+      if (it.fk_item_category
+          && !categoryOptions.value.some((c) => c.value === it.fk_item_category)) {
+        categoryOptions.value.push({
+          label: `${it.category_name} (neaktivna)`,
+          value: it.fk_item_category,
+        });
+      }
+    }
+
     form.value = {
-      fk_department:
-        departmentOptions.value.find((d) => d.label === request.department_name)?.value || null,
+      fk_department: request.fk_department || null,
       justification: request.justification || '',
       comment: request.comment || '',
       estimated_amount: request.total_amount || null,
       items: items.map((it) => ({
         fk_item_category:
-          it.id_item_category
+          it.fk_item_category
           || categoryOptions.value.find((c) => c.label === it.category_name)?.value
           || null,
         category_label: it.category_name,
