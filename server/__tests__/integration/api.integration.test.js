@@ -208,3 +208,50 @@ describe('Workflow zahtjeva (integracija)', () => {
     }
   });
 });
+
+describe('Zaštite sesija i upravljanja korisnicima (integracija)', () => {
+  itDb('deaktivacija odmah gasi postojeću sesiju korisnika', async () => {
+    const employeeAgent = await loginAgent(EMPLOYEE);
+    const adminAgent = await loginAgent(ADMIN);
+
+    // Zaposlenik (id 2 iz seeda) ima aktivnu sesiju...
+    const before = await employeeAgent.get('/api/requests');
+    expect(before.status).toBe(200);
+
+    // ...admin ga deaktivira — sljedeći zahtjev s istim cookiejem pada na 401
+    const deactivate = await adminAgent.patch('/api/users/2/status').send({ is_active: false });
+    expect(deactivate.status).toBe(200);
+
+    const after = await employeeAgent.get('/api/requests');
+    expect(after.status).toBe(401);
+
+    // vrati na aktivno da ostali testovi ne ovise o ovom
+    const reactivate = await adminAgent.patch('/api/users/2/status').send({ is_active: true });
+    expect(reactivate.status).toBe(200);
+  });
+
+  itDb('zadnjem aktivnom administratoru nije moguće promijeniti ulogu', async () => {
+    const agent = await loginAgent(ADMIN);
+    // Admin (id 1) je jedini aktivni administrator u seedu
+    const res = await agent.put('/api/users/1').send({
+      first_name: 'Admin', last_name: 'Korisnik',
+      email: 'admin@veleri.hr', role_id: 2,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('zadnjem aktivnom administratoru');
+  });
+
+  itDb('admin ne može obrisati vlastiti račun', async () => {
+    const agent = await loginAgent(ADMIN);
+    const res = await agent.delete('/api/users/1');
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('vlastiti');
+  });
+
+  itDb('korisnik sa zahtjevima ili aktivnostima vraća 409, ne SQL grešku', async () => {
+    const agent = await loginAgent(ADMIN);
+    // Zaposlenik (id 2) kreirao je zahtjev u workflow testovima
+    const res = await agent.delete('/api/users/2');
+    expect(res.status).toBe(409);
+  });
+});

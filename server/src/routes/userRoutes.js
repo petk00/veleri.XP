@@ -114,9 +114,38 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
       return res.status(409).json({ message: 'Email je već u upotrebi.' });
     }
 
-    const [roles] = await db.query('SELECT id_role FROM Role WHERE id_role = ?', [role_id]);
+    const [roles] = await db.query('SELECT id_role, name FROM Role WHERE id_role = ?', [role_id]);
     if (roles.length === 0) {
       return res.status(400).json({ message: 'Odabrana uloga ne postoji.' });
+    }
+
+    // Zadnjem aktivnom administratoru ne smije se oduzeti uloga —
+    // isti guard kao kod deaktivacije, inače sustav ostaje bez admina.
+    if (roles[0].name !== 'Administrator') {
+      const [target] = await db.query(
+        `SELECT u.is_active, r.name AS role_name
+         FROM AppUser u
+         JOIN Role r ON u.fk_role = r.id_role
+         WHERE u.id_user = ?`,
+        [id]
+      );
+      if (target.length === 0) {
+        return res.status(404).json({ message: 'Korisnik nije pronađen.' });
+      }
+      if (target[0].is_active && target[0].role_name === 'Administrator') {
+        const [[{ remaining }]] = await db.query(
+          `SELECT COUNT(*) AS remaining
+           FROM AppUser u
+           JOIN Role r ON u.fk_role = r.id_role
+           WHERE r.name = 'Administrator' AND u.is_active = 1 AND u.id_user != ?`,
+          [id]
+        );
+        if (remaining === 0) {
+          return res.status(400).json({
+            message: 'Nije moguće promijeniti ulogu zadnjem aktivnom administratoru u sustavu.',
+          });
+        }
+      }
     }
 
     const [result] = await db.query(
@@ -220,19 +249,58 @@ router.post('/:id/reset-link', authenticateToken, requireAdmin, async (req, res)
   }
 });
 
-// DELETE /api/users/:id — briši korisnika (samo ako nema zahtjeva)
+// DELETE /api/users/:id — briši korisnika (samo ako nema tragova u sustavu)
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
 
+  if (Number(id) === req.user.id_user) {
+    return res.status(400).json({ message: 'Ne možete obrisati vlastiti korisnički račun.' });
+  }
+
   try {
-    const [requests] = await db.query(
-      'SELECT COUNT(*) AS cnt FROM PurchaseRequest WHERE fk_created_by_user = ?',
+    const [target] = await db.query(
+      `SELECT u.is_active, r.name AS role_name
+       FROM AppUser u
+       JOIN Role r ON u.fk_role = r.id_role
+       WHERE u.id_user = ?`,
       [id]
     );
+    if (target.length === 0) {
+      return res.status(404).json({ message: 'Korisnik nije pronađen.' });
+    }
+    if (target[0].is_active && target[0].role_name === 'Administrator') {
+      const [[{ remaining }]] = await db.query(
+        `SELECT COUNT(*) AS remaining
+         FROM AppUser u
+         JOIN Role r ON u.fk_role = r.id_role
+         WHERE r.name = 'Administrator' AND u.is_active = 1 AND u.id_user != ?`,
+        [id]
+      );
+      if (remaining === 0) {
+        return res.status(400).json({
+          message: 'Nije moguće obrisati zadnjeg aktivnog administratora u sustavu.',
+        });
+      }
+    }
 
-    if (requests[0].cnt > 0) {
+    // Osim zahtjeva, FK-ovi RESTRICT postoje i na povijesti statusa i
+    // dokumentima — bez ove provjere brisanje bi puklo s SQL greškom (500).
+    const [[refs]] = await db.query(
+      `SELECT
+        (SELECT COUNT(*) FROM PurchaseRequest WHERE fk_created_by_user = ?) AS requests,
+        (SELECT COUNT(*) FROM RequestStatusHistory WHERE fk_changed_by_user = ?) AS history,
+        (SELECT COUNT(*) FROM Attachment WHERE fk_uploaded_by_user = ?) AS attachments`,
+      [id, id, id]
+    );
+
+    if (refs.requests > 0) {
       return res.status(409).json({
-        message: `Korisnik ima ${requests[0].cnt} zahtjev(a) i ne može se obrisati.`,
+        message: `Korisnik ima ${refs.requests} zahtjev(a) i ne može se obrisati.`,
+      });
+    }
+    if (refs.history > 0 || refs.attachments > 0) {
+      return res.status(409).json({
+        message: 'Korisnik ima zabilježene aktivnosti (povijest statusa ili dokumente) i ne može se obrisati. Umjesto brisanja deaktivirajte račun.',
       });
     }
 
