@@ -19,6 +19,12 @@ process.env.SMTP_PORT = '1';
 
 require('dotenv').config();
 
+// file-type je ESM-only pa dynamic import ne radi pod Jestom bez
+// --experimental-vm-modules — magic bytes provjera se zato mocka.
+jest.mock('../../src/services/fileTypeService', () => ({
+  detectMimeType: jest.fn().mockResolvedValue('application/pdf'),
+}));
+
 const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
@@ -206,6 +212,42 @@ describe('Workflow zahtjeva (integracija)', () => {
     for (const r of res.body.data) {
       expect(r.created_by).toContain('Zaposlenik');
     }
+  });
+});
+
+describe('Dokumenti (integracija)', () => {
+  itDb('upload i download datoteke s dijakritikom u imenu', async () => {
+    const agent = await loginAgent(EMPLOYEE);
+
+    const created = await agent.post('/api/requests').send({
+      fk_fiscal_year: 1,
+      fk_department: 1,
+      justification: 'Test downloada s posebnim znakovima u imenu datoteke',
+      items: [{ fk_item_category: 1, item_name: 'Stavka', quantity: 1 }],
+    });
+    expect(created.status).toBe(201);
+
+    // Minimalni valjani PDF — magic bytes provjera traži %PDF potpis
+    const pdfBuffer = Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF');
+    // Ne-Latin1 znakovi u imenu — stari ručni setHeader bi na ovo bacio
+    // "Invalid character in header content" i download bi vratio 500.
+    const weirdName = 'Ponuda čšđž — oprema (kopija).pdf';
+
+    const uploaded = await agent
+      .post(`/api/requests/${created.body.id_purchase_request}/attachments`)
+      .field('document_type', 'Ponuda')
+      .attach('file', pdfBuffer, { filename: weirdName, contentType: 'application/pdf' });
+    expect(uploaded.status).toBe(201);
+
+    const download = await agent.get(`/api/attachments/download/${uploaded.body.id_attachment}`);
+    expect(download.status).toBe(200);
+    // res.download escapa ime kroz filename* (RFC 5987) umjesto da header pukne
+    expect(download.headers['content-disposition']).toContain("filename*=UTF-8''");
+
+    // kreator smije obrisati vlastiti upload u nezaključanom statusu —
+    // ujedno počisti datoteku s diska nakon testa
+    const deleted = await agent.delete(`/api/attachments/delete/${uploaded.body.id_attachment}`);
+    expect(deleted.status).toBe(200);
   });
 });
 
