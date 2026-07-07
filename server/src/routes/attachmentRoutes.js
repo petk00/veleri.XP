@@ -13,7 +13,7 @@ const UPLOADS_DIR = path.resolve(process.env.UPLOADS_DIR || path.join(__dirname,
 const resolveFilePath = (filePath) =>
   path.isAbsolute(filePath) ? filePath : path.join(UPLOADS_DIR, filePath);
 
-const LOCKED_STATUSES = [5, 7]; // Odbijeno, Zatvoreno
+const { LOCKED_STATUSES } = require('../constants/status');
 
 const isAdmin = (user) => user.role_name === 'Administrator';
 

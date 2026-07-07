@@ -5,6 +5,8 @@ const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
+const db = require('./config/db');
+
 const authRoutes = require('./routes/authRoutes');
 const requestRoutes = require('./routes/requestRoutes');
 const requestAttachmentRoutes = require('./routes/requestAttachmentRoutes');
@@ -100,8 +102,13 @@ app.use('/api/reference', referenceRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/fiscal-years', fiscalYearRoutes);
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', uptime: Math.floor(process.uptime()) });
+app.get('/health', async (req, res) => {
+  try {
+    await db.query('SELECT 1');
+    res.json({ status: 'ok', uptime: Math.floor(process.uptime()) });
+  } catch {
+    res.status(503).json({ status: 'error', message: 'Baza podataka nije dostupna.' });
+  }
 });
 
 app.use((req, res) => {

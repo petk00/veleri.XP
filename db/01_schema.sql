@@ -86,6 +86,7 @@ CREATE TABLE `ItemCategory` (
   `category_limit` decimal(14,2) NOT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`id_item_category`),
+  UNIQUE KEY `uq_cat_name_per_year` (`fk_fiscal_year`, `name`),
   KEY `fk_itemcategory_fiscalyear` (`fk_fiscal_year`),
   CONSTRAINT `fk_itemcategory_fiscalyear` FOREIGN KEY (`fk_fiscal_year`) REFERENCES `FiscalYear` (`id_fiscal_year`)
     ON DELETE RESTRICT ON UPDATE CASCADE

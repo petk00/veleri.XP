@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const authenticateToken = require('../middleware/authMiddleware');
+const { STATUS } = require('../constants/status');
+
+// Potrošnja se računa iz zahtjeva u statusima Naručeno/Zatvoreno.
+const SPENT_STATUSES = `${STATUS.NARUCENO}, ${STATUS.ZATVORENO}`;
 
 const requireAdmin = (req, res, next) => {
   if (req.user?.role_name !== 'Administrator') {
@@ -192,7 +196,7 @@ router.get('/:id/departments', authenticateToken, requireAdmin, async (req, res)
        FROM Department d
        LEFT JOIN PurchaseRequest pr
          ON pr.fk_department = d.id_department
-         AND pr.fk_request_status IN (6, 7)
+         AND pr.fk_request_status IN (${SPENT_STATUSES})
        WHERE d.fk_fiscal_year = ?
        GROUP BY d.id_department
        ORDER BY d.name`,
@@ -340,7 +344,7 @@ router.get('/:id/categories', authenticateToken, requireAdmin, async (req, res) 
                   pr.total_amount
            FROM PurchaseRequest pr
            JOIN PurchaseRequestItem pri ON pri.fk_purchase_request = pr.id_purchase_request
-           WHERE pr.fk_request_status IN (6, 7) AND pr.total_amount IS NOT NULL
+           WHERE pr.fk_request_status IN (${SPENT_STATUSES}) AND pr.total_amount IS NOT NULL
            GROUP BY pr.id_purchase_request, pr.total_amount
            HAVING COUNT(DISTINCT pri.fk_item_category) = 1
          ) single_cat
@@ -357,7 +361,7 @@ router.get('/:id/categories', authenticateToken, requireAdmin, async (req, res) 
          SELECT pr.id_purchase_request, pr.total_amount
          FROM PurchaseRequest pr
          JOIN PurchaseRequestItem pri ON pri.fk_purchase_request = pr.id_purchase_request
-         WHERE pr.fk_fiscal_year = ? AND pr.fk_request_status IN (6, 7) AND pr.total_amount IS NOT NULL
+         WHERE pr.fk_fiscal_year = ? AND pr.fk_request_status IN (${SPENT_STATUSES}) AND pr.total_amount IS NOT NULL
          GROUP BY pr.id_purchase_request, pr.total_amount
          HAVING COUNT(DISTINCT pri.fk_item_category) > 1
        ) mixed_requests`,
