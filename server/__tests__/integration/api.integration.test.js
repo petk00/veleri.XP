@@ -87,6 +87,14 @@ const itDb = (name, fn, timeout = 15000) =>
     await fn();
   }, timeout);
 
+describe('Health (integracija)', () => {
+  itDb('health provjerava i dostupnost baze', async () => {
+    const res = await request(app).get('/health');
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('ok');
+  });
+});
+
 describe('Autentikacija (integracija)', () => {
   itDb('login s pogrešnom lozinkom vraća 401 bez cookieja', async () => {
     const res = await request(app).post('/api/auth/login')

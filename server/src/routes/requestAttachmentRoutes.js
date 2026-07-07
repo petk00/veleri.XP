@@ -6,17 +6,7 @@ const fs = require('fs');
 const db = require('../config/db');
 const authenticateToken = require('../middleware/authMiddleware');
 const { detectMimeType } = require('../services/fileTypeService');
-
-const STATUS = {
-  POSLANO: 1,
-  NA_ODOBRENJU: 2,
-  VRACENO: 3,
-  ODBIJENO: 5,
-  NARUCENO: 6,
-  ZATVORENO: 7,
-};
-
-const LOCKED_STATUSES = [STATUS.ODBIJENO, STATUS.ZATVORENO];
+const { STATUS, LOCKED_STATUSES } = require('../constants/status');
 
 const UPLOAD_RULES = {
   Ponuda: [STATUS.POSLANO, STATUS.NA_ODOBRENJU, STATUS.VRACENO, STATUS.NARUCENO],

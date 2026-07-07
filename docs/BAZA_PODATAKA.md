@@ -151,7 +151,7 @@ Zapisi su vezani uz poslovnu godinu.
 |---|---|---|---|
 | `id_department` | `int` | PK, AI | Jedinstveni identifikator odjela. |
 | `fk_fiscal_year` | `int` | FK, NOT NULL | Poslovna godina kojoj odjel pripada. |
-| `name` | `varchar(150)` | NOT NULL | Naziv mjesta troška / odjela. |
+| `name` | `varchar(150)` | NOT NULL, UNIQUE po godini | Naziv mjesta troška / odjela — jedinstven unutar poslovne godine (`uq_dept_name_per_year`). |
 | `department_limit` | `decimal(14,2)` | NOT NULL | Godišnji limit za mjesto troška. |
 | `is_active` | `tinyint(1)` | NOT NULL, default `1` | Oznaka aktivnog zapisa. |
 
@@ -176,7 +176,7 @@ Kao i odjeli, zapisi su vezani uz poslovnu godinu.
 |---|---|---|---|
 | `id_item_category` | `int` | PK, AI | Jedinstveni identifikator kategorije. |
 | `fk_fiscal_year` | `int` | FK, NOT NULL | Poslovna godina kojoj kategorija pripada. |
-| `name` | `varchar(150)` | NOT NULL | Naziv predmeta nabave / kategorije. |
+| `name` | `varchar(150)` | NOT NULL, UNIQUE po godini | Naziv predmeta nabave / kategorije — jedinstven unutar poslovne godine (`uq_cat_name_per_year`). |
 | `category_limit` | `decimal(14,2)` | NOT NULL | Godišnji limit za kategoriju. |
 | `is_active` | `tinyint(1)` | NOT NULL, default `1` | Oznaka aktivnog zapisa. |
 

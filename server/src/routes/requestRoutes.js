@@ -2,32 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const authenticateToken = require('../middleware/authMiddleware');
+const { STATUS, STATUS_LABELS, LOCKED_STATUSES } = require('../constants/status');
 
-/**
- * STATUS konstante — odgovaraju ID-evima u tablici RequestStatus.
- * Status 4 (Odobreno) postoji u bazi ali se NE koristi u workflowu;
- * "Naručeno" (6) je semantički ekvivalent.
- */
-const STATUS = {
-  POSLANO: 1,
-  NA_ODOBRENJU: 2,
-  VRACENO: 3,
-  ODBIJENO: 5,
-  NARUCENO: 6,
-  ZATVORENO: 7,
-};
-
-const STATUS_LABELS = {
-  1: 'Poslano',
-  2: 'Na odobrenju',
-  3: 'Zahtjeva izmjene',
-  4: 'Odobreno',
-  5: 'Odbijeno',
-  6: 'Naručeno',
-  7: 'Zatvoreno',
-};
-
-const LOCKED_STATUSES = [STATUS.ODBIJENO, STATUS.ZATVORENO];
 const MAX_JUSTIFICATION_LEN = 1000;
 
 /**
