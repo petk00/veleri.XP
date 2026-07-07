@@ -178,6 +178,44 @@ describe('Kategorije i limiti (integracija, SRS 7.1)', () => {
   });
 });
 
+describe('Aktivacija odjela i kategorija (integracija)', () => {
+  itDb('deaktivirani odjel nestaje iz referentne liste, aktivacijom se vraća', async () => {
+    const admin = await loginAgent(ADMIN);
+    const employee = await loginAgent(EMPLOYEE);
+
+    const created = await admin.post('/api/fiscal-years/1/departments')
+      .send({ name: 'Odjel za deaktivaciju', department_limit: 0 });
+    expect(created.status).toBe(201);
+    const deptId = created.body.id_department;
+
+    const off = await admin.patch(`/api/fiscal-years/1/departments/${deptId}/status`)
+      .send({ is_active: false });
+    expect(off.status).toBe(200);
+
+    // referentna ruta (koju koristi wizard novog zahtjeva) više ga ne nudi
+    const refOff = await employee.get('/api/reference/departments');
+    expect(refOff.body.some((d) => d.id_department === deptId)).toBe(false);
+
+    const on = await admin.patch(`/api/fiscal-years/1/departments/${deptId}/status`)
+      .send({ is_active: true });
+    expect(on.status).toBe(200);
+
+    const refOn = await employee.get('/api/reference/departments');
+    expect(refOn.body.some((d) => d.id_department === deptId)).toBe(true);
+
+    // počisti
+    const del = await admin.delete(`/api/fiscal-years/1/departments/${deptId}`);
+    expect(del.status).toBe(200);
+  });
+
+  itDb('is_active mora biti boolean, kategorija u zatvorenoj godini se ne mijenja', async () => {
+    const admin = await loginAgent(ADMIN);
+    const bad = await admin.patch('/api/fiscal-years/1/categories/1/status')
+      .send({ is_active: 'ne' });
+    expect(bad.status).toBe(400);
+  });
+});
+
 describe('Workflow zahtjeva (integracija)', () => {
   let requestId;
 

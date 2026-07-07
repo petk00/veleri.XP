@@ -185,8 +185,15 @@
                 v-for="d in sortedDepartments"
                 :key="d.id_department"
                 class="dept-table__row"
+                :class="{ 'row--inactive': !d.is_active }"
               >
-                <span class="dept-col dept-col--name">{{ d.name }}</span>
+                <span class="dept-col dept-col--name">
+                  {{ d.name }}
+                  <span v-if="!d.is_active" class="inactive-badge">
+                    neaktivan
+                    <q-tooltip>Ne nudi se kod novih zahtjeva; postojeći zahtjevi ostaju netaknuti.</q-tooltip>
+                  </span>
+                </span>
                 <span class="dept-col dept-col--bar">
                   <div class="budget-bar">
                     <div
@@ -223,6 +230,10 @@
                     <q-icon name="edit" size="15px" />
                     <q-tooltip>Uredi</q-tooltip>
                   </button>
+                  <button class="icon-btn" @click="toggleDeptActive(d)">
+                    <q-icon :name="d.is_active ? 'visibility_off' : 'visibility'" size="15px" />
+                    <q-tooltip>{{ d.is_active ? 'Deaktiviraj — ne nudi se kod novih zahtjeva' : 'Aktiviraj' }}</q-tooltip>
+                  </button>
                   <button class="icon-btn icon-btn--danger" @click="deleteDept(d)">
                     <q-icon name="delete_outline" size="15px" />
                     <q-tooltip>Obriši</q-tooltip>
@@ -256,9 +267,16 @@
                   v-for="c in categories"
                   :key="c.id_item_category"
                   class="cat-chip"
+                  :class="{ 'row--inactive': !c.is_active }"
                 >
                   <div class="cat-chip__main">
-                    <span class="cat-chip__name">{{ c.name }}</span>
+                    <span class="cat-chip__name">
+                      {{ c.name }}
+                      <span v-if="!c.is_active" class="inactive-badge">
+                        neaktivna
+                        <q-tooltip>Ne nudi se kod novih zahtjeva; postojeći zahtjevi ostaju netaknuti.</q-tooltip>
+                      </span>
+                    </span>
                     <span class="cat-chip__amounts">
                       <span class="budget-spent" :class="{ 'budget-spent--neutral': catPct(c) === null }">{{ formatEUR(c.spent_amount) }}</span>
                       <span class="budget-sep">/</span>
@@ -278,6 +296,10 @@
                     <button class="icon-btn" @click="openCatDialog(c)">
                       <q-icon name="edit" size="14px" />
                       <q-tooltip>Uredi</q-tooltip>
+                    </button>
+                    <button class="icon-btn" @click="toggleCatActive(c)">
+                      <q-icon :name="c.is_active ? 'visibility_off' : 'visibility'" size="14px" />
+                      <q-tooltip>{{ c.is_active ? 'Deaktiviraj — ne nudi se kod novih zahtjeva' : 'Aktiviraj' }}</q-tooltip>
                     </button>
                     <button class="icon-btn icon-btn--danger" @click="deleteCat(c)">
                       <q-icon name="delete_outline" size="14px" />
@@ -682,6 +704,19 @@ const submitDept = async () => {
   }
 };
 
+const toggleDeptActive = async (dept) => {
+  try {
+    const { data } = await api.patch(
+      `/fiscal-years/${selectedId.value}/departments/${dept.id_department}/status`,
+      { is_active: !dept.is_active }
+    );
+    $q.notify({ type: 'positive', message: data.message });
+    await loadDetail();
+  } catch (err) {
+    $q.notify({ type: 'negative', message: err?.response?.data?.message || 'Greška pri promjeni statusa.' });
+  }
+};
+
 const deleteDept = (dept) => {
   $q.dialog({
     title: 'Brisanje odjela',
@@ -728,6 +763,19 @@ const submitCat = async () => {
   }
 };
 
+const toggleCatActive = async (cat) => {
+  try {
+    const { data } = await api.patch(
+      `/fiscal-years/${selectedId.value}/categories/${cat.id_item_category}/status`,
+      { is_active: !cat.is_active }
+    );
+    $q.notify({ type: 'positive', message: data.message });
+    await loadDetail();
+  } catch (err) {
+    $q.notify({ type: 'negative', message: err?.response?.data?.message || 'Greška pri promjeni statusa.' });
+  }
+};
+
 const deleteCat = (cat) => {
   $q.dialog({
     title: 'Brisanje kategorije',
@@ -751,6 +799,29 @@ onMounted(loadYears);
 </script>
 
 <style scoped>
+/* ── Neaktivni odjeli/kategorije ── */
+.row--inactive .dept-col--name,
+.row--inactive .dept-col--bar,
+.row--inactive .dept-col--pct,
+.row--inactive .dept-col--amounts,
+.row--inactive .cat-chip__main,
+.row--inactive .cat-chip__pct {
+  opacity: 0.45;
+}
+
+.inactive-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
 /* ── Base ── */
 .page {
   padding: 0;

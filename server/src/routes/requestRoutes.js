@@ -394,6 +394,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
       `
       SELECT
         pri.id_purchase_request_item,
+        pri.fk_item_category,
         pri.item_name,
         pri.quantity,
         ic.name AS category_name

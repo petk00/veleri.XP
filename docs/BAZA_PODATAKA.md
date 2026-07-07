@@ -116,7 +116,7 @@ Pravila u aplikaciji:
 - neaktivan korisnik (`is_active = 0`) ne može se prijaviti,
 - email mora biti jedinstven.
 
-Napomena: administracija korisnika kroz UI/API još nije implementirana. Tablica podržava aktivaciju/deaktivaciju korisnika, ali trenutno se korisnici ne održavaju kroz posebnu admin stranicu.
+Administracija korisnika dostupna je administratoru kroz stranicu Korisnici (CRUD, invite link, aktivacija/deaktivacija). Deaktivacija se primjenjuje odmah — auth middleware provjerava `is_active` pri svakom zahtjevu, pa aktivna sesija deaktiviranog korisnika prestaje vrijediti.
 
 ## Tablica `FiscalYear`
 
@@ -162,7 +162,7 @@ Relacije:
 Pravila u aplikaciji:
 
 - kod kreiranja zahtjeva korisnik bira aktivan odjel,
-- referentna ruta vraća samo zapise gdje je `is_active = 1`,
+- referentna ruta vraća samo zapise gdje je `is_active = 1`; administrator upravlja aktivacijom kroz stranicu Financije (deaktivirani zapis se ne nudi kod novih zahtjeva, postojeći zahtjevi ostaju netaknuti),
 - `department_limit` definira koliki udio godišnjeg budžeta (`FiscalYear.total_budget`) je dodijeljen odjelu,
 - suma svih `department_limit` u godini ne smije premašiti `FiscalYear.total_budget` — backend provjerava pri svakom dodavanju i izmjeni odjela,
 - limit se može mijenjati dok je godina otvorena.
@@ -187,7 +187,7 @@ Relacije:
 Pravila u aplikaciji:
 
 - kod kreiranja stavke korisnik bira aktivnu kategoriju,
-- referentna ruta vraća samo zapise gdje je `is_active = 1`,
+- referentna ruta vraća samo zapise gdje je `is_active = 1`; administrator upravlja aktivacijom kroz stranicu Financije (deaktivirani zapis se ne nudi kod novih zahtjeva, postojeći zahtjevi ostaju netaknuti),
 - `category_limit` definira informativni limit za kategoriju — prikazuje se u admin sučelju, ali trenutno ne blokira zahtjeve koji ga premašuju.
 
 ## Tablica `RequestStatus`
