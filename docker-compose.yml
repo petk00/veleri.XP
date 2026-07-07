@@ -4,16 +4,16 @@ services:
     image: mysql:8.0
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Postavi DB_ROOT_PASSWORD u .env datoteci u korijenu projekta}
       MYSQL_DATABASE: XP
       MYSQL_USER: veleri
-      MYSQL_PASSWORD: veleripassword
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Postavi DB_PASSWORD u .env datoteci u korijenu projekta}
     volumes:
       - mysql_data:/var/lib/mysql
       - ./db/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
       - ./db/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -prootpassword --silent"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
       interval: 5s
       timeout: 5s
       retries: 15
@@ -31,7 +31,7 @@ services:
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USER: veleri
-      DB_PASSWORD: veleripassword
+      DB_PASSWORD: ${DB_PASSWORD:?Postavi DB_PASSWORD u .env datoteci u korijenu projekta}
       DB_NAME: XP
       JWT_SECRET: ${JWT_SECRET:?Postavi JWT_SECRET u .env datoteci u korijenu projekta (openssl rand -base64 48)}
       JWT_EXPIRES_IN: 1d

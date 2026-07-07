@@ -5,7 +5,9 @@ const path = require('path');
 const db = require('../config/db');
 const authenticateToken = require('../middleware/authMiddleware');
 
-const UPLOADS_DIR = process.env.UPLOADS_DIR || path.resolve(__dirname, '../../uploads');
+// path.resolve i ovdje — relativna putanja ili trailing slash iz env-a
+// pokvarili bi prefiks provjeru u downloadu (path traversal guard).
+const UPLOADS_DIR = path.resolve(process.env.UPLOADS_DIR || path.join(__dirname, '../../uploads'));
 
 // Handles both legacy absolute paths and new relative paths from UPLOADS_DIR.
 const resolveFilePath = (filePath) =>
@@ -68,9 +70,9 @@ router.get('/download/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Fajl ne postoji na disku.' });
     }
 
-    res.setHeader('Content-Disposition', `attachment; filename="${attachment.file_name}"`);
-    res.setHeader('Content-Type', attachment.file_type);
-    res.sendFile(resolvedPath);
+    // res.download escapa ime datoteke (navodnici, dijakritika) kroz
+    // Content-Disposition filename* — ručni header bi na takva imena pukao.
+    res.download(resolvedPath, attachment.file_name);
   } catch (error) {
     console.error('GET download error:', error);
     res.status(500).json({ message: 'Greška pri preuzimanju fajla.' });

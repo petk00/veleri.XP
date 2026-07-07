@@ -81,7 +81,9 @@ const lockRequestForWrite = async (connection, requestId, user) => {
   return rows[0] || null;
 };
 
-const UPLOADS_DIR = process.env.UPLOADS_DIR || path.resolve(__dirname, '../../uploads');
+// path.resolve zbog konzistentnosti s download guardom u attachmentRoutes —
+// file_path u bazi mora biti relativan od iste (apsolutne) baze.
+const UPLOADS_DIR = path.resolve(process.env.UPLOADS_DIR || path.join(__dirname, '../../uploads'));
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
