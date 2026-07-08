@@ -24,11 +24,11 @@ veleri.XP je full-stack web aplikacija za digitalizaciju procesa nabave: zaposle
 - Upload, download i brisanje dokumenata (`Ponuda`, `Otpremnica`) s magic-bytes provjerom sadržaja.
 - Audit trail kroz povijest aktivnosti (`RequestStatusHistory`).
 - In-app obavijesti o promjenama statusa; više novih obavijesti grupira se u jednu s linkom na filtriranu listu.
-- Admin upravljanje korisnicima (CRUD, invite link, deaktivacija; novi korisnik je neaktivan dok ne postavi lozinku).
-- Admin upravljanje poslovnim godinama, odjelima i kategorijama.
+- Admin upravljanje korisnicima (CRUD, invite link, deaktivacija; novi korisnik je neaktivan dok ne postavi lozinku). Deaktivacija odmah ruši aktivnu sesiju; zadnji aktivni administrator ne može se deaktivirati, obrisati ni degradirati.
+- Admin upravljanje poslovnim godinama, odjelima i kategorijama, uključujući aktivaciju/deaktivaciju (deaktivirani zapis ne nudi se kod novih zahtjeva, postojeći ostaju netaknuti).
 - Kopiranje šifrarnika pri otvaranju nove poslovne godine.
 - **Financijsko praćenje:** godišnji budžet, limiti i potrošnja po odjelima i po kategorijama (stranica Financije), uz kontrolu da zbroj limita ne premaši budžet; dijalog odobravanja prikazuje projekciju potrošnje odjela i bilježi prekoračenja u povijest (upozorava, ne blokira).
-- Security hardening: CORS whitelist, rate limiting, Helmet, path traversal zaštita, trust proxy iza nginxa.
+- Security hardening: CORS whitelist, rate limiting, Helmet, path traversal zaštita, trust proxy iza nginxa; uloga i aktivnost korisnika provjeravaju se iz baze pri svakom zahtjevu.
 - Generiranje PDF dokumenta zahtjeva (samo za admin, status Naručeno/Zatvoreno).
 - Testovi na tri razine: unit (Jest, Vitest), API integracijski s pravom bazom (supertest + MySQL) i end-to-end (Playwright) — ukupno 100+ testova, sve tri razine u CI-ju.
 - Docker deployment (MySQL + Express backend + Quasar/nginx frontend s HTTPS preusmjeravanjem).

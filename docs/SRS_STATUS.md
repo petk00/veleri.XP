@@ -3,7 +3,7 @@
 Ovaj dokument mapira zahtjeve iz specifikacije na trenutno stanje aplikacije.
 Status je procijenjen prema kodu u repozitoriju, a ne prema potpunom end-to-end testiranju u pregledniku.
 
-Zadnja provjera: **2026-07-06**
+Zadnja provjera: **2026-07-08**
 
 Provjereni izvori:
 
@@ -38,7 +38,7 @@ Postoci su izračunati iz detaljne matrice zahtjeva: Implementirano = 1, Djelomi
 | Financijsko praćenje (7.x) | 100% | Budžet, limiti i potrošnja po odjelima i kategorijama; projekcija limita pri odobravanju. Analitički modul (7.4) izvan opsega. |
 | Evidencija i revizija (8.x) | 83% | Povijest radnji postoji; zadnji izmjenitelj vidljiv samo kroz historiju (8.2). |
 | Notifikacije (9.x) | 100% | In-app obavijesti za sve relevantne promjene statusa; email izvan opsega. |
-| Sigurnost | 90% | Nije zasebno poglavlje SRS matrice — subjektivna procjena: httpOnly cookie, CORS whitelist, rate limiting, Helmet, path traversal zaštita. |
+| Sigurnost | 95% | Nije zasebno poglavlje SRS matrice — subjektivna procjena: httpOnly cookie, CORS whitelist, rate limiting, Helmet, path traversal zaštita; uloga i aktivnost korisnika provjeravaju se iz baze pri svakom zahtjevu (deaktivacija ruši sesiju), zaštite za zadnjeg administratora, DB lozinke kroz .env. |
 
 Ukupna dovršenost prema SRS-u (unutar dogovorenog opsega): **95%** — (36 + 4 × 0,5) / 40.
 
@@ -56,7 +56,7 @@ Procjena MVP workflowa nabave: **~98%** (svi koraci tijeka nabave rade end-to-en
 | 1.2 | Prijava u sustav | Implementirano | `POST /api/auth/login` provjerava email, lozinku i aktivnost korisnika; JWT se postavlja kao httpOnly cookie. | Gotovo |
 | 1.3 | Korisničke uloge | Implementirano | Baza ima role `Administrator` i `Zaposlenik`; backend ih koristi za sve provjere pristupa; admin može upravljati ulogama kroz UsersPage. | Gotovo |
 | 2.1 | Pokretanje poslovne godine | Implementirano | `POST /api/fiscal-years` otvara novu godinu i kopira šifrarnike iz prethodne; dostupno kroz stranicu Financije (FinancePage). | Gotovo |
-| 2.2 | Uređivanje šifrarnika | Implementirano | CRUD za odjele i kategorije po godini dostupan adminu kroz stranicu Financije i `/api/fiscal-years/:id/departments|categories`. | Gotovo |
+| 2.2 | Uređivanje šifrarnika | Implementirano | CRUD za odjele i kategorije po godini dostupan adminu kroz stranicu Financije i `/api/fiscal-years/:id/departments|categories`; zapisi korišteni u zahtjevima deaktiviraju se umjesto brisanja (ne nude se kod novih zahtjeva). | Gotovo |
 | 2.3 | Zaključavanje prethodne godine | Implementirano | `PATCH /api/fiscal-years/:id/close` zaključava godinu; zaključana godina ne dopušta izmjene šifrarnika. | Gotovo |
 | 2.4 | Pregled prethodnih godina | Implementirano | Stranica Financije prikazuje sve godine s oznakom otvorena/zatvorena. | Gotovo |
 | 2.5 | Zabrana brisanja poslovne godine | Implementirano | API nema rutu za brisanje poslovne godine; funkcionalno pravilo je prisutno. | Gotovo |
@@ -102,7 +102,7 @@ Preostale dorade, poredane po prioritetu:
 
 1. Pripremiti produkcijski deployment na stvarnom serveru (pravi TLS certifikat, dokumentirana instalacija; Docker postava postoji i verificirana je lokalno).
 
-Dovršeno u srpnju 2026.: potrošnja i limiti po predmetu nabave (7.1/7.2), API integracijski testovi s pravom bazom (supertest + MySQL, 12 testova), e2e testovi za Financije i Korisnike.
+Dovršeno u srpnju 2026.: potrošnja i limiti po predmetu nabave (7.1/7.2), API integracijski testovi s pravom bazom (supertest + MySQL, 20+ testova), e2e testovi za Financije i Korisnike, sigurnosne dorade sesija i upravljanja korisnicima (provjera uloge/aktivnosti iz baze, zaštite za zadnjeg administratora), DB lozinke kroz .env, aktivacija/deaktivacija odjela i kategorija, UNIQUE naziva kategorija po godini, health provjera baze, osvježena API i korisnička dokumentacija.
 
 Svjesno isključeno iz opsega (odluke potvrđene 06.07.2026.): draft zahtjeva (3.8), tipovi dokumenata Narudžbenica i Ostalo (5.3), email obavijesti o promjeni statusa, centar/povijest obavijesti, analitički pregled potrošnje (7.4), audit log prijava i 2FA. Prekoračenje limita namjerno NE blokira odobrenje — admin dobiva upozorenje i prekoračenje se bilježi u povijest (7.3).
 

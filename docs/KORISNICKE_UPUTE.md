@@ -260,7 +260,7 @@ Zahtjev prolazi kroz sljedeće statuse:
 |---|---|
 | `Poslano` | Zahtjev je kreiran i čeka pregled administratora. |
 | `Na odobrenju` | Administrator je preuzeo zahtjev na obradu. |
-| `Vraćeno na dopunu / izmjenu` | Administrator je vratio zahtjev zaposleniku radi ispravka ili dopune. |
+| `Zahtjeva izmjene` | Administrator je vratio zahtjev zaposleniku radi ispravka ili dopune. |
 | `Odbijeno` | Zahtjev je odbijen i više se ne obrađuje. |
 | `Naručeno` | Zahtjev je odobren i nalazi se u fazi narudžbe. |
 | `Zatvoreno` | Zahtjev je završen i zaključan. |
@@ -383,22 +383,59 @@ Zahtjevi u sljedećim statusima smatraju se zaključanima:
 Zaključani zahtjevi se ne mogu uređivati.
 Na njima se ne mogu dodavati ni brisati dokumenti.
 
+## Administracija korisnika (administrator)
+
+Stranica `Korisnici` dostupna je samo administratoru.
+
+Administrator može:
+
+- kreirati novog korisnika (ime, prezime, email na domeni `@veleri.hr`, uloga) — sustav generira **invite link** koji administrator prosljeđuje korisniku (ili se šalje emailom ako je SMTP konfiguriran); korisnik je neaktivan dok putem linka ne postavi lozinku,
+- urediti podatke i ulogu korisnika,
+- generirati novi invite/reset link (valjanost 48 sati) ako je stari istekao ili korisnik želi novu lozinku,
+- deaktivirati korisnika — deaktivacija se primjenjuje **odmah**, i aktivna sesija korisnika prestaje vrijediti,
+- obrisati korisnika koji nema nikakvih tragova u sustavu (zahtjeva, povijesti, dokumenata) — inače se račun deaktivira.
+
+Zaštite: nije moguće deaktivirati ili obrisati vlastiti račun, ni zadnjeg aktivnog administratora, niti zadnjem administratoru promijeniti ulogu.
+
+## Financije i poslovne godine (administrator)
+
+Stranica `Financije` dostupna je samo administratoru i objedinjuje upravljanje poslovnim godinama, budžetom i šifrarnicima.
+
+### Budžet i limiti
+
+- Svaka poslovna godina ima **godišnji budžet**; zbroj limita odjela ne smije premašiti budžet (aplikacija odbija unos preko limita).
+- Za svaki odjel i kategoriju prikazuje se potrošnja (zahtjevi u statusima `Naručeno`/`Zatvoreno`), limit i postotak iskorištenosti.
+- Kod odobravanja zahtjeva administrator vidi projekciju potrošnje odjela; prekoračenje limita **ne blokira** odobrenje, ali se upozorenje trajno bilježi u povijest aktivnosti.
+
+### Odjeli i kategorije
+
+- Dodavanje i uređivanje moguće je samo dok je godina otvorena; naziv je jedinstven unutar godine.
+- Odjel ili kategorija koja se koristi u zahtjevima ne može se obrisati — umjesto toga se **deaktivira** (ikona oka): deaktivirani zapis se više ne nudi kod kreiranja novih zahtjeva, a postojeći zahtjevi ostaju netaknuti. Deaktivacija je reverzibilna.
+
+### Prijelaz na novu poslovnu godinu
+
+Redoslijed radnji na početku kalendarske godine:
+
+1. **Od 1. siječnja** zatvoriti prethodnu poslovnu godinu (gumb za zaključavanje) — godina se ne može zatvoriti dok kalendarska godina još traje, a zatvaranje je nepovratno.
+2. Otvoriti novu poslovnu godinu i unijeti godišnji budžet — nova godina ne može se otvoriti unaprijed niti dok je prethodna još otvorena.
+3. Sustav automatski **kopira odjele i kategorije** iz prethodne godine (limiti se postavljaju na 0) — potrebno je samo unijeti nove limite.
+
+> **Napomena:** dok traje prijelaz (stara godina zatvorena, nova još nije otvorena) nema aktivne poslovne godine i zaposlenici ne mogu kreirati nove zahtjeve. Prijelaz zato treba obaviti odmah početkom godine. Postojeći zahtjevi stare godine normalno se dovršavaju — zaključana godina sprječava samo izmjene šifrarnika i kreiranje novih zahtjeva u njoj.
+
 ## Ograničenja trenutne verzije
 
 U trenutnoj verziji aplikacije nisu dostupne sljedeće funkcionalnosti:
 
 | Funkcionalnost | Stanje |
 |---|---|
-| Samostalna registracija korisnika | Nije implementirano. |
-| Administracija korisnika kroz aplikaciju | Nije implementirano. |
-| Otvaranje nove poslovne godine kroz aplikaciju | Nije implementirano. |
-| Zaključavanje poslovne godine kroz aplikaciju | Nije implementirano. |
-| Uređivanje šifrarnika kroz aplikaciju | Nije implementirano. |
-| Provjera godišnjih limita | Djelomično pripremljeno u bazi, ali nije aktivno u workflowu. |
+| Samostalna registracija korisnika | Izvan opsega — korisnike kreira administrator uz invite link. |
 | Draft zahtjeva | Izvan opsega projekta — zahtjev se uvijek šalje odmah. |
-| Storniranje zahtjeva | Nije implementirano. |
-| Perzistentne notifikacije | Nije implementirano. |
-| Serverska paginacija i napredni backend filteri | Nije implementirano; trenutni filteri rade na frontend strani. |
+| Tipovi dokumenata `Narudžbenica` i `Ostalo` | Izvan opsega — podržani su `Ponuda` i `Otpremnica`. |
+| Email obavijesti o promjeni statusa | Izvan opsega — obavijesti su in-app; postoji samo opcionalni invite email. |
+| Trajni centar obavijesti | Izvan opsega — obavijesti su toast poruke u aplikaciji. |
+| Analitički modul potrošnje | Izvan opsega — osnovni pregled postoji na stranici Financije. |
+| Cijene po stavci | Iznos se vodi na razini zahtjeva, pa je potrošnja po kategoriji približna. |
+| Priprema poslovne godine unaprijed | Nova godina se ne može otvoriti prije početka kalendarske godine (vidi Prijelaz na novu poslovnu godinu). |
 
 ## Preporučeni način rada
 
@@ -406,7 +443,7 @@ Za zaposlenika:
 
 1. Kreirati zahtjev s dovoljno jasnim obrazloženjem.
 2. Priložiti ponudu odmah ako je dostupna.
-3. Redovito provjeravati zahtjeve u statusu `Vraćeno na dopunu / izmjenu`.
+3. Redovito provjeravati zahtjeve u statusu `Zahtjeva izmjene`.
 4. Nakon ispravka poslati zahtjev ponovno na obradu.
 
 Za administratora:
@@ -414,6 +451,8 @@ Za administratora:
 1. Pregledavati zahtjeve u statusu `Poslano`.
 2. Preuzimati zahtjeve na obradu.
 3. Vraćati nepotpune zahtjeve uz jasan komentar.
-4. Odobravati zahtjeve tek kada imaju potrebnu ponudu.
+4. Odobravati zahtjeve tek kada imaju potrebnu ponudu, uz pogled na projekciju limita odjela.
 5. Nakon narudžbe dodati ili provjeriti otpremnicu.
 6. Zatvoriti zahtjev tek kada su dokumenti i iznos potpuni.
+7. Povremeno provjeriti iskorištenost budžeta na stranici Financije.
+8. Početkom kalendarske godine obaviti prijelaz na novu poslovnu godinu (vidi gore).
