@@ -52,6 +52,7 @@ veleri.XP je full-stack web aplikacija za digitalizaciju procesa nabave: zaposle
 | `docs/BAZA_PODATAKA.md` | Dokumentacija baze podataka. |
 | `docs/KORISNICKE_UPUTE.md` | Korisničke upute za zaposlenika i administratora. |
 | `docs/TEST_PLAN.md` | Plan testiranja. |
+| `docs/DEPLOYMENT.md` | Instalacija na produkcijski server, TLS, backup i restore. |
 | `docs/PLAN_DORADA.md` | Preporučeni redoslijed daljnjih dorada. |
 
 ## Tech Stack

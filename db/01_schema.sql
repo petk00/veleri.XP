@@ -43,6 +43,7 @@ CREATE TABLE `AppUser` (
   `invite_token_expires` datetime DEFAULT NULL,
   PRIMARY KEY (`id_user`),
   UNIQUE KEY `email` (`email`),
+  KEY `idx_invite_token` (`invite_token`),
   KEY `fk_appuser_role` (`fk_role`),
   CONSTRAINT `fk_appuser_role` FOREIGN KEY (`fk_role`) REFERENCES `Role` (`id_role`)
     ON DELETE RESTRICT ON UPDATE CASCADE

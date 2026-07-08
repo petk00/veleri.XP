@@ -148,6 +148,37 @@ describe('Korisnici (integracija)', () => {
     expect(created).toBeDefined();
     expect(Boolean(created.is_active)).toBe(false);
   });
+
+  itDb('cijeli invite tok: token iz linka postavlja lozinku, u bazi je samo hash', async () => {
+    const agent = await loginAgent(ADMIN);
+    const created = await agent.post('/api/users').send({
+      first_name: 'Invite', last_name: 'Tok',
+      email: 'invite.tok@veleri.hr', role_id: 2,
+    });
+    expect(created.status).toBe(201);
+    const rawToken = created.body.inviteLink.split('token=')[1];
+
+    // U bazi ne smije biti sirovi token nego njegov SHA-256 hash
+    const [[row]] = await db.query(
+      "SELECT invite_token FROM AppUser WHERE email = 'invite.tok@veleri.hr'"
+    );
+    expect(row.invite_token).not.toBe(rawToken);
+    expect(row.invite_token).toHaveLength(64);
+
+    const set = await request(app).post('/api/auth/set-password')
+      .send({ token: rawToken, password: 'nova-lozinka-123' });
+    expect(set.status).toBe(200);
+
+    // Prijava radi i s email adresom u drugačijem case-u (normalizacija)
+    const login = await request(app).post('/api/auth/login')
+      .send({ email: 'Invite.Tok@VELERI.HR', password: 'nova-lozinka-123' });
+    expect(login.status).toBe(200);
+
+    // Iskorišteni token više ne vrijedi
+    const reuse = await request(app).post('/api/auth/set-password')
+      .send({ token: rawToken, password: 'druga-lozinka-123' });
+    expect(reuse.status).toBe(400);
+  });
 });
 
 describe('Kategorije i limiti (integracija, SRS 7.1)', () => {
