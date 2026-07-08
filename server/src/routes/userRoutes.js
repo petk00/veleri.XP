@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const db = require('../config/db');
 const authenticateToken = require('../middleware/authMiddleware');
 const { sendInvite } = require('../services/emailService');
+const { generateInviteToken } = require('../services/inviteTokenService');
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:9000';
 
 const router = express.Router();
@@ -61,17 +62,17 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
       return res.status(409).json({ message: 'Korisnik s tim emailom već postoji.' });
     }
 
-    const token = crypto.randomBytes(32).toString('hex');
+    const token = generateInviteToken();
     const expires = new Date(Date.now() + 48 * 60 * 60 * 1000);
     const placeholderHash = await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10);
 
     await db.query(
       `INSERT INTO AppUser (fk_role, first_name, last_name, email, password_hash, is_active, invite_token, invite_token_expires)
        VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
-      [role_id, first_name.trim(), last_name.trim(), email.toLowerCase(), placeholderHash, token, expires]
+      [role_id, first_name.trim(), last_name.trim(), email.toLowerCase(), placeholderHash, token.hash, expires]
     );
 
-    const inviteLink = `${CLIENT_URL}/#/set-password?token=${token}`;
+    const inviteLink = `${CLIENT_URL}/#/set-password?token=${token.raw}`;
 
     // Email slanje je opcionalno - po zahtjevu klijenta, admin ručno
     // prosljeđuje invite link. SMTP konfiguracija nije obavezna; ako
@@ -79,7 +80,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
     // inviteLink fallbackom u JSON odgovoru.
     let emailSent = true;
     try {
-      await sendInvite({ to: email.toLowerCase(), firstName: first_name.trim(), token });
+      await sendInvite({ to: email.toLowerCase(), firstName: first_name.trim(), token: token.raw });
     } catch (emailErr) {
       emailSent = false;
       console.error('[email] sendInvite failed:', emailErr.message);
@@ -224,20 +225,20 @@ router.post('/:id/reset-link', authenticateToken, requireAdmin, async (req, res)
     if (rows.length === 0) return res.status(404).json({ message: 'Korisnik nije pronađen.' });
 
     const user = rows[0];
-    const token = crypto.randomBytes(32).toString('hex');
+    const token = generateInviteToken();
     const expires = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
     await db.query(
       'UPDATE AppUser SET invite_token = ?, invite_token_expires = ? WHERE id_user = ?',
-      [token, expires, id]
+      [token.hash, expires, id]
     );
 
-    const inviteLink = `${CLIENT_URL}/#/set-password?token=${token}`;
+    const inviteLink = `${CLIENT_URL}/#/set-password?token=${token.raw}`;
 
     // Isto kao kod kreiranja: email opcionalan, admin prosljeđuje link ručno.
     let emailSent = true;
     try {
-      await sendInvite({ to: user.email, firstName: user.first_name, token });
+      await sendInvite({ to: user.email, firstName: user.first_name, token: token.raw });
     } catch (emailErr) {
       emailSent = false;
       console.error('[email] sendInvite (reset-link) failed:', emailErr.message);

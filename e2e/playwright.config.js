@@ -6,6 +6,8 @@ module.exports = defineConfig({
   timeout: 30_000,
   expect: { timeout: 8_000 },
   fullyParallel: false, // testovi dijele stanje baze — sekvencijalno
+  workers: 1, // i between-file: bez ovoga se spec datoteke vrte paralelno
+              // po workerima pa si međusobno mijenjaju dijeljene podatke
   retries: 0,
   reporter: [['html', { open: 'never' }], ['list']],
 

@@ -1,6 +1,16 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { ADMIN, login, dismissNotifications } = require('./helpers');
+const { ADMIN, EMPLOYEE, login, dismissNotifications } = require('./helpers');
+
+/** Nađi red korisnika na stranici Korisnici (uz pretragu po emailu). */
+async function findUserRow(page, userEmail) {
+  await page.goto('/#/korisnici');
+  await dismissNotifications(page, 300, 2000);
+  await page.getByPlaceholder('Pretraži po imenu, emailu ili ulozi...').fill(userEmail);
+  const row = page.locator('.user-row', { hasText: userEmail });
+  await expect(row).toBeVisible();
+  return row;
+}
 
 test.describe.configure({ mode: 'serial' });
 
@@ -72,6 +82,40 @@ test.describe('Korisnici (admin)', () => {
     await page.getByRole('button', { name: 'Obriši' }).click();
     await expect(page.getByText('Korisnik obrisan.')).toBeVisible();
     await expect(row).toHaveCount(0);
+  });
+
+  test('deaktivacija korisnika odmah ruši njegovu aktivnu sesiju', async ({ browser }) => {
+    // Dva neovisna browser konteksta: zaposlenik s aktivnom sesijom + admin
+    const employeeContext = await browser.newContext();
+    const employeePage = await employeeContext.newPage();
+    await login(employeePage, EMPLOYEE);
+
+    const adminContext = await browser.newContext();
+    const adminPage = await adminContext.newPage();
+    await login(adminPage, ADMIN);
+
+    try {
+      // Admin deaktivira zaposlenika (ikone redom: uredi, reset, status, obriši)
+      const row = await findUserRow(adminPage, EMPLOYEE.email);
+      await row.locator('.icon-btn').nth(2).click();
+      await adminPage.getByRole('button', { name: 'Deaktiviraj' }).click();
+      await expect(row.getByText('Neaktivan', { exact: true })).toBeVisible();
+
+      // Zaposlenikova postojeća sesija pada na prvom sljedećem zahtjevu —
+      // auth middleware čita is_active iz baze, a 401 ga vraća na login
+      await employeePage.goto('/#/zahtjevi');
+      await expect(employeePage).toHaveURL(/\/#\/login/);
+    } finally {
+      // Reaktiviraj zaposlenika bez obzira na ishod — ostali testovi ga koriste
+      const row = await findUserRow(adminPage, EMPLOYEE.email);
+      if (await row.getByText('Neaktivan', { exact: true }).count() > 0) {
+        await row.locator('.icon-btn').nth(2).click();
+        await adminPage.getByRole('button', { name: 'Aktiviraj' }).click();
+        await expect(row.getByText('Aktivan', { exact: true })).toBeVisible();
+      }
+      await employeeContext.close();
+      await adminContext.close();
+    }
   });
 
 });

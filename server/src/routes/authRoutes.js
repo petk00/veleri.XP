@@ -2,12 +2,19 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
+const { hashInviteToken } = require('../services/inviteTokenService');
 
 const router = express.Router();
 
+// Email se svugdje normalizira na lowercase — u bazi je pohranjen lowercase
+// (userRoutes), a bez normalizacije bi prijava ovisila o MySQL collationu.
+const normalizeEmail = (email) =>
+  typeof email === 'string' ? email.trim().toLowerCase() : '';
+
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = normalizeEmail(req.body.email);
+    const { password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
@@ -103,9 +110,10 @@ router.post('/set-password', async (req, res) => {
   }
 
   try {
+    // U bazi je SHA-256 hash tokena — sirovi token postoji samo u linku.
     const [rows] = await db.query(
       `SELECT id_user, invite_token_expires FROM AppUser WHERE invite_token = ? LIMIT 1`,
-      [token]
+      [hashInviteToken(token)]
     );
 
     if (rows.length === 0) {
@@ -132,8 +140,11 @@ router.post('/set-password', async (req, res) => {
   }
 });
 
+// Napomena: ruta otkriva postoji li račun za dani email (enumeracija) —
+// svjesna UX odluka za internu aplikaciju (login forma u dva koraka),
+// ublažena rate limitom. Za javno izloženu aplikaciju vratiti generičan odgovor.
 router.post('/check-email', async (req, res) => {
-  const { email } = req.body;
+  const email = normalizeEmail(req.body.email);
 
   if (!email) {
     return res.status(400).json({ message: 'E-mail adresa je obavezna.' });
