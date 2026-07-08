@@ -29,7 +29,7 @@ Aplikacija ima implementiran kompletan MVP proces nabave:
 
 Preostale neimplementirane cjeline:
 
-- produkcijski deployment na stvarnom serveru (pravi TLS certifikat, instalacijska skripta — Docker compose postoji i verificiran je lokalno).
+- stvarna instalacija na produkcijski server s pravim TLS certifikatom (Docker postava, instalacijske upute u `docs/DEPLOYMENT.md` i backup skripta postoje).
 
 Svjesno isključeno iz opsega (odluke potvrđene 06.07.2026.): draft zahtjeva, tipovi dokumenata Narudžbenica i Ostalo, email obavijesti o statusima, centar/povijest obavijesti, analitički pregled potrošnje, audit log prijava, 2FA. Prekoračenje limita namjerno ne blokira odobrenje (upozorenje + zapis u povijest).
 

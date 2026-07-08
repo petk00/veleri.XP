@@ -46,7 +46,7 @@ Procjena MVP workflowa nabave: **~98%** (svi koraci tijeka nabave rade end-to-en
 
 ## Najvažnije nedovršene cjeline
 
-1. Deployment: Docker postava postoji i verificirana je lokalno (`docker-compose.yml`, Dockerfile za server i klijent, nginx s HTTPS preusmjeravanjem, `.env.example`); preostaje pravi TLS certifikat i dokumentirana instalacija na stvarnom serveru.
+1. Deployment: Docker postava postoji i verificirana je lokalno, a instalacija je dokumentirana u `docs/DEPLOYMENT.md` (uz backup skriptu `scripts/backup.sh`); preostaje stvarna instalacija na serveru s pravim TLS certifikatom.
 
 ## Detaljna matrica zahtjeva
 
@@ -100,7 +100,7 @@ Procjena MVP workflowa nabave: **~98%** (svi koraci tijeka nabave rade end-to-en
 
 Preostale dorade, poredane po prioritetu:
 
-1. Pripremiti produkcijski deployment na stvarnom serveru (pravi TLS certifikat, dokumentirana instalacija; Docker postava postoji i verificirana je lokalno).
+1. Instalirati aplikaciju na stvarni server s pravim TLS certifikatom (Docker postava i instalacijske upute postoje — `docs/DEPLOYMENT.md`).
 
 Dovršeno u srpnju 2026.: potrošnja i limiti po predmetu nabave (7.1/7.2), API integracijski testovi s pravom bazom (supertest + MySQL, 20+ testova), e2e testovi za Financije i Korisnike, sigurnosne dorade sesija i upravljanja korisnicima (provjera uloge/aktivnosti iz baze, zaštite za zadnjeg administratora), DB lozinke kroz .env, aktivacija/deaktivacija odjela i kategorija, UNIQUE naziva kategorija po godini, health provjera baze, osvježena API i korisnička dokumentacija.
 
