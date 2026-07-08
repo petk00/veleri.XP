@@ -1,10 +1,12 @@
 # Dokumentacija baze podataka
 
 Ovaj dokument opisuje bazu podataka aplikacije `veleri.XP`.
-Baza je relacijska i koristi MySQL/MariaDB. Trenutni dump nalazi se u:
+Baza je relacijska i koristi MySQL 8.0. Struktura i inicijalni podaci nalaze se u:
 
 ```text
-database/dump-XP-202605061957.sql
+db/01_schema.sql    — struktura (tablice, ključevi, ograničenja)
+db/02_seed.sql      — obvezni šifrarnici i inicijalni korisnici
+db/03_demo_seed.sql — demo podaci za prezentaciju (opcionalno)
 ```
 
 Model baze prati osnovni proces zahtjeva za nabavu:

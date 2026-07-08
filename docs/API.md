@@ -89,35 +89,65 @@ Sve rute zahtijevaju JWT token.
 
 ### GET `/api/requests`
 
-Dohvaća listu zahtjeva.
+Dohvaća listu zahtjeva sa serverskom paginacijom i filterima.
 
 Pravila pristupa:
 
 - administrator vidi sve zahtjeve,
 - zaposlenik vidi samo zahtjeve koje je sam kreirao.
 
+#### Query parametri
+
+| Parametar | Opis |
+|---|---|
+| `page`, `limit` | Paginacija (default `1` / `10`, limit najviše 500). |
+| `search` | Pretraga po broju zahtjeva, podnositelju, odjelu i nazivu statusa. |
+| `status` | Naziv statusa (npr. `Poslano`) ili izvedeni filter: `u_obradi`, `ceka_otpremnicu`, `spremno_za_zatvaranje`. |
+| `department` | Naziv odjela. |
+| `user` | Ime i prezime podnositelja (samo admin). |
+| `fiscalYear` | Godina (npr. `2026`). |
+| `category` | Naziv kategorije — zahtjevi koji imaju barem jednu stavku te kategorije. |
+| `onlyMine` | `1` — admin vidi samo vlastite zahtjeve. |
+| `sortBy`, `order` | Sortiranje (`request_number`, `department_name`, `created_by`, `created_at`, `updated_at`, `status_name`; `ASC`/`DESC`). |
+
 #### Uspješan odgovor
 
 ```json
-[
-  {
-    "id_purchase_request": 1,
-    "request_number": "PR-2026-0001",
-    "fiscal_year": 2026,
-    "department_name": "IT",
-    "fk_request_status": 1,
-    "created_by": "Ivan Horvat",
-    "total_amount": "250.00",
-    "created_at": "2026-04-23T21:21:14.000Z",
-    "status_name": "Poslano"
+{
+  "data": [
+    {
+      "id_purchase_request": 1,
+      "request_number": "NAB-2026-0001",
+      "fiscal_year": 2026,
+      "department_name": "IT",
+      "fk_request_status": 1,
+      "created_by": "Ivan Horvat",
+      "total_amount": "250.00",
+      "created_at": "2026-04-23T21:21:14.000Z",
+      "updated_at": null,
+      "justification": "Zamjena dotrajale opreme",
+      "last_comment": "Zahtjev kreiran i poslan.",
+      "has_ponuda": 1,
+      "has_otpremnica": 0,
+      "status_name": "Poslano"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "limit": 10,
+  "counts": {
+    "total": 1, "active": 1, "attention": 1, "closed": 0,
+    "na_odobrenju": 0, "naruceno": 0, "u_obradi": 1,
+    "ceka_otpremnicu": 0, "spremno_za_zatvaranje": 0
   }
-]
+}
 ```
 
-#### Napomena
+`counts` sadrži nefiltrirane brojeve po statusnim grupama (uz kontrolu pristupa) — koristi ih dashboard.
 
-Trenutna implementacija ne podržava serversku paginaciju ni query filtere.
-Filtriranje i paginacija se trenutno rade na frontend strani.
+### GET `/api/requests/meta`
+
+Vraća jedinstvene vrijednosti za filter padajuće izbornike: `departments`, `fiscalYears`, `categories` (za admina i `users`), izvedene iz zahtjeva vidljivih prijavljenom korisniku.
 
 ### GET `/api/requests/:id`
 
@@ -539,7 +569,7 @@ Dohvaća aktivna mjesta troška / odjele.
 
 #### Napomena
 
-Trenutno se vraćaju svi aktivni odjeli bez eksplicitnog filtriranja po poslovnoj godini u API ruti.
+Vraćaju se samo odjeli otvorene poslovne godine s `is_active = 1` — deaktivirani odjeli ne nude se kod novih zahtjeva.
 
 ### GET `/api/reference/item-categories`
 
@@ -558,15 +588,72 @@ Dohvaća aktivne predmete nabave / kategorije.
 
 #### Napomena
 
-Trenutno se vraćaju sve aktivne kategorije bez eksplicitnog filtriranja po poslovnoj godini u API ruti.
+Vraćaju se samo kategorije otvorene poslovne godine s `is_active = 1` — deaktivirane kategorije ne nude se kod novih zahtjeva.
 
-## Test API
+## Users API
 
-### GET `/api/test`
+Rute za administraciju korisnika koriste prefiks `/api/users`. Sve rute zahtijevaju JWT token **i ulogu Administrator** (inače `403`).
 
-Testna ruta za provjeru rada servera i baze.
+| Metoda i ruta | Opis |
+|---|---|
+| GET `/api/users` | Lista svih korisnika s ulogom i statusom aktivnosti. |
+| GET `/api/users/roles` | Lista dostupnih uloga. |
+| POST `/api/users` | Kreira korisnika (ime, prezime, email na `@veleri.hr`, uloga). Korisnik je neaktivan dok ne postavi lozinku putem invite linka; odgovor sadrži `inviteLink` i `emailSent` (slanje emaila je opcionalno — bez SMTP konfiguracije admin link prosljeđuje ručno). |
+| PUT `/api/users/:id` | Uređuje korisnika. Zadnjem aktivnom administratoru nije moguće promijeniti ulogu (`400`). |
+| PATCH `/api/users/:id/status` | Aktivira/deaktivira korisnika (`{ "is_active": boolean }`). Nije moguće deaktivirati vlastiti račun ni zadnjeg aktivnog administratora. Deaktivacija se primjenjuje odmah — aktivna sesija korisnika prestaje vrijediti. |
+| POST `/api/users/:id/reset-link` | Generira novi invite/reset link (48 h valjanosti). |
+| DELETE `/api/users/:id` | Briše korisnika. Nije moguće obrisati vlastiti račun, zadnjeg aktivnog administratora (`400`) ni korisnika sa zahtjevima, poviješću statusa ili dokumentima (`409` — umjesto brisanja deaktivirati račun). |
 
-Ova ruta nije dio poslovnog API-ja i koristi se samo za razvojnu provjeru.
+#### Povezane auth rute
+
+| Metoda i ruta | Opis |
+|---|---|
+| POST `/api/auth/set-password` | Postavljanje lozinke putem invite tokena (`{ token, password }`, min. 8 znakova); aktivira račun i poništava token. Rate limit: 10 pokušaja po satu. |
+| POST `/api/auth/check-email` | Provjera postoji li aktivan račun za email (koristi login forma). Rate limit: 30 pokušaja / 15 min. |
+| POST `/api/auth/logout` | Briše JWT cookie. |
+
+## Fiscal Years API
+
+Rute za poslovne godine i šifrarnike koriste prefiks `/api/fiscal-years`. Sve rute zahtijevaju JWT token **i ulogu Administrator**. Izmjene su moguće samo dok je godina otvorena (`is_closed = 0`); zatvorena godina vraća `400`.
+
+### Poslovne godine
+
+| Metoda i ruta | Opis |
+|---|---|
+| GET `/api/fiscal-years` | Lista godina s budžetom i ukupno alociranim limitima odjela. |
+| POST `/api/fiscal-years` | Otvara novu godinu (`{ year, total_budget }`) i kopira odjele i kategorije iz zadnje zatvorene godine (limiti se postavljaju na 0). Nije moguće otvoriti godinu unaprijed niti dok je neka godina još otvorena (`409`). |
+| PATCH `/api/fiscal-years/:id/budget` | Mijenja godišnji budžet; novi budžet ne smije biti manji od već alociranih limita odjela. |
+| PATCH `/api/fiscal-years/:id/close` | Zaključava godinu — moguće tek od 1. siječnja sljedeće kalendarske godine. Radnja je nepovratna (ruta za brisanje godine ne postoji). |
+
+### Odjeli po godini
+
+| Metoda i ruta | Opis |
+|---|---|
+| GET `/api/fiscal-years/:id/departments` | Odjeli godine s limitom i potrošnjom (zahtjevi u statusima Naručeno/Zatvoreno). |
+| POST `/api/fiscal-years/:id/departments` | Dodaje odjel (`{ name, department_limit }`). Zbroj limita svih odjela ne smije premašiti godišnji budžet; naziv je jedinstven unutar godine (`409`). |
+| PUT `/api/fiscal-years/:id/departments/:deptId` | Uređuje naziv i limit uz iste kontrole. |
+| PATCH `/api/fiscal-years/:id/departments/:deptId/status` | Aktivira/deaktivira odjel (`{ "is_active": boolean }`). Deaktivirani odjel se ne nudi kod novih zahtjeva; postojeći zahtjevi ostaju netaknuti. |
+| DELETE `/api/fiscal-years/:id/departments/:deptId` | Briše odjel; odjel korišten u zahtjevima ne može se obrisati (`409` — deaktivirati umjesto brisanja). |
+
+### Kategorije po godini
+
+| Metoda i ruta | Opis |
+|---|---|
+| GET `/api/fiscal-years/:id/categories` | Kategorije godine s limitom i potrošnjom + `unattributed` (zbirno za zahtjeve čije stavke miješaju kategorije). |
+| POST `/api/fiscal-years/:id/categories` | Dodaje kategoriju (`{ name, category_limit }`) uz iste kontrole kao za odjele. |
+| PUT `/api/fiscal-years/:id/categories/:catId` | Uređuje naziv i limit. |
+| PATCH `/api/fiscal-years/:id/categories/:catId/status` | Aktivira/deaktivira kategoriju. |
+| DELETE `/api/fiscal-years/:id/categories/:catId` | Briše kategoriju; kategorija korištena u stavkama ne može se obrisati (`409`). |
+
+#### Napomena o potrošnji po kategoriji
+
+Iznos postoji samo na razini zahtjeva (stavke nemaju cijenu), pa se kategoriji pripisuju samo zahtjevi čije sve stavke dijele tu kategoriju. Zahtjevi s više kategorija iskazuju se zbirno kao `unattributed`.
+
+## Health
+
+### GET `/health`
+
+Provjera dostupnosti servera i baze (bez autentikacije). Vraća `{ "status": "ok", "uptime": n }`, odnosno `503` ako baza nije dostupna.
 
 ## Statusi zahtjeva
 
@@ -576,32 +663,28 @@ Trenutno korišteni statusi:
 |---:|---|
 | 1 | Poslano |
 | 2 | Na odobrenju |
-| 3 | Vraćeno na dopunu/izmjenu |
+| 3 | Zahtjeva izmjene |
 | 5 | Odbijeno |
 | 6 | Naručeno |
 | 7 | Zatvoreno |
 
-Status `Odobreno` postoji u bazi kao stariji status, ali ga trenutni workflow ne koristi kao zasebnu fazu.
+Status `Odobreno` (ID 4) postoji u bazi kao stariji status, ali ga trenutni workflow ne koristi kao zasebnu fazu. Status `Odbijeno` koristi se i za storno (akcija `storno`) — razlika je vidljiva u komentaru povijesti.
 
 ## Poznata ograničenja API-ja
 
 | Ograničenje | Opis |
 |---|---|
-| Nema registracije korisnika | API nema rute za admin kreiranje korisnika. |
-| Nema admin API-ja za poslovne godine | Aktivna godina se samo dohvaća. |
-| Nema CRUD API-ja za šifrarnike | Odjeli i kategorije se samo dohvaćaju. |
-| Nema serverske paginacije | `GET /api/requests` vraća sve dostupne zahtjeve. |
-| Nema query filtera | Filtriranje zahtjeva radi frontend. |
 | Nema narudžbenice i ostalih dokumenata | Podržani su samo `Ponuda` i `Otpremnica`; ostali tipovi izvan su opsega projekta. |
-| Limiti se ne koriste u API-ju | Polja limita postoje u bazi, ali API ne računa potrošnju. |
-| Upload putanje su lokalne | U bazi se sprema filesystem putanja dokumenta. |
+| Cijene po stavci | Iznos postoji na razini zahtjeva; potrošnja po kategoriji je zato približna (vidi Fiscal Years API). |
+| Upload putanje su lokalne | U bazi se sprema filesystem putanja dokumenta relativna od `UPLOADS_DIR`. |
+| Email obavijesti | Postoji samo opcionalni invite email; obavijesti o statusima su in-app. |
 
 ## Primjer korištenja API-ja
 
 Tipičan redoslijed korištenja:
 
 1. Korisnik se prijavi preko `POST /api/auth/login`.
-2. Frontend sprema JWT token.
+2. Backend postavlja JWT kao httpOnly cookie — frontend ne barata tokenom.
 3. Frontend dohvaća aktivnu godinu preko `GET /api/reference/active-fiscal-year`.
 4. Frontend dohvaća odjele i kategorije preko reference API-ja.
 5. Korisnik kreira zahtjev preko `POST /api/requests`.
