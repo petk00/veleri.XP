@@ -164,36 +164,44 @@ git clone https://github.com/petk00/veleri.XP
 cd veleri.XP
 ```
 
-3. Kreirati `.env` datoteku u korijenu projekta s JWT tajnim ključem.
+3. Kreirati `.env` datoteku u korijenu projekta s JWT tajnim ključem i MySQL lozinkama.
 
    **Najlakše (bilo koji OS) — ručno u Notepadu ili VS Code:**  
    Kreirati datoteku `.env` u korijenu projekta (`veleri.XP/.env`) s ovim sadržajem:
    ```
    JWT_SECRET=PROMIJENI_OVO_minimum_32_znaka_dugacak_kljuc_ovdje
+   DB_ROOT_PASSWORD=PROMIJENI_OVO_root_lozinka
+   DB_PASSWORD=PROMIJENI_OVO_app_lozinka
    ```
-   Zamijeniti `PROMIJENI_OVO_...` s proizvoljnim nizom od minimalno 32 znaka (slova, brojevi).
+   Zamijeniti `PROMIJENI_OVO_...` s vlastitim jakim vrijednostima. `JWT_SECRET` mora imati minimalno 32 znaka.
 
    **macOS / Linux / Git Bash:**
    ```bash
-   echo "JWT_SECRET=$(openssl rand -base64 48)" > .env
+   {
+     echo "JWT_SECRET=$(openssl rand -base64 48)"
+     echo "DB_ROOT_PASSWORD=$(openssl rand -base64 24)"
+     echo "DB_PASSWORD=$(openssl rand -base64 24)"
+   } > .env
    ```
 
    **Windows PowerShell 5.x** (standardni PowerShell na Windows 10/11):
    ```powershell
-   $b = New-Object byte[] 48
-   [Security.Cryptography.RNGCryptoServiceProvider]::new().GetBytes($b)
-   "JWT_SECRET=$([Convert]::ToBase64String($b))" | Set-Content .env -Encoding ASCII
+   $rng = [Security.Cryptography.RNGCryptoServiceProvider]::new()
+   $b = New-Object byte[] 48; $rng.GetBytes($b); "JWT_SECRET=$([Convert]::ToBase64String($b))" | Set-Content .env -Encoding ASCII
+   $b = New-Object byte[] 24; $rng.GetBytes($b); "DB_ROOT_PASSWORD=$([Convert]::ToBase64String($b))" | Add-Content .env -Encoding ASCII
+   $b = New-Object byte[] 24; $rng.GetBytes($b); "DB_PASSWORD=$([Convert]::ToBase64String($b))" | Add-Content .env -Encoding ASCII
    ```
 
    **Windows PowerShell 7+:**
    ```powershell
-   $b = [Security.Cryptography.RandomNumberGenerator]::GetBytes(48)
-   "JWT_SECRET=$([Convert]::ToBase64String($b))" | Set-Content .env -Encoding utf8NoBOM
+   "JWT_SECRET=$([Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(48)))" | Set-Content .env -Encoding utf8NoBOM
+   "DB_ROOT_PASSWORD=$([Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(24)))" | Add-Content .env -Encoding utf8NoBOM
+   "DB_PASSWORD=$([Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(24)))" | Add-Content .env -Encoding utf8NoBOM
    ```
 
    > **Važno:** `.env` datoteka mora biti plain UTF-8 (bez BOM) ili ASCII — Docker Compose ne može čitati UTF-16 datoteke koje `Out-File` ponekad kreira na staroj PowerShell verziji.
 
-   Bez `JWT_SECRET` backend odbija pokrenuti se. Za produkciju promijeniti i MySQL lozinke u `docker-compose.yml`.
+   Bez `JWT_SECRET`, `DB_ROOT_PASSWORD` i `DB_PASSWORD` Docker Compose odbija pokrenuti stack.
 
 4. Izgraditi i pokrenuti sve kontejnere:
 
@@ -230,9 +238,9 @@ Repozitorij sadrži `.gitattributes` koji čuva ispravne (LF) line endinge pri c
 
 ### Napomene za produkcijski deploy
 
-- Generirati jak JWT tajni ključ i postaviti ga u `.env` u korijenu projekta: `echo "JWT_SECRET=$(openssl rand -base64 48)" > .env` — backend odbija pokrenuti bez njega.
+- Generirati jak JWT tajni ključ i MySQL lozinke te postaviti ih u `.env` u korijenu projekta. Docker Compose odbija pokrenuti stack bez `JWT_SECRET`, `DB_ROOT_PASSWORD` i `DB_PASSWORD`.
 - Za pristup s drugih računala postaviti `SERVER_IP` u istom `.env` (javna IP adresa ili domena servera, bez porta) — compose iz toga gradi `API_URL` i CORS whitelist. Vidjeti `.env.example`.
-- U `docker-compose.yml` promijeniti MySQL lozinke (`MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD`).
+- Ne commitati produkcijski `.env`; lozinke ostaju lokalno na serveru.
 - Frontend koristi self-signed certifikat (generira se pri buildu) — za javnu produkciju zamijeniti pravim certifikatom u nginx konfiguraciji.
 - MySQL init skripte (`db/`) izvršavaju se **samo pri prvom pokretanju na praznom volumenu**. Za čisti reinit (briše bazu i uploade!): `docker compose down -v && docker compose up --build`. Običan `down` čuva podatke.
 - Uploadani dokumenti čuvaju se u named volumenu `uploads` i ostaju perzistentni između restartova.
