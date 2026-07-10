@@ -63,7 +63,20 @@ Seed kreira dva računa (`admin@veleri.hr`, `zaposlenik@veleri.hr`) s razvojnom 
 3. demo račun `zaposlenik@veleri.hr` deaktivirati ili mu također resetirati lozinku,
 4. kreirati prave korisnike kroz stranicu Korisnici (invite link).
 
-## 4. TLS certifikat
+## 4. Provjera nakon deploya
+
+Nakon prvog pokretanja napraviti kratku provjeru osnovnih funkcija:
+
+- otvoriti aplikaciju preko HTTPS adrese i potvrditi da se login ekran učitava,
+- provjeriti health endpoint backenda: `docker compose exec frontend wget -qO- http://backend:3000/health`,
+- prijaviti se kao administrator i promijeniti početnu lozinku,
+- kreirati testni zahtjev kao zaposlenik ili admin testnim računom,
+- uploadati testnu ponudu i provjeriti da se dokument može preuzeti,
+- pokrenuti probni backup: `./scripts/backup.sh`.
+
+Ako svi koraci prođu, aplikacija je spremna za unos stvarnih korisnika i šifrarnika.
+
+## 5. TLS certifikat
 
 Frontend image u buildu generira **self-signed certifikat** (browser prikazuje upozorenje).
 Za produkciju zamijeniti pravim certifikatom — mountati ga preko postojeće putanje u `docker-compose.yml`:
@@ -81,7 +94,7 @@ U mapu `/etc/ssl/veleri` staviti pravi certifikat i ključ pod imenima `selfsign
 Za javno dostupan server s domenom preporuka je Let's Encrypt (`certbot certonly --standalone`,
 uz cron za obnovu i `docker compose restart frontend` nakon obnove).
 
-## 5. Backup
+## 6. Backup
 
 Skripta `scripts/backup.sh` radi dump baze i arhivu uploada iz kontejnera:
 
@@ -108,7 +121,7 @@ docker compose cp backups/uploads_YYYY-MM-DD_HHMM.tar.gz backend:/tmp/u.tar.gz
 docker compose exec backend sh -c 'rm -rf /app/uploads/attachments && tar -xzf /tmp/u.tar.gz -C / && rm /tmp/u.tar.gz'
 ```
 
-## 6. Ažuriranje aplikacije
+## 7. Ažuriranje aplikacije
 
 ```bash
 git pull
@@ -119,7 +132,7 @@ Migracije sheme: `db/01_schema.sql` se primjenjuje **samo pri prvoj inicijalizac
 Za izmjene sheme na postojećoj bazi pokrenuti pripadajući `ALTER TABLE` ručno
 (izmjene su dokumentirane u `docs/BAZA_PODATAKA.md`).
 
-## 7. Dijagnostika
+## 8. Dijagnostika
 
 | Provjera | Naredba |
 |---|---|
