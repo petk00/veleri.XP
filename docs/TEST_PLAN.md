@@ -3,6 +3,8 @@
 Ovaj dokument opisuje plan testiranja sustava za upravljanje zahtjevima za nabavu.
 Plan je usklađen s trenutnim MVP opsegom aplikacije i zahtjevima iz SRS-a.
 
+Zadnja provjera: **2026-07-10**
+
 ## 4.3. Testiranje sustava
 
 Testiranje sustava provodi se kroz tri razine:
@@ -15,7 +17,15 @@ Cilj testiranja je potvrditi da osnovni proces nabave radi ispravno: prijava kor
 
 ## 4.3.1. Izrada unit testova
 
-Unit testovi provjeravaju manje, izolirane dijelove sustava. U trenutnoj fazi projekt nema automatizirane unit testove, pa su u nastavku navedeni preporučeni testovi koje treba dodati.
+Unit testovi provjeravaju manje, izolirane dijelove sustava. Projekt trenutno ima automatizirane backend testove u `server/__tests__/` i frontend testove u `client/src/__tests__/`.
+
+Pri zadnjoj provjeri lokalno prolazi:
+
+- backend: 60 Jest/Supertest testova,
+- frontend: 29 Vitest testova,
+- frontend lint: bez grešaka.
+
+Tablice u nastavku služe kao pokrivenost ključnih scenarija i kontrolna lista za buduće proširenje testova.
 
 ### Backend unit testovi
 
@@ -61,6 +71,14 @@ Unit testovi provjeravaju manje, izolirane dijelove sustava. U trenutnoj fazi pr
 | Backend | Jest, Supertest | Implementirano |
 | Frontend | Vitest, jsdom | Implementirano |
 | E2E | Playwright | Implementirano |
+
+### Implementirani automatizirani testovi
+
+| Sloj | Datoteke | Pokrivenost |
+|---|---|---|
+| Backend unit/API | `server/__tests__/budgetImpact.test.js`, `requestNumber.test.js`, `statusMachine.test.js`, `uploadRules.test.js` | Budžetska projekcija, generiranje broja zahtjeva, statusni workflow, pravila uploada i validacije dokumenata. |
+| Backend integracijski | `server/__tests__/integration/api.integration.test.js` | Login/cookie tok, role, korisnici, limiti kategorija, workflow zahtjeva i izolacija podataka po korisniku nad testnom MySQL bazom. |
+| Frontend unit | `client/src/__tests__/authStorage.test.js`, `budgetMath.test.js`, `notifier.test.js` | Lokalna pohrana korisnika, izračuni budžeta i logika in-app obavijesti. |
 
 ## 4.3.2. End-to-end (e2e) testovi
 
@@ -238,7 +256,7 @@ MVP se smatra prihvatljivim ako su ispunjeni sljedeći uvjeti:
 
 ## Poznata ograničenja testiranja
 
-- E2e testovi zahtijevaju pokrenuti frontend (`localhost:9000`) i backend (`localhost:3000`) te postavljenu bazu s inicijalnim podacima.
+- Lokalno pokretanje e2e testova zahtijeva pokrenuti frontend (`localhost:9000`) i backend (`localhost:3000`) te postavljenu bazu s inicijalnim podacima; u CI-ju se frontend, backend i MySQL servis podižu automatski.
 - Workflow testovi koji ovise o stanju baze (npr. postojanje vraćenog zahtjeva) koriste `test.skip` ako uvjet nije ispunjen.
-- Limiti i financijsko praćenje nisu implementirani — testiraju se u kasnijoj fazi (v2.0).
+- Limiti i financijsko praćenje su implementirani i pokriveni kroz unit, API integracijske i e2e testove; preciznija analitika po stavci ostaje izvan trenutnog opsega jer se iznos vodi na razini zahtjeva.
 - Notifikacije nisu perzistentne, prikazuju se samo kroz UI u aktivnoj sesiji.
