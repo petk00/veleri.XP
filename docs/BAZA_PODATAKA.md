@@ -259,7 +259,7 @@ Relacije:
 
 Pravila u aplikaciji:
 
-- broj zahtjeva generira se u formatu `PR-GGGG-XXXX`, npr. `PR-2026-0001`,
+- broj zahtjeva generira se u formatu `NAB-GGGG-NNNN`, npr. `NAB-2026-0001`,
 - novi zahtjev dobiva status `Poslano`,
 - zahtjev mora imati poslovnu godinu, odjel, obrazloženje i barem jednu stavku,
 - obrazloženje je ograničeno na 1000 znakova u backend validaciji,
@@ -424,13 +424,13 @@ Baza koristi foreign key ograničenja za očuvanje povezanosti podataka.
 Broj zahtjeva generira backend prema poslovnoj godini:
 
 ```text
-PR-GGGG-XXXX
+NAB-GGGG-NNNN
 ```
 
 Primjer:
 
 ```text
-PR-2026-0001
+NAB-2026-0001
 ```
 
 Backend traži zadnji postojeći broj za odabranu godinu i povećava redni broj.

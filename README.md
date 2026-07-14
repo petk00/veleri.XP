@@ -16,7 +16,7 @@ veleri.XP je full-stack web aplikacija za digitalizaciju procesa nabave: zaposle
 - Prijava korisnika (httpOnly JWT cookie).
 - Dvije uloge: `Administrator` i `Zaposlenik`.
 - Kreiranje (višekoračni wizard, s ponudom ili bez), pregled, uređivanje i storniranje zahtjeva.
-- Automatski broj zahtjeva u formatu `NAB-GGGG-NNNN`.
+- Automatski broj zahtjeva u formatu `NAB-GGGG-NNNN` (npr. `NAB-2026-0001`).
 - Odabir aktivne poslovne godine, odjela i kategorije nabave.
 - Unos stavki i količina; provjera da stavke i odjel pripadaju istoj godini.
 - Serverska paginacija i filteri (status, odjel, korisnik, godina, kategorija, pretraga; status i kroz `?status=` URL parametar).
@@ -32,6 +32,7 @@ veleri.XP je full-stack web aplikacija za digitalizaciju procesa nabave: zaposle
 - Generiranje PDF dokumenta zahtjeva (samo za admin, status Naručeno/Zatvoreno).
 - Testovi na tri razine: unit (Jest, Vitest), API integracijski s pravom bazom (supertest + MySQL) i end-to-end (Playwright) — ukupno 100+ testova, sve tri razine u CI-ju.
 - Docker deployment (MySQL + Express backend + Quasar/nginx frontend s HTTPS preusmjeravanjem).
+- Health endpoint `/health` koji vraća status aplikacije i provjeru dostupnosti baze.
 
 ### Svjesno izvan opsega
 
