@@ -14,6 +14,7 @@ Postava je verificirana lokalno; koraci ispod opisuju instalaciju na Linux serve
 
 - Port 3000 (backend) i 3306 (MySQL) **nisu izloženi** na hostu — dostupni su samo unutar Docker mreže.
 - HTTP (80) se automatski preusmjerava na HTTPS (443).
+- Backend ima health endpoint `/health` koji vraća status `ok` kada je aplikacija i baza dostupne.
 - Podaci žive u dva Docker volumena: `mysql_data` (baza) i `uploads` (dokumenti).
 
 ## 1. Preduvjeti
@@ -68,7 +69,7 @@ Seed kreira dva računa (`admin@veleri.hr`, `zaposlenik@veleri.hr`) s razvojnom 
 Nakon prvog pokretanja napraviti kratku provjeru osnovnih funkcija:
 
 - otvoriti aplikaciju preko HTTPS adrese i potvrditi da se login ekran učitava,
-- provjeriti health endpoint backenda: `docker compose exec frontend wget -qO- http://backend:3000/health`,
+- provjeriti health endpoint backenda: `curl -fsS https://localhost/health` ili `docker compose exec frontend wget -qO- http://backend:3000/health`,
 - prijaviti se kao administrator i promijeniti početnu lozinku,
 - kreirati testni zahtjev kao zaposlenik ili admin testnim računom,
 - uploadati testnu ponudu i provjeriti da se dokument može preuzeti,

@@ -158,13 +158,13 @@ Nakon uspješnog slanja aplikacija prikazuje poruku s brojem zahtjeva i vraća k
 Broj zahtjeva generira se automatski u obliku:
 
 ```text
-PR-GGGG-XXXX
+NAB-GGGG-NNNN
 ```
 
 Primjer:
 
 ```text
-PR-2026-0001
+NAB-2026-0001
 ```
 
 ## Detalji zahtjeva
