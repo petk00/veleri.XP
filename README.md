@@ -47,6 +47,7 @@ veleri.XP je full-stack web aplikacija za digitalizaciju procesa nabave: zaposle
 
 | Dokument | Opis |
 |---|---|
+| `docs/AI.md` | AI prijedlozi |
 | `docs/SRS_STATUS.md` | Status implementacije prema SRS zahtjevima. |
 | `docs/ARHITEKTURA.md` | Arhitektura sustava i opis slojeva. |
 | `docs/API.md` | REST API dokumentacija. |
